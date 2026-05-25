@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+pub mod assets;
 pub mod project;
+pub use assets::*;
 pub use project::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

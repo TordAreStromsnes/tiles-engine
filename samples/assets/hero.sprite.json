@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 0,
+  "id": "sprite.hero",
+  "name": "Hero",
+  "canvas": {
+    "width": 32,
+    "height": 48,
+    "pivot": {
+      "x": 16.0,
+      "y": 40.0
+    }
+  },
+  "tags": ["character", "humanoid", "playable"],
+  "stateVariants": [
+    {
+      "id": "normal",
+      "name": "Normal",
+      "tags": ["default"],
+      "visibleLayerIds": ["body", "tunic", "hair"]
+    },
+    {
+      "id": "wet",
+      "name": "Wet",
+      "tags": ["material.wet"],
+      "visibleLayerIds": ["body", "tunic", "hair", "wet-overlay"]
+    }
+  ],
+  "layers": [
+    {
+      "id": "body",
+      "name": "Body",
+      "role": "body",
+      "source": {
+        "path": "assets/sprites/hero.png",
+        "frame": {
+          "x": 0,
+          "y": 0,
+          "width": 32,
+          "height": 48
+        }
+      },
+      "zIndex": 0,
+      "opacity": 1.0,
+      "visibleByDefault": true,
+      "anchor": {
+        "x": 16.0,
+        "y": 40.0
+      }
+    },
+    {
+      "id": "tunic",
+      "name": "Tunic",
+      "role": "clothing",
+      "source": {
+        "path": "assets/sprites/hero.png",
+        "frame": {
+          "x": 0,
+          "y": 48,
+          "width": 32,
+          "height": 48
+        }
+      },
+      "zIndex": 1,
+      "opacity": 1.0,
+      "visibleByDefault": true,
+      "anchor": {
+        "x": 16.0,
+        "y": 40.0
+      }
+    },
+    {
+      "id": "hair",
+      "name": "Hair",
+      "role": "hair",
+      "source": {
+        "path": "assets/sprites/hero.png",
+        "frame": {
+          "x": 0,
+          "y": 96,
+          "width": 32,
+          "height": 48
+        }
+      },
+      "zIndex": 2,
+      "opacity": 1.0,
+      "visibleByDefault": true,
+      "anchor": {
+        "x": 16.0,
+        "y": 40.0
+      }
+    },
+    {
+      "id": "wet-overlay",
+      "name": "Wet Overlay",
+      "role": "effect",
+      "source": {
+        "path": "assets/sprites/hero.png",
+        "frame": {
+          "x": 0,
+          "y": 144,
+          "width": 32,
+          "height": 48
+        }
+      },
+      "zIndex": 3,
+      "opacity": 0.42,
+      "visibleByDefault": true,
+      "anchor": {
+        "x": 16.0,
+        "y": 40.0
+      }
+    }
+  ],
+  "attachmentPoints": [
+    {
+      "id": "hand.right",
+      "name": "Right Hand",
+      "targetLayerId": "body",
+      "position": {
+        "x": 23.0,
+        "y": 26.0
+      },
+      "tags": ["heldItem"]
+    },
+    {
+      "id": "feet.ground",
+      "name": "Ground Contact",
+      "targetLayerId": "body",
+      "position": {
+        "x": 16.0,
+        "y": 44.0
+      },
+      "tags": ["movement", "shadow"]
+    }
+  ]
+}
