@@ -39,6 +39,14 @@ project write automation.
 - #12: Design Generic Interaction Systems
 - #13: Build Native Renderer Spike
 
+## Created Scene Runtime Follow-Up Issues
+
+- #31: Build Scene Entity Schema V0
+- #32: Build Runtime Preview Loop Slice
+- #33: Build Scene Composer Placement Prototype
+- #34: Build Interaction Trigger Schema V0
+- #35: Design Menus And Save Load After Runtime Preview
+
 ## CLI Setup
 
 GitHub CLI needs repo and project access:
