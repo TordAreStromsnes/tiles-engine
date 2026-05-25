@@ -38,6 +38,14 @@ pub enum RendererConstraint {
     EmbeddedViewportDeferred,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Camera2d {
+    pub position: [f32; 2],
+    pub viewport_size: [f32; 2],
+    pub zoom: f32,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SpriteBatch {
@@ -121,6 +129,13 @@ pub enum TextureAtlasValidationError {
     DuplicateSpriteId { id: String },
     InvalidSpriteRect { id: String },
     SpriteRectOutOfBounds { id: String },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Camera2dValidationError {
+    InvalidPosition,
+    InvalidViewportSize,
+    InvalidZoom,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -258,6 +273,53 @@ impl SpriteInstance {
     }
 }
 
+impl Camera2d {
+    pub fn validate(&self) -> Result<(), Camera2dValidationError> {
+        if self.position.iter().any(|value| !value.is_finite()) {
+            return Err(Camera2dValidationError::InvalidPosition);
+        }
+
+        if self
+            .viewport_size
+            .iter()
+            .any(|value| !value.is_finite() || *value <= 0.0)
+        {
+            return Err(Camera2dValidationError::InvalidViewportSize);
+        }
+
+        if !self.zoom.is_finite() || self.zoom <= 0.0 {
+            return Err(Camera2dValidationError::InvalidZoom);
+        }
+
+        Ok(())
+    }
+
+    pub fn world_to_clip(&self, position: [f32; 2]) -> [f32; 2] {
+        let viewport_size = self.effective_viewport_size();
+
+        [
+            (position[0] - self.position[0]) / (viewport_size[0] * 0.5),
+            (position[1] - self.position[1]) / (viewport_size[1] * 0.5),
+        ]
+    }
+
+    pub fn world_size_to_clip(&self, size: [f32; 2]) -> [f32; 2] {
+        let viewport_size = self.effective_viewport_size();
+
+        [
+            size[0] / (viewport_size[0] * 0.5),
+            size[1] / (viewport_size[1] * 0.5),
+        ]
+    }
+
+    fn effective_viewport_size(&self) -> [f32; 2] {
+        [
+            self.viewport_size[0] / self.zoom,
+            self.viewport_size[1] / self.zoom,
+        ]
+    }
+}
+
 impl TextureAtlas {
     pub fn validate(&self) -> Result<(), TextureAtlasValidationError> {
         if self.id.trim().is_empty() {
@@ -334,6 +396,17 @@ pub fn native_renderer_plan() -> NativeRendererPlan {
     }
 }
 
+pub fn preview_camera(scene: &PreviewScene) -> Camera2d {
+    Camera2d {
+        position: [0.0, 0.0],
+        viewport_size: [
+            scene.grid.world_width * 1.16,
+            scene.grid.world_height * 1.16,
+        ],
+        zoom: 1.0,
+    }
+}
+
 pub fn preview_texture_atlas() -> TextureAtlas {
     TextureAtlas {
         id: "preview.generated".to_string(),
@@ -379,6 +452,89 @@ pub fn preview_texture_atlas() -> TextureAtlas {
                 },
             },
         ],
+    }
+}
+
+pub fn preview_editor_overlay_batch(scene: &PreviewScene, elapsed_seconds: f32) -> SpriteBatch {
+    let sprite_position = sprite_position(scene, elapsed_seconds);
+    let sprite_size = scene.sprite.size;
+    let outline_thickness = 0.014;
+    let outline_color = [1.0, 0.92, 0.42, 0.96];
+    let origin_color = [1.0, 1.0, 1.0, 0.68];
+    let mut instances = Vec::with_capacity(6);
+
+    for (id, position, size, depth) in [
+        (
+            "preview.overlay.selection.top",
+            [
+                sprite_position[0],
+                sprite_position[1] + sprite_size[1] * 0.5,
+            ],
+            [sprite_size[0] + outline_thickness * 2.0, outline_thickness],
+            0.0,
+        ),
+        (
+            "preview.overlay.selection.bottom",
+            [
+                sprite_position[0],
+                sprite_position[1] - sprite_size[1] * 0.5,
+            ],
+            [sprite_size[0] + outline_thickness * 2.0, outline_thickness],
+            0.1,
+        ),
+        (
+            "preview.overlay.selection.left",
+            [
+                sprite_position[0] - sprite_size[0] * 0.5,
+                sprite_position[1],
+            ],
+            [outline_thickness, sprite_size[1] + outline_thickness * 2.0],
+            0.2,
+        ),
+        (
+            "preview.overlay.selection.right",
+            [
+                sprite_position[0] + sprite_size[0] * 0.5,
+                sprite_position[1],
+            ],
+            [outline_thickness, sprite_size[1] + outline_thickness * 2.0],
+            0.3,
+        ),
+    ] {
+        instances.push(SpriteInstance {
+            id: id.to_string(),
+            source: overlay_source_ref(),
+            position,
+            size,
+            layer: 1_000,
+            depth,
+            tint: outline_color,
+            flip_x: false,
+            flip_y: false,
+        });
+    }
+
+    for (id, size, depth) in [
+        ("preview.overlay.origin.horizontal", [0.34, 0.008], 1.0),
+        ("preview.overlay.origin.vertical", [0.008, 0.34], 1.1),
+    ] {
+        instances.push(SpriteInstance {
+            id: id.to_string(),
+            source: overlay_source_ref(),
+            position: [0.0, 0.0],
+            size,
+            layer: 1_001,
+            depth,
+            tint: origin_color,
+            flip_x: false,
+            flip_y: false,
+        });
+    }
+
+    SpriteBatch {
+        schema_version: SPRITE_BATCH_SCHEMA_VERSION,
+        id: "preview.editor-overlay".to_string(),
+        instances,
     }
 }
 
@@ -468,6 +624,19 @@ pub fn preview_sprite_batch(scene: &PreviewScene, elapsed_seconds: f32) -> Sprit
     }
 }
 
+fn overlay_source_ref() -> SpriteSourceRef {
+    SpriteSourceRef {
+        atlas_id: "preview.generated".to_string(),
+        sprite_id: "overlay.selection".to_string(),
+        source_rect: Some(TextureRect {
+            x: 3,
+            y: 0,
+            width: 1,
+            height: 1,
+        }),
+    }
+}
+
 pub fn default_preview_scene() -> PreviewScene {
     PreviewScene {
         grid: TileGridPreview {
@@ -544,6 +713,38 @@ mod tests {
     }
 
     #[test]
+    fn preview_camera_validates_and_projects_world_space() {
+        let scene = default_preview_scene();
+        let camera = preview_camera(&scene);
+
+        camera.validate().expect("preview camera should validate");
+        assert_eq!(camera.world_to_clip(camera.position), [0.0, 0.0]);
+
+        let right_edge = camera.world_to_clip([camera.viewport_size[0] * 0.5, 0.0]);
+        assert_eq!(right_edge, [1.0, 0.0]);
+    }
+
+    #[test]
+    fn camera_validation_rejects_invalid_zoom() {
+        let mut camera = preview_camera(&default_preview_scene());
+        camera.zoom = 0.0;
+
+        assert!(matches!(
+            camera.validate(),
+            Err(Camera2dValidationError::InvalidZoom)
+        ));
+    }
+
+    #[test]
+    fn camera_model_serializes_for_editor_transfer() {
+        let json = serde_json::to_string(&preview_camera(&default_preview_scene()))
+            .expect("camera should serialize");
+
+        assert!(json.contains("viewportSize"));
+        assert!(json.contains("zoom"));
+    }
+
+    #[test]
     fn preview_sprite_batch_validates_and_sorts() {
         let scene = default_preview_scene();
         let batch = preview_sprite_batch(&scene, 0.0);
@@ -569,6 +770,23 @@ mod tests {
         assert!(json.contains("schemaVersion"));
         assert!(json.contains("atlasId"));
         assert!(json.contains("flipX"));
+    }
+
+    #[test]
+    fn preview_editor_overlay_batch_validates() {
+        let scene = default_preview_scene();
+        let batch = preview_editor_overlay_batch(&scene, 0.0);
+
+        batch.validate().expect("overlay batch should validate");
+        assert_eq!(batch.id, "preview.editor-overlay");
+        assert!(batch
+            .instances
+            .iter()
+            .any(|instance| instance.id == "preview.overlay.origin.horizontal"));
+        assert!(batch
+            .instances
+            .iter()
+            .all(|instance| instance.source.sprite_id == "overlay.selection"));
     }
 
     #[test]

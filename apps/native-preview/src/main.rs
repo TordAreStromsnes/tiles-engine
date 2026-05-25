@@ -2,8 +2,8 @@ use std::{borrow::Cow, env, error::Error, fmt, time::Instant};
 
 use bytemuck::{Pod, Zeroable};
 use tiles_renderer::{
-    default_preview_scene, preview_sprite_batch, preview_texture_atlas, PreviewScene, TextureAtlas,
-    TextureRect,
+    default_preview_scene, preview_camera, preview_editor_overlay_batch, preview_sprite_batch,
+    preview_texture_atlas, Camera2d, PreviewScene, SpriteBatch, TextureAtlas, TextureRect,
 };
 use wgpu::util::DeviceExt;
 use winit::{
@@ -173,11 +173,13 @@ struct PreviewRenderer<'window> {
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     size: PhysicalSize<u32>,
+    camera: Camera2d,
     render_pipeline: wgpu::RenderPipeline,
     atlas_bind_group: wgpu::BindGroup,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     instance_buffer: wgpu::Buffer,
+    overlay_instance_buffer: wgpu::Buffer,
     index_count: u32,
 }
 
@@ -222,6 +224,7 @@ impl<'window> PreviewRenderer<'window> {
         let alpha_mode = capabilities.alpha_modes[0];
         let config = surface_config(size, format, present_mode, alpha_mode);
         surface.configure(&device, &config);
+        let camera = camera_for_surface(&scene, size);
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("tiles-preview-shader"),
@@ -308,6 +311,12 @@ impl<'window> PreviewRenderer<'window> {
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        let overlay_instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("tiles-preview-overlay-instances"),
+            size: MAX_INSTANCES * std::mem::size_of::<InstanceRaw>() as u64,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
 
         Ok(Self {
             scene,
@@ -316,11 +325,13 @@ impl<'window> PreviewRenderer<'window> {
             queue,
             config,
             size,
+            camera,
             render_pipeline,
             atlas_bind_group,
             vertex_buffer,
             index_buffer,
             instance_buffer,
+            overlay_instance_buffer,
             index_count: QUAD_INDICES.len() as u32,
         })
     }
@@ -331,6 +342,7 @@ impl<'window> PreviewRenderer<'window> {
         }
 
         self.size = size;
+        self.camera = camera_for_surface(&self.scene, size);
         self.config.width = size.width;
         self.config.height = size.height;
         self.surface.configure(&self.device, &self.config);
@@ -341,9 +353,15 @@ impl<'window> PreviewRenderer<'window> {
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
-        let instances = build_instances(&self.scene, elapsed_seconds);
+        let instances = build_instances(&self.scene, &self.camera, elapsed_seconds);
+        let overlay_instances = build_overlay_instances(&self.scene, &self.camera, elapsed_seconds);
         self.queue
             .write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&instances));
+        self.queue.write_buffer(
+            &self.overlay_instance_buffer,
+            0,
+            bytemuck::cast_slice(&overlay_instances),
+        );
 
         let mut encoder = self
             .device
@@ -379,6 +397,29 @@ impl<'window> PreviewRenderer<'window> {
             pass.draw_indexed(0..self.index_count, 0, 0..instances.len() as u32);
         }
 
+        {
+            let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("tiles-preview-editor-overlay-pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                occlusion_query_set: None,
+                timestamp_writes: None,
+            });
+            pass.set_pipeline(&self.render_pipeline);
+            pass.set_bind_group(0, &self.atlas_bind_group, &[]);
+            pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            pass.set_vertex_buffer(1, self.overlay_instance_buffer.slice(..));
+            pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            pass.draw_indexed(0..self.index_count, 0, 0..overlay_instances.len() as u32);
+        }
+
         self.queue.submit(Some(encoder.finish()));
         output.present();
         Ok(())
@@ -394,6 +435,7 @@ async fn run(frame_limit: Option<u32>) -> Result<(), PreviewError> {
     let renderer = tiles_renderer::native_renderer_plan();
     let runtime = tiles_runtime::native_runtime_boundary();
     let scene = default_preview_scene();
+    let camera = preview_camera(&scene);
 
     println!("Tiles Engine native preview");
     println!("renderer: {}", renderer.backend_summary());
@@ -402,6 +444,10 @@ async fn run(frame_limit: Option<u32>) -> Result<(), PreviewError> {
     println!(
         "scene: {}x{} tile grid with animated sprite",
         scene.grid.columns, scene.grid.rows
+    );
+    println!(
+        "camera: {:.2}x{:.2} world viewport, zoom {:.2}",
+        camera.viewport_size[0], camera.viewport_size[1], camera.zoom
     );
 
     let event_loop = EventLoop::new()?;
@@ -470,32 +516,62 @@ fn surface_config(
     }
 }
 
-fn build_instances(scene: &PreviewScene, elapsed_seconds: f32) -> Vec<InstanceRaw> {
-    let batch = preview_sprite_batch(scene, elapsed_seconds);
+fn build_instances(
+    scene: &PreviewScene,
+    camera: &Camera2d,
+    elapsed_seconds: f32,
+) -> Vec<InstanceRaw> {
+    build_batch_instances(&preview_sprite_batch(scene, elapsed_seconds), camera)
+}
+
+fn build_overlay_instances(
+    scene: &PreviewScene,
+    camera: &Camera2d,
+    elapsed_seconds: f32,
+) -> Vec<InstanceRaw> {
+    build_batch_instances(
+        &preview_editor_overlay_batch(scene, elapsed_seconds),
+        camera,
+    )
+}
+
+fn build_batch_instances(batch: &SpriteBatch, camera: &Camera2d) -> Vec<InstanceRaw> {
     let atlas = preview_texture_atlas();
 
     batch
         .sorted_instances()
         .into_iter()
-        .map(|instance| InstanceRaw {
-            offset: instance.position,
-            scale: [
-                if instance.flip_x {
-                    -instance.size[0]
-                } else {
-                    instance.size[0]
-                },
-                if instance.flip_y {
-                    -instance.size[1]
-                } else {
-                    instance.size[1]
-                },
-            ],
-            color: instance.tint,
-            uv_origin: uv_origin(instance.source.source_rect, &atlas),
-            uv_size: uv_size(instance.source.source_rect, &atlas),
+        .map(|instance| {
+            let clip_size = camera.world_size_to_clip(instance.size);
+
+            InstanceRaw {
+                offset: camera.world_to_clip(instance.position),
+                scale: [
+                    if instance.flip_x {
+                        -clip_size[0]
+                    } else {
+                        clip_size[0]
+                    },
+                    if instance.flip_y {
+                        -clip_size[1]
+                    } else {
+                        clip_size[1]
+                    },
+                ],
+                color: instance.tint,
+                uv_origin: uv_origin(instance.source.source_rect, &atlas),
+                uv_size: uv_size(instance.source.source_rect, &atlas),
+            }
         })
         .collect()
+}
+
+fn camera_for_surface(scene: &PreviewScene, size: PhysicalSize<u32>) -> Camera2d {
+    let mut camera = preview_camera(scene);
+    let width = size.width.max(1) as f32;
+    let height = size.height.max(1) as f32;
+    camera.viewport_size[0] = camera.viewport_size[1] * (width / height);
+    camera
 }
 
 fn create_preview_atlas_bind_group(
