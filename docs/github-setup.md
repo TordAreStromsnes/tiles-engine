@@ -18,6 +18,7 @@ Confirmed through GitHub CLI on 2026-05-25:
 - Project title is `tiles-engine`.
 - Standard labels from [docs/delivery-process.md](delivery-process.md) exist.
 - Seed issues #1 through #13 exist and are added to project `3`.
+- Renderer follow-up issues #14 through #18 exist and are added to project `3`.
 
 The GitHub connector available here can inspect issues and PRs, but it does not
 expose issue creation or GitHub Project creation. Use GitHub CLI for issue and
@@ -38,6 +39,14 @@ project write automation.
 - #11: Design Scene Composer And Runtime Preview MVP
 - #12: Design Generic Interaction Systems
 - #13: Build Native Renderer Spike
+
+## Created Renderer Follow-Up Issues
+
+- #14: Build Renderer MVP Sprite Batch Contract
+- #15: Build Texture Atlas And Sprite Upload Path
+- #16: Add Camera And Editor Overlay Pass To Native Preview
+- #17: Launch Native Preview From Desktop Shell
+- #18: Research Embedded Native Viewport Feasibility
 
 ## CLI Setup
 

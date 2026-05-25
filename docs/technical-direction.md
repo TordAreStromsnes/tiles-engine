@@ -65,25 +65,28 @@ the product. The product is the packaged Tauri desktop application.
 
 ### Renderer
 
-Start with a native rendering spike before committing.
+Use direct `wgpu` for the first native rendering path.
 
-Candidate paths:
+Candidate paths after the first spike:
 
-- wgpu directly for custom 2D/2.5D rendering control.
-- Bevy rendering and ECS if the integration cost is acceptable.
-- A simpler Rust 2D renderer for early prototypes, with a later migration plan.
+- Keep building direct `wgpu` for custom 2D/2.5D rendering control.
+- Evaluate Bevy ECS/runtime integration if the data model maps cleanly.
+- Use a simpler Rust 2D renderer only if direct `wgpu` blocks early learning.
 
 The renderer should support layers, cameras, sprite batching, tile maps, light
 maps, particles, and editor overlays.
 
-The Phase 1 recommendation is to test direct `wgpu` first and keep Bevy as an
-evaluation target. See [spikes/003-renderer-ecs-options.md](spikes/003-renderer-ecs-options.md).
+The Phase 1 renderer spike proved a native `wgpu` preview window with a tile
+grid and animated sprite. Keep Bevy as an evaluation target. See
+[spikes/003-renderer-ecs-options.md](spikes/003-renderer-ecs-options.md) and
+[spikes/004-native-wgpu-preview.md](spikes/004-native-wgpu-preview.md).
 
 Preferred preview path:
 
-1. First prove a native `wgpu` sprite/tile renderer in Rust.
-2. Run it as a local preview/playtest window beside the Tauri editor if embedding
-   is risky.
+1. Run the native `wgpu` renderer as a local preview/playtest window beside the
+   Tauri editor for MVP.
+2. Keep editor-to-renderer data serializable so the Tauri shell can launch and
+   drive previews without owning the GPU lifecycle.
 3. Investigate an embedded native viewport only after the renderer API is
    stable.
 4. Use the same renderer/runtime path for exported games where practical.
@@ -130,8 +133,8 @@ sharing can arrive later as an optional service:
 
 - Can Tauri + React host a smooth editor while a native Rust renderer handles
   preview/playtest output?
-- Should Rust renderer output be embedded in the editor, run in a sibling native
-  preview window, or both?
+- When should the project move from sibling native preview window to embedded
+  native viewport, if ever?
 - Is Bevy ECS useful without inheriting too much engine/editor complexity?
 - What project format is pleasant for humans and stable for tooling?
 - How do layered sprite rigs stay editable without exploding asset complexity?

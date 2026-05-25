@@ -27,12 +27,12 @@ const fallbackStatus: EngineStatus = {
   },
   nativeBoundary: {
     runtime: "Rust owns the native game loop",
-    renderer: "Native Rust GPU renderer (wgpu spike pending)",
+    renderer: "Native Rust GPU renderer (wgpu native preview spike)",
     editor: "React owns editor panels only",
     preview: "Native preview/playtest window first, embedded viewport later",
   },
   currentPhase: "Phase 1: technical spikes",
-  nextSpike: "Native wgpu sprite/tile renderer",
+  nextSpike: "Project format V0",
 };
 
 const panels = ["Assets", "Animation", "Maps", "Scene", "Systems"] as const;

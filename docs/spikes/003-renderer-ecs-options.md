@@ -64,15 +64,15 @@ Use only if direct `wgpu` blocks early learning.
 
 ## Decision For Phase 1
 
-- Issue #13 should build a direct native `wgpu` sprite/tile renderer spike.
+- Issue #13 built a direct native `wgpu` sprite/tile renderer spike.
 - Runtime ECS should stay behind `crates/tiles-runtime` until the project format
   and first preview loop exist.
 - Bevy should remain an evaluation target, not the default foundation.
 
 ## Follow-Up Questions
 
-- Should the first preview run in a sibling native window or embedded surface?
-- What minimum renderer data model is needed for tile maps, moving sprites, and
-  editor overlays?
+- When should the first embedded native viewport feasibility spike happen?
+- What renderer data model is needed for durable texture atlases, cameras,
+  sprite batches, and editor overlays?
 - How much of the runtime game loop must exist before renderer work becomes
   meaningful?

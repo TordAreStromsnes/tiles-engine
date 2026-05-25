@@ -45,7 +45,7 @@ pub fn engine_status() -> EngineStatus {
             preview: renderer.preview_strategy,
         },
         current_phase: "Phase 1: technical spikes".to_string(),
-        next_spike: "Native wgpu sprite/tile renderer".to_string(),
+        next_spike: "Project format V0".to_string(),
     }
 }
 
