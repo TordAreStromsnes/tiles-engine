@@ -1,7 +1,7 @@
 use std::{borrow::Cow, env, error::Error, fmt, time::Instant};
 
 use bytemuck::{Pod, Zeroable};
-use tiles_renderer::{default_preview_scene, sprite_position, PreviewScene};
+use tiles_renderer::{default_preview_scene, preview_sprite_batch, PreviewScene};
 use wgpu::util::DeviceExt;
 use winit::{
     dpi::{LogicalSize, PhysicalSize},
@@ -423,42 +423,28 @@ fn surface_config(
 }
 
 fn build_instances(scene: &PreviewScene, elapsed_seconds: f32) -> Vec<InstanceRaw> {
-    let columns = scene.grid.columns.max(1);
-    let rows = scene.grid.rows.max(1);
-    let cell_width = scene.grid.world_width / columns as f32;
-    let cell_height = scene.grid.world_height / rows as f32;
-    let start_x = -scene.grid.world_width / 2.0 + cell_width / 2.0;
-    let start_y = -scene.grid.world_height / 2.0 + cell_height / 2.0;
-    let mut instances = Vec::with_capacity(columns as usize * rows as usize + 1);
+    let batch = preview_sprite_batch(scene, elapsed_seconds);
 
-    for row in 0..rows {
-        for column in 0..columns {
-            let checker = (row + column) % 2 == 0;
-            let blue_tint = column as f32 / columns as f32;
-            let green_tint = row as f32 / rows as f32;
-
-            instances.push(InstanceRaw {
-                offset: [
-                    start_x + column as f32 * cell_width,
-                    start_y + row as f32 * cell_height,
-                ],
-                scale: [cell_width * 0.94, cell_height * 0.94],
-                color: if checker {
-                    [0.18, 0.48 + green_tint * 0.16, 0.38 + blue_tint * 0.22, 1.0]
+    batch
+        .sorted_instances()
+        .into_iter()
+        .map(|instance| InstanceRaw {
+            offset: instance.position,
+            scale: [
+                if instance.flip_x {
+                    -instance.size[0]
                 } else {
-                    [0.16, 0.40 + green_tint * 0.14, 0.32 + blue_tint * 0.18, 1.0]
+                    instance.size[0]
                 },
-            });
-        }
-    }
-
-    instances.push(InstanceRaw {
-        offset: sprite_position(scene, elapsed_seconds),
-        scale: scene.sprite.size,
-        color: scene.sprite.color,
-    });
-
-    instances
+                if instance.flip_y {
+                    -instance.size[1]
+                } else {
+                    instance.size[1]
+                },
+            ],
+            color: instance.tint,
+        })
+        .collect()
 }
 
 fn parse_frame_limit() -> Option<u32> {
