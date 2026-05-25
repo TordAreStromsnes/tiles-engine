@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Tiles Engine Planning Docs
+    url: https://github.com/TordAreStromsnes/tiles-engine/tree/main/docs
+    about: Check the product plan, roadmap, and delivery process before opening a broad issue.

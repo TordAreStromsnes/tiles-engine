@@ -1,0 +1,59 @@
+name: Feature
+description: Plan a user-facing feature or engine capability.
+title: "[Feature]: "
+labels: ["tiles-engine", "type:feature"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What creator or engine problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: why-now
+    attributes:
+      label: Why Now
+      description: Why should this happen before other roadmap work?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is included?
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out Of Scope
+      description: What should this issue explicitly not do?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Use checkboxes.
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition Of Done
+      value: |
+        - [ ] Implementation matches the scope.
+        - [ ] Tests or manual verification are recorded.
+        - [ ] Docs or ADRs are updated if behavior, architecture, or formats changed.
+        - [ ] Follow-up issues exist for deferred work.
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks And Open Questions
+    validations:
+      required: false

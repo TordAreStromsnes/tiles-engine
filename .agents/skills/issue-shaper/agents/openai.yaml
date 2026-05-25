@@ -1,0 +1,3 @@
+display_name: Issue Shaper
+short_description: Write implementation-ready GitHub issues.
+default_prompt: Use this skill to turn product ideas into GitHub issues with a problem statement, reason, scope, acceptance criteria, and definition of done.

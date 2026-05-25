@@ -1,0 +1,15 @@
+{
+  "name": "tiles-engine",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "desktop:dev": "npm --prefix apps/desktop run tauri:dev",
+    "desktop:build": "npm --prefix apps/desktop run tauri:build",
+    "desktop:frontend": "npm --prefix apps/desktop run dev",
+    "desktop:check": "npm --prefix apps/desktop run check",
+    "native-preview": "cargo run -p tiles-native-preview",
+    "core:test": "cargo test -p tiles-core",
+    "rust:fmt": "cargo fmt --all",
+    "rust:check": "cargo check --workspace"
+  }
+}

@@ -1,0 +1,289 @@
+:root {
+  color: #15202b;
+  background: #eef1f4;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button {
+  font: inherit;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 24px;
+  color: #f7fbff;
+  background: #1d2834;
+  border-right: 1px solid #314252;
+}
+
+.brand-block {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.brand-mark {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  color: #10202b;
+  background: #f2c14e;
+  border: 2px solid #f7d77d;
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.brand-block p {
+  margin-top: 4px;
+  color: #b6c4ce;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.panel-list {
+  display: grid;
+  gap: 8px;
+}
+
+.panel-button {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  color: #dbe7ef;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.panel-button:hover,
+.panel-button-active {
+  color: #ffffff;
+  background: #2f4151;
+  border-color: #4d6577;
+}
+
+.workspace {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 76px;
+  padding: 18px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #d7dee5;
+}
+
+.toolbar strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.eyebrow {
+  display: block;
+  color: #657687;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.bridge-pill {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  color: #18242e;
+  background: #e6edf4;
+  border: 1px solid #c7d2de;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.bridge-desktop {
+  color: #0b3a22;
+  background: #dbf2e6;
+  border-color: #93d8b4;
+}
+
+.bridge-web {
+  color: #5a3512;
+  background: #fff1d7;
+  border-color: #e6c280;
+}
+
+.bridge-bridge-error {
+  color: #641c1c;
+  background: #ffe2e2;
+  border-color: #e99b9b;
+}
+
+.workbench {
+  display: grid;
+  grid-template-columns: minmax(420px, 1fr) 320px;
+  gap: 0;
+  min-height: 0;
+}
+
+.viewport {
+  position: relative;
+  min-height: calc(100vh - 76px);
+  overflow: hidden;
+  background: #9db9c6;
+}
+
+.tile-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.28) 1px, transparent 1px),
+    linear-gradient(135deg, #9bbf75, #6f9e8f 42%, #577a9a);
+  background-size: 48px 48px, 48px 48px, cover;
+}
+
+.sprite-preview {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 96px;
+  height: 136px;
+  transform: translate(-50%, -50%);
+}
+
+.sprite-head {
+  position: absolute;
+  left: 28px;
+  top: 0;
+  width: 40px;
+  height: 36px;
+  background: #f0c7a4;
+  border: 3px solid #50392f;
+  border-radius: 8px;
+}
+
+.sprite-body {
+  position: absolute;
+  left: 22px;
+  top: 38px;
+  width: 52px;
+  height: 76px;
+  background:
+    linear-gradient(90deg, transparent 0 12px, #334e68 12px 40px, transparent 40px),
+    linear-gradient(#c84f4f 0 42px, #3f74a3 42px 100%);
+  border: 3px solid #25323f;
+  border-radius: 6px;
+}
+
+.sprite-shadow {
+  position: absolute;
+  left: 14px;
+  bottom: 0;
+  width: 68px;
+  height: 16px;
+  background: rgba(29, 40, 52, 0.28);
+  border-radius: 50%;
+}
+
+.inspector {
+  padding: 22px;
+  background: #f8fafc;
+  border-left: 1px solid #d7dee5;
+}
+
+.inspector h2 {
+  margin-top: 6px;
+  font-size: 24px;
+}
+
+dl {
+  display: grid;
+  gap: 16px;
+  margin: 24px 0 0;
+}
+
+dt {
+  color: #657687;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+dd {
+  margin: 4px 0 0;
+  color: #18242e;
+  line-height: 1.4;
+}
+
+@media (max-width: 860px) {
+  .app-shell,
+  .workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .rail {
+    border-right: 0;
+    border-bottom: 1px solid #314252;
+  }
+
+  .panel-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .viewport {
+    min-height: 420px;
+  }
+
+  .inspector {
+    border-left: 0;
+    border-top: 1px solid #d7dee5;
+  }
+}

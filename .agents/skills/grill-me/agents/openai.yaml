@@ -1,0 +1,3 @@
+display_name: Grill Me
+short_description: Stress-test decisions one question at a time.
+default_prompt: Use this skill when the Tiles Engine plan needs a direct decision interview. Ask one focused question at a time, recommend an answer, and record confirmed decisions.

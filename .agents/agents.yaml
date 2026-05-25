@@ -1,0 +1,100 @@
+version: 1
+project: tiles-engine
+default_project_label: tiles-engine
+github_project_name: Tiles Engine
+
+roles:
+  product_architect:
+    purpose: Keep product scope tied to creator workflows and roadmap order.
+    owns:
+      - docs/product-plan.md
+      - docs/roadmap.md
+    uses_skills:
+      - grill-me
+      - issue-shaper
+    handoff_to:
+      - issue_shaper
+      - architecture_reviewer
+
+  grill_me_facilitator:
+    purpose: Interrogate high-risk decisions one focused question at a time.
+    owns:
+      - .agents/skills/grill-me/SKILL.md
+    uses_skills:
+      - grill-me
+    handoff_to:
+      - product_architect
+      - issue_shaper
+
+  issue_shaper:
+    purpose: Convert ideas into implementation-ready GitHub issues.
+    owns:
+      - .github/ISSUE_TEMPLATE
+      - docs/backlog/seed-issues.md
+    uses_skills:
+      - issue-shaper
+    handoff_to:
+      - architecture_reviewer
+      - dod_auditor
+
+  engine_architect:
+    purpose: Protect core architecture, data model, renderer boundaries, and runtime flexibility.
+    owns:
+      - docs/technical-direction.md
+      - docs/decisions
+    uses_skills:
+      - architecture-review
+    handoff_to:
+      - quality_gatekeeper
+
+  editor_ux_engineer:
+    purpose: Design and implement editor workflows for assets, animation, maps, scenes, and preview.
+    owns:
+      - editor UI once created
+    uses_skills:
+      - architecture-review
+    handoff_to:
+      - quality_gatekeeper
+
+  runtime_systems_engineer:
+    purpose: Implement runtime simulation, interaction rules, lighting, particles, AI, and transitions.
+    owns:
+      - engine runtime crates once created
+    uses_skills:
+      - architecture-review
+    handoff_to:
+      - quality_gatekeeper
+
+  quality_gatekeeper:
+    purpose: Check code quality, tests, regressions, maintainability, and verification notes.
+    owns:
+      - PR quality review
+    uses_skills:
+      - architecture-review
+      - dod-auditor
+    handoff_to:
+      - dod_auditor
+
+  dod_auditor:
+    purpose: Verify that a completed issue satisfies its definition of done before merge.
+    owns:
+      - definition of done checks
+    uses_skills:
+      - dod-auditor
+    handoff_to:
+      - product_architect
+
+quality_gates:
+  before_issue_ready:
+    - problem is specific
+    - why now is clear
+    - scope and out of scope are explicit
+    - acceptance criteria are testable
+    - definition of done is checkable
+
+  before_merge:
+    - linked issue exists
+    - acceptance criteria are met
+    - tests or manual verification are recorded
+    - docs or ADRs are updated when architecture or format changed
+    - follow-up work is captured

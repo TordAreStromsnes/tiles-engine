@@ -1,0 +1,41 @@
+name: Design Decision
+description: Lock a product, architecture, process, or format decision.
+title: "[Decision]: "
+labels: ["tiles-engine", "type:decision", "risk:high"]
+body:
+  - type: textarea
+    id: decision
+    attributes:
+      label: Decision To Make
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options
+      description: List the serious options and tradeoffs.
+    validations:
+      required: true
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Recommended Answer
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: What future systems, users, or issues does this affect?
+    validations:
+      required: true
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition Of Done
+      value: |
+        - [ ] Decision is recorded in docs or an ADR.
+        - [ ] Follow-up implementation issues are created.
+        - [ ] Open risks are documented.
+    validations:
+      required: true

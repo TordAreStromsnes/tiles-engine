@@ -1,0 +1,51 @@
+name: Implementation Task
+description: Build a scoped piece of engine, editor, tooling, or docs work.
+title: "[Task]: "
+labels: ["tiles-engine"]
+body:
+  - type: textarea
+    id: linked-decision
+    attributes:
+      label: Linked Decision Or Roadmap Item
+      description: Link the decision, spike, roadmap phase, or parent issue.
+    validations:
+      required: true
+  - type: textarea
+    id: work
+    attributes:
+      label: Work To Do
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Expected Files Or Areas
+      description: List likely modules, docs, or packages.
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      description: Tests, commands, or manual checks expected.
+    validations:
+      required: true
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition Of Done
+      value: |
+        - [ ] Acceptance criteria are met.
+        - [ ] Verification is recorded.
+        - [ ] Docs or ADRs are updated if needed.
+        - [ ] Follow-up issues are created for deferred work.
+    validations:
+      required: true

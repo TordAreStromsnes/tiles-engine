@@ -1,0 +1,27 @@
+# Build outputs
+target/
+dist/
+build/
+out/
+coverage/
+apps/desktop/src-tauri/gen/
+
+# Dependencies
+node_modules/
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*

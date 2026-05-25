@@ -1,0 +1,47 @@
+name: Research Spike
+description: Answer a technical or product question before implementation.
+title: "[Spike]: "
+labels: ["tiles-engine", "type:research"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What decision must this spike answer?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why is this uncertain or risky?
+    validations:
+      required: true
+  - type: textarea
+    id: approach
+    attributes:
+      label: Spike Approach
+      description: What small prototype, comparison, or investigation will answer it?
+    validations:
+      required: true
+  - type: textarea
+    id: decision-output
+    attributes:
+      label: Expected Decision Output
+      value: |
+        - [ ] Recommendation recorded.
+        - [ ] Tradeoffs documented.
+        - [ ] Follow-up implementation issue created or explicitly deferred.
+    validations:
+      required: true
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition Of Done
+      value: |
+        - [ ] The spike question is answered.
+        - [ ] Evidence or prototype notes are linked.
+        - [ ] Recommendation is written in docs or an ADR.
+        - [ ] Follow-up issues exist for next work.
+    validations:
+      required: true

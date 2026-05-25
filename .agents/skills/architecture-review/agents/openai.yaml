@@ -1,0 +1,3 @@
+display_name: Architecture Review
+short_description: Review engine architecture decisions.
+default_prompt: Use this skill to review technical decisions for maintainability, performance, data ownership, and future engine/editor compatibility.

@@ -1,0 +1,3 @@
+display_name: DoD Auditor
+short_description: Check work against definitions of done.
+default_prompt: Use this skill to inspect an issue, pull request, or plan and verify whether it satisfies the project's definition of done.
