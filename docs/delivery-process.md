@@ -89,3 +89,10 @@ PRs should include:
 - Screenshots or recordings for visual editor changes.
 - Remaining risks.
 - Follow-up issues if the work intentionally stops short.
+
+## Licensing Expectations
+
+Code, docs, schemas, tests, configuration, and repo-native tooling are
+dual-licensed as `MIT OR Apache-2.0`. Asset contributions require an explicit
+asset license before they are accepted. See [licensing.md](licensing.md) and
+[../CONTRIBUTING.md](../CONTRIBUTING.md).

@@ -1,6 +1,7 @@
 {
   "name": "tiles-engine",
   "version": "0.1.0",
+  "license": "MIT OR Apache-2.0",
   "private": true,
   "scripts": {
     "desktop:dev": "npm --prefix apps/desktop run tauri:dev",
