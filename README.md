@@ -41,6 +41,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Delivery process: [docs/delivery-process.md](docs/delivery-process.md)
 - Project format V0: [docs/project-format-v0.md](docs/project-format-v0.md)
 - Sprite asset schema V0: [docs/sprite-asset-schema-v0.md](docs/sprite-asset-schema-v0.md)
+- Animation clip schema V0: [docs/animation-clip-schema-v0.md](docs/animation-clip-schema-v0.md)
 - Humanoid creator MVP: [docs/humanoid-character-creator-mvp.md](docs/humanoid-character-creator-mvp.md)
 - GitHub setup: [docs/github-setup.md](docs/github-setup.md)
 - Seed backlog: [docs/backlog/seed-issues.md](docs/backlog/seed-issues.md)
