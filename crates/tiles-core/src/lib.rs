@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+pub mod maps;
 pub mod project;
+pub use maps::*;
 pub use project::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
