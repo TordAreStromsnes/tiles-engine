@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+pub mod project;
+pub use project::*;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EngineStatus {
