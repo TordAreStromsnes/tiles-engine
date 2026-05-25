@@ -1,7 +1,10 @@
 use std::{borrow::Cow, env, error::Error, fmt, time::Instant};
 
 use bytemuck::{Pod, Zeroable};
-use tiles_renderer::{default_preview_scene, preview_sprite_batch, PreviewScene};
+use tiles_renderer::{
+    default_preview_scene, preview_sprite_batch, preview_texture_atlas, PreviewScene, TextureAtlas,
+    TextureRect,
+};
 use wgpu::util::DeviceExt;
 use winit::{
     dpi::{LogicalSize, PhysicalSize},
@@ -35,24 +38,34 @@ struct VertexIn {
     @location(1) offset: vec2<f32>,
     @location(2) scale: vec2<f32>,
     @location(3) color: vec4<f32>,
+    @location(4) uv_origin: vec2<f32>,
+    @location(5) uv_size: vec2<f32>,
 };
 
 struct VertexOut {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) color: vec4<f32>,
+    @location(1) uv: vec2<f32>,
 };
+
+@group(0) @binding(0)
+var atlas_texture: texture_2d<f32>;
+
+@group(0) @binding(1)
+var atlas_sampler: sampler;
 
 @vertex
 fn vs_main(vertex: VertexIn) -> VertexOut {
     var out: VertexOut;
     out.clip_position = vec4<f32>(vertex.position * vertex.scale + vertex.offset, 0.0, 1.0);
     out.color = vertex.color;
+    out.uv = (vertex.position + vec2<f32>(0.5, 0.5)) * vertex.uv_size + vertex.uv_origin;
     return out;
 }
 
 @fragment
 fn fs_main(fragment: VertexOut) -> @location(0) vec4<f32> {
-    return fragment.color;
+    return textureSample(atlas_texture, atlas_sampler, fragment.uv) * fragment.color;
 }
 "#;
 
@@ -80,13 +93,17 @@ struct InstanceRaw {
     offset: [f32; 2],
     scale: [f32; 2],
     color: [f32; 4],
+    uv_origin: [f32; 2],
+    uv_size: [f32; 2],
 }
 
 impl InstanceRaw {
-    const ATTRIBUTES: [wgpu::VertexAttribute; 3] = wgpu::vertex_attr_array![
+    const ATTRIBUTES: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![
         1 => Float32x2,
         2 => Float32x2,
-        3 => Float32x4
+        3 => Float32x4,
+        4 => Float32x2,
+        5 => Float32x2
     ];
 
     fn layout() -> wgpu::VertexBufferLayout<'static> {
@@ -157,6 +174,7 @@ struct PreviewRenderer<'window> {
     config: wgpu::SurfaceConfiguration,
     size: PhysicalSize<u32>,
     render_pipeline: wgpu::RenderPipeline,
+    atlas_bind_group: wgpu::BindGroup,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     instance_buffer: wgpu::Buffer,
@@ -209,10 +227,38 @@ impl<'window> PreviewRenderer<'window> {
             label: Some("tiles-preview-shader"),
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(SHADER)),
         });
+        let atlas_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("tiles-preview-atlas-bind-group-layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
+        let atlas_bind_group = create_preview_atlas_bind_group(
+            &device,
+            &queue,
+            &atlas_bind_group_layout,
+            &preview_texture_atlas(),
+        );
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("tiles-preview-pipeline-layout"),
-                bind_group_layouts: &[],
+                bind_group_layouts: &[&atlas_bind_group_layout],
                 push_constant_ranges: &[],
             });
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -271,6 +317,7 @@ impl<'window> PreviewRenderer<'window> {
             config,
             size,
             render_pipeline,
+            atlas_bind_group,
             vertex_buffer,
             index_buffer,
             instance_buffer,
@@ -325,6 +372,7 @@ impl<'window> PreviewRenderer<'window> {
                 timestamp_writes: None,
             });
             pass.set_pipeline(&self.render_pipeline);
+            pass.set_bind_group(0, &self.atlas_bind_group, &[]);
             pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
@@ -424,6 +472,7 @@ fn surface_config(
 
 fn build_instances(scene: &PreviewScene, elapsed_seconds: f32) -> Vec<InstanceRaw> {
     let batch = preview_sprite_batch(scene, elapsed_seconds);
+    let atlas = preview_texture_atlas();
 
     batch
         .sorted_instances()
@@ -443,8 +492,124 @@ fn build_instances(scene: &PreviewScene, elapsed_seconds: f32) -> Vec<InstanceRa
                 },
             ],
             color: instance.tint,
+            uv_origin: uv_origin(instance.source.source_rect, &atlas),
+            uv_size: uv_size(instance.source.source_rect, &atlas),
         })
         .collect()
+}
+
+fn create_preview_atlas_bind_group(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    layout: &wgpu::BindGroupLayout,
+    atlas: &TextureAtlas,
+) -> wgpu::BindGroup {
+    let size = wgpu::Extent3d {
+        width: atlas.size.width,
+        height: atlas.size.height,
+        depth_or_array_layers: 1,
+    };
+    let texture = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("tiles-preview-generated-atlas"),
+        size,
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
+    let pixels = preview_atlas_pixels(atlas);
+    queue.write_texture(
+        wgpu::ImageCopyTexture {
+            texture: &texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
+        &pixels,
+        wgpu::ImageDataLayout {
+            offset: 0,
+            bytes_per_row: Some(4 * atlas.size.width),
+            rows_per_image: Some(atlas.size.height),
+        },
+        size,
+    );
+
+    let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        label: Some("tiles-preview-atlas-sampler"),
+        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_v: wgpu::AddressMode::ClampToEdge,
+        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        mag_filter: wgpu::FilterMode::Nearest,
+        min_filter: wgpu::FilterMode::Nearest,
+        mipmap_filter: wgpu::FilterMode::Nearest,
+        ..Default::default()
+    });
+
+    device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("tiles-preview-atlas-bind-group"),
+        layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&view),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::Sampler(&sampler),
+            },
+        ],
+    })
+}
+
+fn preview_atlas_pixels(atlas: &TextureAtlas) -> Vec<u8> {
+    let mut pixels = vec![255; atlas.size.width as usize * atlas.size.height as usize * 4];
+    let colors = [
+        ("tile.checker.a", [215, 242, 206, 255]),
+        ("tile.checker.b", [152, 215, 184, 255]),
+        ("sprite.hero.placeholder", [245, 104, 78, 255]),
+        ("overlay.selection", [255, 255, 255, 255]),
+    ];
+
+    for sprite in &atlas.sprites {
+        let color = colors
+            .iter()
+            .find_map(|(id, color)| (*id == sprite.id).then_some(*color))
+            .unwrap_or([255, 255, 255, 255]);
+
+        for y in sprite.source_rect.y..sprite.source_rect.y + sprite.source_rect.height {
+            for x in sprite.source_rect.x..sprite.source_rect.x + sprite.source_rect.width {
+                let index = ((y * atlas.size.width + x) * 4) as usize;
+                pixels[index..index + 4].copy_from_slice(&color);
+            }
+        }
+    }
+
+    pixels
+}
+
+fn uv_origin(rect: Option<TextureRect>, atlas: &TextureAtlas) -> [f32; 2] {
+    let Some(rect) = rect else {
+        return [0.0, 0.0];
+    };
+
+    [
+        rect.x as f32 / atlas.size.width as f32,
+        rect.y as f32 / atlas.size.height as f32,
+    ]
+}
+
+fn uv_size(rect: Option<TextureRect>, atlas: &TextureAtlas) -> [f32; 2] {
+    let Some(rect) = rect else {
+        return [1.0, 1.0];
+    };
+
+    [
+        rect.width as f32 / atlas.size.width as f32,
+        rect.height as f32 / atlas.size.height as f32,
+    ]
 }
 
 fn parse_frame_limit() -> Option<u32> {

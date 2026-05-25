@@ -68,6 +68,28 @@ pub struct SpriteSourceRef {
     pub source_rect: Option<TextureRect>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextureAtlas {
+    pub id: String,
+    pub size: TextureSize,
+    pub sprites: Vec<TextureAtlasSprite>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextureSize {
+    pub width: u32,
+    pub height: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextureAtlasSprite {
+    pub id: String,
+    pub source_rect: TextureRect,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextureRect {
@@ -89,6 +111,16 @@ pub enum SpriteBatchValidationError {
     InvalidSize { instance_id: String },
     InvalidDepth { instance_id: String },
     InvalidTint { instance_id: String },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TextureAtlasValidationError {
+    EmptyAtlasId,
+    InvalidAtlasSize,
+    EmptySpriteId,
+    DuplicateSpriteId { id: String },
+    InvalidSpriteRect { id: String },
+    SpriteRectOutOfBounds { id: String },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -226,6 +258,57 @@ impl SpriteInstance {
     }
 }
 
+impl TextureAtlas {
+    pub fn validate(&self) -> Result<(), TextureAtlasValidationError> {
+        if self.id.trim().is_empty() {
+            return Err(TextureAtlasValidationError::EmptyAtlasId);
+        }
+
+        if self.size.width == 0 || self.size.height == 0 {
+            return Err(TextureAtlasValidationError::InvalidAtlasSize);
+        }
+
+        let mut sprite_ids = std::collections::HashSet::new();
+
+        for sprite in &self.sprites {
+            if sprite.id.trim().is_empty() {
+                return Err(TextureAtlasValidationError::EmptySpriteId);
+            }
+
+            if !sprite_ids.insert(sprite.id.as_str()) {
+                return Err(TextureAtlasValidationError::DuplicateSpriteId {
+                    id: sprite.id.clone(),
+                });
+            }
+
+            if sprite.source_rect.width == 0 || sprite.source_rect.height == 0 {
+                return Err(TextureAtlasValidationError::InvalidSpriteRect {
+                    id: sprite.id.clone(),
+                });
+            }
+
+            let Some(end_x) = sprite.source_rect.x.checked_add(sprite.source_rect.width) else {
+                return Err(TextureAtlasValidationError::SpriteRectOutOfBounds {
+                    id: sprite.id.clone(),
+                });
+            };
+            let Some(end_y) = sprite.source_rect.y.checked_add(sprite.source_rect.height) else {
+                return Err(TextureAtlasValidationError::SpriteRectOutOfBounds {
+                    id: sprite.id.clone(),
+                });
+            };
+
+            if end_x > self.size.width || end_y > self.size.height {
+                return Err(TextureAtlasValidationError::SpriteRectOutOfBounds {
+                    id: sprite.id.clone(),
+                });
+            }
+        }
+
+        Ok(())
+    }
+}
+
 pub fn native_renderer_plan() -> NativeRendererPlan {
     NativeRendererPlan {
         backend: RenderBackend::NativeGpu {
@@ -247,6 +330,54 @@ pub fn native_renderer_plan() -> NativeRendererPlan {
             RendererConstraint::NativeSurfaceOwnsGpuLifecycle,
             RendererConstraint::EditorSendsSerializableSceneData,
             RendererConstraint::EmbeddedViewportDeferred,
+        ],
+    }
+}
+
+pub fn preview_texture_atlas() -> TextureAtlas {
+    TextureAtlas {
+        id: "preview.generated".to_string(),
+        size: TextureSize {
+            width: 4,
+            height: 1,
+        },
+        sprites: vec![
+            TextureAtlasSprite {
+                id: "tile.checker.a".to_string(),
+                source_rect: TextureRect {
+                    x: 0,
+                    y: 0,
+                    width: 1,
+                    height: 1,
+                },
+            },
+            TextureAtlasSprite {
+                id: "tile.checker.b".to_string(),
+                source_rect: TextureRect {
+                    x: 1,
+                    y: 0,
+                    width: 1,
+                    height: 1,
+                },
+            },
+            TextureAtlasSprite {
+                id: "sprite.hero.placeholder".to_string(),
+                source_rect: TextureRect {
+                    x: 2,
+                    y: 0,
+                    width: 1,
+                    height: 1,
+                },
+            },
+            TextureAtlasSprite {
+                id: "overlay.selection".to_string(),
+                source_rect: TextureRect {
+                    x: 3,
+                    y: 0,
+                    width: 1,
+                    height: 1,
+                },
+            },
         ],
     }
 }
@@ -275,7 +406,21 @@ pub fn preview_sprite_batch(scene: &PreviewScene, elapsed_seconds: f32) -> Sprit
                     } else {
                         "tile.checker.b".to_string()
                     },
-                    source_rect: None,
+                    source_rect: Some(if checker {
+                        TextureRect {
+                            x: 0,
+                            y: 0,
+                            width: 1,
+                            height: 1,
+                        }
+                    } else {
+                        TextureRect {
+                            x: 1,
+                            y: 0,
+                            width: 1,
+                            height: 1,
+                        }
+                    }),
                 },
                 position: [
                     start_x + column as f32 * cell_width,
@@ -300,7 +445,12 @@ pub fn preview_sprite_batch(scene: &PreviewScene, elapsed_seconds: f32) -> Sprit
         source: SpriteSourceRef {
             atlas_id: "preview.generated".to_string(),
             sprite_id: "sprite.hero.placeholder".to_string(),
-            source_rect: None,
+            source_rect: Some(TextureRect {
+                x: 2,
+                y: 0,
+                width: 1,
+                height: 1,
+            }),
         },
         position: sprite_position(scene, elapsed_seconds),
         size: scene.sprite.size,
@@ -429,6 +579,39 @@ mod tests {
         assert!(matches!(
             batch.validate(),
             Err(SpriteBatchValidationError::InvalidSize { .. })
+        ));
+    }
+
+    #[test]
+    fn preview_texture_atlas_validates() {
+        let atlas = preview_texture_atlas();
+
+        atlas.validate().expect("preview atlas should validate");
+        assert_eq!(atlas.size.width, 4);
+        assert!(atlas
+            .sprites
+            .iter()
+            .any(|sprite| sprite.id == "sprite.hero.placeholder"));
+    }
+
+    #[test]
+    fn texture_atlas_serializes_for_asset_pipeline() {
+        let json = serde_json::to_string(&preview_texture_atlas())
+            .expect("texture atlas should serialize");
+
+        assert!(json.contains("preview.generated"));
+        assert!(json.contains("sourceRect"));
+        assert!(json.contains("sprite.hero.placeholder"));
+    }
+
+    #[test]
+    fn texture_atlas_validation_rejects_out_of_bounds_rect() {
+        let mut atlas = preview_texture_atlas();
+        atlas.sprites[0].source_rect.x = atlas.size.width;
+
+        assert!(matches!(
+            atlas.validate(),
+            Err(TextureAtlasValidationError::SpriteRectOutOfBounds { .. })
         ));
     }
 }

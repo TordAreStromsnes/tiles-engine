@@ -40,20 +40,26 @@ Source references include:
 - Sprite id.
 - Optional source rectangle.
 
-Texture atlas creation and upload are intentionally deferred to #15. The batch
-contract can already carry atlas and source-rectangle intent so asset, animation,
-and map systems have a stable target.
+Texture atlas upload is represented by `TextureAtlas` metadata:
+
+- Atlas id.
+- Atlas pixel size.
+- Sprite ids.
+- Source rectangles.
+
+The native preview currently uploads a generated in-memory atlas. Real project
+asset loading, atlas packing, and image import are still future work.
 
 ## Native Preview Use
 
 The native preview now builds a `SpriteBatch` from the preview scene and converts
-the sorted instances into GPU instance data. The current preview still draws
-colored quads, but it no longer owns a private sprite instance model.
+the sorted instances into GPU instance data. It samples a generated texture atlas
+using the source rectangles in the batch instances.
 
 ## Known Limits
 
-- No texture atlas upload yet.
 - No camera transform yet.
 - No editor overlay pass yet.
 - No batching across multiple texture atlases yet.
+- No project image loading or atlas packing yet.
 - No clipping, blend modes, or material flags yet.
