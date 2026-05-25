@@ -41,6 +41,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Delivery process: [docs/delivery-process.md](docs/delivery-process.md)
 - Project format V0: [docs/project-format-v0.md](docs/project-format-v0.md)
 - Tile map and portal schema V0: [docs/tile-map-portal-schema-v0.md](docs/tile-map-portal-schema-v0.md)
+- Procedural generation inputs: [docs/procedural-world-generation-inputs.md](docs/procedural-world-generation-inputs.md)
 - GitHub setup: [docs/github-setup.md](docs/github-setup.md)
 - Seed backlog: [docs/backlog/seed-issues.md](docs/backlog/seed-issues.md)
 - Agent roles: [.agents/agents.yaml](.agents/agents.yaml)
