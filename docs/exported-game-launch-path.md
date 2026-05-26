@@ -82,6 +82,26 @@ export package.
 7. Runner loads an existing runtime save snapshot from the platform user data
    directory, or starts a new game from the packaged entry scene.
 
+Issue #91 adds the first `tiles-game-runner` binary under `apps/game-runner`.
+For the MVP prototype it accepts `--manifest <path>` or `--content-root <path>`,
+validates the export manifest, resolves the package content root, initializes
+Rust-owned runtime state, and can exit after `--smoke-test`. It does not import
+Tauri, React, or desktop editor command code.
+
+Manual smoke command:
+
+```powershell
+cargo run -p tiles-game-runner -- --manifest samples/exports/starter.export-manifest.json --smoke-test
+```
+
+Manual verification for #91: the command above loaded
+`samples/exports/starter.export-manifest.json`, resolved
+`samples/exports/content`, initialized runtime state with active map
+`map.village`, and exited successfully.
+
+Deferred runtime UX remains tracked by #94 for menu rendering and #99 for
+exported-game save storage.
+
 ## Export Manifest V0 Requirements
 
 The first manifest should include:
