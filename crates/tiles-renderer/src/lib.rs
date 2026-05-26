@@ -206,6 +206,32 @@ pub struct OverlayStyle {
     pub depth: f32,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MoveGizmo {
+    pub id: String,
+    pub selection_id: String,
+    pub position: [f32; 2],
+    pub axis_length: f32,
+    pub handle_size: f32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MoveGizmoAxis {
+    Free,
+    X,
+    Y,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MoveGizmoDrag {
+    pub screen_delta: [f32; 2],
+    pub surface_size: [f32; 2],
+    pub axis: MoveGizmoAxis,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum SpriteBatchValidationError {
     UnsupportedSchemaVersion { actual: u32 },
@@ -241,6 +267,33 @@ pub enum OverlayPrimitiveValidationError {
     InvalidStyleDepth { id: String },
     DiagonalLineUnsupported { id: String },
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum MoveGizmoValidationError {
+    EmptyGizmoId,
+    EmptySelectionId,
+    InvalidPosition,
+    InvalidAxisLength,
+    InvalidHandleSize,
+    InvalidScreenDelta,
+    InvalidSurfaceSize,
+}
+
+impl fmt::Display for MoveGizmoValidationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EmptyGizmoId => write!(formatter, "move gizmo id cannot be empty"),
+            Self::EmptySelectionId => write!(formatter, "move gizmo selection id cannot be empty"),
+            Self::InvalidPosition => write!(formatter, "move gizmo position is invalid"),
+            Self::InvalidAxisLength => write!(formatter, "move gizmo axis length is invalid"),
+            Self::InvalidHandleSize => write!(formatter, "move gizmo handle size is invalid"),
+            Self::InvalidScreenDelta => write!(formatter, "move gizmo screen delta is invalid"),
+            Self::InvalidSurfaceSize => write!(formatter, "move gizmo surface size is invalid"),
+        }
+    }
+}
+
+impl Error for MoveGizmoValidationError {}
 
 impl fmt::Display for OverlayPrimitiveValidationError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -643,6 +696,144 @@ impl OverlayPrimitiveShape {
     }
 }
 
+impl MoveGizmo {
+    pub fn validate(&self) -> Result<(), MoveGizmoValidationError> {
+        if self.id.trim().is_empty() {
+            return Err(MoveGizmoValidationError::EmptyGizmoId);
+        }
+
+        if self.selection_id.trim().is_empty() {
+            return Err(MoveGizmoValidationError::EmptySelectionId);
+        }
+
+        if self.position.iter().any(|value| !value.is_finite()) {
+            return Err(MoveGizmoValidationError::InvalidPosition);
+        }
+
+        if !self.axis_length.is_finite() || self.axis_length <= 0.0 {
+            return Err(MoveGizmoValidationError::InvalidAxisLength);
+        }
+
+        if !self.handle_size.is_finite() || self.handle_size <= 0.0 {
+            return Err(MoveGizmoValidationError::InvalidHandleSize);
+        }
+
+        Ok(())
+    }
+
+    pub fn overlay_primitives(&self) -> Result<OverlayPrimitiveBatch, MoveGizmoValidationError> {
+        self.validate()?;
+
+        let x_end = [self.position[0] + self.axis_length, self.position[1]];
+        let y_end = [self.position[0], self.position[1] + self.axis_length];
+
+        Ok(OverlayPrimitiveBatch {
+            id: format!("{}.overlay", self.id),
+            primitives: vec![
+                OverlayPrimitive {
+                    id: format!("{}.axis.x", self.id),
+                    shape: OverlayPrimitiveShape::Line {
+                        start: self.position,
+                        end: x_end,
+                        thickness: self.handle_size * 0.22,
+                    },
+                    style: OverlayStyle {
+                        color: [1.0, 0.25, 0.18, 0.94],
+                        layer: 1_020,
+                        depth: 0.0,
+                    },
+                },
+                OverlayPrimitive {
+                    id: format!("{}.axis.y", self.id),
+                    shape: OverlayPrimitiveShape::Line {
+                        start: self.position,
+                        end: y_end,
+                        thickness: self.handle_size * 0.22,
+                    },
+                    style: OverlayStyle {
+                        color: [0.18, 0.82, 0.42, 0.94],
+                        layer: 1_020,
+                        depth: 0.1,
+                    },
+                },
+                OverlayPrimitive {
+                    id: format!("{}.handle.x", self.id),
+                    shape: OverlayPrimitiveShape::FilledQuad {
+                        center: x_end,
+                        size: [self.handle_size, self.handle_size],
+                    },
+                    style: OverlayStyle {
+                        color: [1.0, 0.25, 0.18, 0.94],
+                        layer: 1_021,
+                        depth: 0.0,
+                    },
+                },
+                OverlayPrimitive {
+                    id: format!("{}.handle.y", self.id),
+                    shape: OverlayPrimitiveShape::FilledQuad {
+                        center: y_end,
+                        size: [self.handle_size, self.handle_size],
+                    },
+                    style: OverlayStyle {
+                        color: [0.18, 0.82, 0.42, 0.94],
+                        layer: 1_021,
+                        depth: 0.1,
+                    },
+                },
+                OverlayPrimitive {
+                    id: format!("{}.center", self.id),
+                    shape: OverlayPrimitiveShape::Crosshair {
+                        center: self.position,
+                        size: self.handle_size * 1.6,
+                        thickness: self.handle_size * 0.24,
+                    },
+                    style: OverlayStyle {
+                        color: [1.0, 1.0, 1.0, 0.72],
+                        layer: 1_022,
+                        depth: 0.0,
+                    },
+                },
+            ],
+        })
+    }
+
+    pub fn moved_position(
+        &self,
+        camera: &Camera2d,
+        drag: MoveGizmoDrag,
+    ) -> Result<[f32; 2], MoveGizmoValidationError> {
+        self.validate()?;
+        drag.validate()?;
+
+        let mut delta = camera.screen_delta_to_world_delta(drag.screen_delta, drag.surface_size);
+        match drag.axis {
+            MoveGizmoAxis::Free => {}
+            MoveGizmoAxis::X => delta[1] = 0.0,
+            MoveGizmoAxis::Y => delta[0] = 0.0,
+        }
+
+        Ok([self.position[0] + delta[0], self.position[1] + delta[1]])
+    }
+}
+
+impl MoveGizmoDrag {
+    pub fn validate(&self) -> Result<(), MoveGizmoValidationError> {
+        if self.screen_delta.iter().any(|value| !value.is_finite()) {
+            return Err(MoveGizmoValidationError::InvalidScreenDelta);
+        }
+
+        if self
+            .surface_size
+            .iter()
+            .any(|value| !value.is_finite() || *value <= 0.0)
+        {
+            return Err(MoveGizmoValidationError::InvalidSurfaceSize);
+        }
+
+        Ok(())
+    }
+}
+
 impl Camera2d {
     pub fn validate(&self) -> Result<(), Camera2dValidationError> {
         if self.position.iter().any(|value| !value.is_finite()) {
@@ -679,6 +870,41 @@ impl Camera2d {
         [
             size[0] / (viewport_size[0] * 0.5),
             size[1] / (viewport_size[1] * 0.5),
+        ]
+    }
+
+    pub fn clip_to_world(&self, position: [f32; 2]) -> [f32; 2] {
+        let viewport_size = self.effective_viewport_size();
+
+        [
+            self.position[0] + position[0] * viewport_size[0] * 0.5,
+            self.position[1] + position[1] * viewport_size[1] * 0.5,
+        ]
+    }
+
+    pub fn screen_to_world(&self, position: [f32; 2], surface_size: [f32; 2]) -> [f32; 2] {
+        let width = surface_size[0].max(1.0);
+        let height = surface_size[1].max(1.0);
+        let clip = [
+            (position[0] / width) * 2.0 - 1.0,
+            1.0 - (position[1] / height) * 2.0,
+        ];
+
+        self.clip_to_world(clip)
+    }
+
+    pub fn screen_delta_to_world_delta(
+        &self,
+        screen_delta: [f32; 2],
+        surface_size: [f32; 2],
+    ) -> [f32; 2] {
+        let viewport_size = self.effective_viewport_size();
+        let width = surface_size[0].max(1.0);
+        let height = surface_size[1].max(1.0);
+
+        [
+            screen_delta[0] / width * viewport_size[0],
+            -screen_delta[1] / height * viewport_size[1],
         ]
     }
 
@@ -1169,6 +1395,38 @@ mod tests {
     }
 
     #[test]
+    fn camera_maps_screen_delta_to_world_delta() {
+        let camera = Camera2d {
+            position: [0.0, 0.0],
+            viewport_size: [10.0, 5.0],
+            zoom: 1.0,
+        };
+
+        assert_eq!(
+            camera.screen_delta_to_world_delta([100.0, 50.0], [1000.0, 500.0]),
+            [1.0, -0.5]
+        );
+        assert_eq!(
+            camera.screen_to_world([500.0, 250.0], [1000.0, 500.0]),
+            [0.0, 0.0]
+        );
+    }
+
+    #[test]
+    fn camera_zoom_affects_screen_delta_to_world_delta() {
+        let camera = Camera2d {
+            position: [0.0, 0.0],
+            viewport_size: [10.0, 5.0],
+            zoom: 2.0,
+        };
+
+        assert_eq!(
+            camera.screen_delta_to_world_delta([100.0, 50.0], [1000.0, 500.0]),
+            [0.5, -0.25]
+        );
+    }
+
+    #[test]
     fn preview_sprite_batch_validates_and_sorts() {
         let scene = default_preview_scene();
         let batch = preview_sprite_batch(&scene, 0.0);
@@ -1339,6 +1597,82 @@ mod tests {
     }
 
     #[test]
+    fn move_gizmo_converts_to_overlay_primitives_and_sprite_batch() {
+        let gizmo = test_move_gizmo();
+        let primitive_batch = gizmo
+            .overlay_primitives()
+            .expect("move gizmo primitives should build");
+        let sprite_batch = primitive_batch
+            .to_sprite_batch()
+            .expect("move gizmo primitives should convert");
+
+        assert_eq!(primitive_batch.primitives.len(), 5);
+        assert!(primitive_batch
+            .primitives
+            .iter()
+            .any(|primitive| primitive.id == "gizmo.hero.axis.x"));
+        assert!(sprite_batch
+            .instances
+            .iter()
+            .any(|instance| instance.id == "gizmo.hero.center.horizontal"));
+        sprite_batch
+            .validate()
+            .expect("move gizmo sprite batch should validate");
+    }
+
+    #[test]
+    fn move_gizmo_drag_updates_world_position_with_axis_lock() {
+        let gizmo = test_move_gizmo();
+        let camera = Camera2d {
+            position: [0.0, 0.0],
+            viewport_size: [10.0, 5.0],
+            zoom: 1.0,
+        };
+
+        let moved = gizmo
+            .moved_position(
+                &camera,
+                MoveGizmoDrag {
+                    screen_delta: [100.0, 50.0],
+                    surface_size: [1000.0, 500.0],
+                    axis: MoveGizmoAxis::Free,
+                },
+            )
+            .expect("free drag should move");
+        let x_locked = gizmo
+            .moved_position(
+                &camera,
+                MoveGizmoDrag {
+                    screen_delta: [100.0, 50.0],
+                    surface_size: [1000.0, 500.0],
+                    axis: MoveGizmoAxis::X,
+                },
+            )
+            .expect("x drag should move");
+
+        assert_eq!(moved, [3.0, 2.5]);
+        assert_eq!(x_locked, [3.0, 3.0]);
+    }
+
+    #[test]
+    fn move_gizmo_rejects_invalid_drag_surface_size() {
+        let gizmo = test_move_gizmo();
+        let camera = preview_camera(&default_preview_scene());
+
+        assert!(matches!(
+            gizmo.moved_position(
+                &camera,
+                MoveGizmoDrag {
+                    screen_delta: [10.0, 0.0],
+                    surface_size: [0.0, 500.0],
+                    axis: MoveGizmoAxis::Free,
+                },
+            ),
+            Err(MoveGizmoValidationError::InvalidSurfaceSize)
+        ));
+    }
+
+    #[test]
     fn sprite_batch_groups_instances_by_atlas_in_draw_order() {
         let mut batch = SpriteBatch {
             schema_version: SPRITE_BATCH_SCHEMA_VERSION,
@@ -1482,6 +1816,16 @@ mod tests {
             color: [1.0, 0.8, 0.2, 0.9],
             layer,
             depth,
+        }
+    }
+
+    fn test_move_gizmo() -> MoveGizmo {
+        MoveGizmo {
+            id: "gizmo.hero".to_string(),
+            selection_id: "selection.hero".to_string(),
+            position: [2.0, 3.0],
+            axis_length: 0.8,
+            handle_size: 0.14,
         }
     }
 }
