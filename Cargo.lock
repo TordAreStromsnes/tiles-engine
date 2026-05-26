@@ -4094,6 +4094,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tiles-core",
+ "tiles-renderer",
 ]
 
 [[package]]

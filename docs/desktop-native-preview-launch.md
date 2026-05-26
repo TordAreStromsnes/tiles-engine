@@ -13,11 +13,18 @@ The desktop shell exposes `launch_native_preview` from
 The command:
 
 - Resolves the repo root from the Tauri manifest directory.
+- Accepts and validates the current editor `SceneDocument`.
 - Looks for `target/debug/tiles-native-preview` or
   `target/debug/tiles-native-preview.exe`.
-- Starts the binary as a sibling desktop process.
-- Returns the process id, command path, and a user-facing message.
+- Writes `target/tiles-preview/preview-snapshot.json`.
+- Starts the binary as a sibling desktop process with `--snapshot <path>`.
+- Returns the process id, command path, snapshot path, and a user-facing message.
 - Returns a clear error if the binary has not been built.
+- Returns a clear error if the snapshot cannot be validated, serialized, or
+  written.
+
+The snapshot transfer contract is documented in
+[live-scene-streaming-native-preview.md](live-scene-streaming-native-preview.md).
 
 ## Local Development Flow
 
@@ -39,7 +46,7 @@ launch result or the error returned from Rust.
 ## Deferred Work
 
 - Packaged sidecar implementation for the preview binary: #87.
-- Live scene streaming from editor to preview: #54.
+- Replace the launch snapshot with true live editor streaming after #54.
 - Embedded native viewport feasibility: #18.
 - Exported game build launch behavior: #55.
 
