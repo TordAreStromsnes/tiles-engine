@@ -38,13 +38,26 @@ rustup component add --toolchain stable-x86_64-pc-windows-gnu rustfmt
 cargo +stable-x86_64-pc-windows-gnu test -p tiles-core
 ```
 
-The native preview scaffold can also be checked with the GNU toolchain:
+The native preview can be smoke-tested with the MSVC toolchain:
 
 ```powershell
-cargo +stable-x86_64-pc-windows-gnu run -p tiles-native-preview
+cargo run -p tiles-native-preview -- --smoke-test
+```
+
+Run it interactively without the smoke-test flag:
+
+```powershell
+cargo run -p tiles-native-preview
 ```
 
 ## Run The Desktop Shell
+
+Build the native preview binary first if you want the desktop shell's
+`Open Preview` button to launch the sibling preview window:
+
+```powershell
+cargo build -p tiles-native-preview
+```
 
 ```powershell
 npm run desktop:dev
@@ -53,6 +66,10 @@ npm run desktop:dev
 This starts Vite on `http://localhost:5173` and launches Tauri. The shell calls a
 Rust command named `engine_status` exposed by `apps/desktop/src-tauri/src/main.rs`
 and implemented by `crates/tiles-core`.
+
+The shell also exposes `launch_native_preview`. In development mode it starts the
+already-built `target/debug/tiles-native-preview.exe` binary and reports a clear
+error in the inspector if the binary is missing.
 
 ## Current Machine Note
 
@@ -72,9 +89,11 @@ On 2026-05-25:
   default MSVC toolchain after loading the Visual Studio developer environment.
 - `cargo check -p tiles-engine-desktop` passed with the default MSVC toolchain
   after adding the required `apps/desktop/src-tauri/icons/icon.ico` placeholder.
+- `cargo check -p tiles-native-preview` passed with the default MSVC toolchain.
+- `cargo run -p tiles-native-preview -- --smoke-test` passed with the default
+  MSVC toolchain and rendered a native `wgpu` preview window.
 - `cargo +stable-x86_64-pc-windows-gnu test -p tiles-core` passed.
 - `cargo +stable-x86_64-pc-windows-gnu test --workspace --exclude tiles-engine-desktop` passed.
-- `cargo +stable-x86_64-pc-windows-gnu run -p tiles-native-preview` passed.
 - `cargo +stable-x86_64-pc-windows-gnu fmt --all -- --check` passed.
 
 In a fresh terminal, `link.exe` may still not appear on the normal PATH. Use the
@@ -86,4 +105,5 @@ Next verification step:
 ```powershell
 cargo test -p tiles-core
 npm run desktop:dev
+cargo run -p tiles-native-preview
 ```

@@ -13,6 +13,8 @@ creation.
 
 This repo is at planning and foundation stage. The first technical foundation is
 accepted: native Rust engine/runtime, Tauri desktop shell, and React editor UI.
+The first native renderer spike now runs as a Rust `wgpu` preview window with a
+tile grid and animated sprite.
 
 ## Recommended Direction
 
@@ -23,8 +25,8 @@ Start with a local native stack:
 - TypeScript + React for editor UI panels, menus, inspectors, and project
   orchestration only.
 - Tauri for local desktop packaging.
-- wgpu, Bevy ECS, or a focused Rust 2D rendering stack after native rendering
-  spikes.
+- Direct `wgpu` for the first native renderer path, with Bevy kept as a later
+  ECS/runtime evaluation target.
 - JSON schemas for early project/asset formats, with binary export formats later.
 
 This keeps performance and local installability strong while avoiding the full
@@ -47,6 +49,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Procedural generation inputs: [docs/procedural-world-generation-inputs.md](docs/procedural-world-generation-inputs.md)
 - Scene composer/runtime preview MVP: [docs/scene-composer-runtime-preview-mvp.md](docs/scene-composer-runtime-preview-mvp.md)
 - Generic interaction systems: [docs/generic-interaction-systems.md](docs/generic-interaction-systems.md)
+- Renderer sprite batch contract: [docs/renderer-sprite-batch-contract.md](docs/renderer-sprite-batch-contract.md)
 - Licensing: [docs/licensing.md](docs/licensing.md)
 - GitHub setup: [docs/github-setup.md](docs/github-setup.md)
 - Seed backlog: [docs/backlog/seed-issues.md](docs/backlog/seed-issues.md)
@@ -56,9 +59,10 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 ## Current Native Crates
 
 - `crates/tiles-core`: shared engine status and project-facing core APIs.
-- `crates/tiles-renderer`: native renderer contract and GPU ownership plan.
+- `crates/tiles-renderer`: native renderer contract, preview scene data, and GPU
+  ownership plan.
 - `crates/tiles-runtime`: native game loop and simulation ownership plan.
-- `apps/native-preview`: placeholder native preview/playtest binary.
+- `apps/native-preview`: native `wgpu` preview/playtest binary.
 - `apps/desktop`: Tauri + React editor shell.
 
 ## First Working Loop
@@ -72,8 +76,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 ## Local Setup
 
 See [docs/setup-local.md](docs/setup-local.md). Node and Rustup are installed on
-this machine, but the MSVC linker from Visual Studio Build Tools is still needed
-before Tauri can run normally on Windows.
+this machine, and Visual Studio Build Tools is installed for MSVC builds.
 
 ## License
 

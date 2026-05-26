@@ -18,9 +18,13 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri = { version = "2", features = [] }
 tauri-build = { version = "2", features = [] }
+bytemuck = { version = "1", features = ["derive"] }
+pollster = "0.3"
 tiles-core = { path = "crates/tiles-core" }
 tiles-renderer = { path = "crates/tiles-renderer" }
 tiles-runtime = { path = "crates/tiles-runtime" }
+wgpu = "0.19"
+winit = "0.29"
 
 [profile.release]
 panic = "abort"
