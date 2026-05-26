@@ -36,4 +36,4 @@ switching the renderer-owned bind group before each draw call.
 
 ## Follow-Ups
 
-- #47: Add texture filtering and hot reload plan.
+- #78: Prototype texture asset hot reload.

@@ -35,6 +35,7 @@ This keeps project files portable across Windows, macOS, and Linux.
 `SpriteImageMetadata::atlas_sprite()` returns a `TextureAtlasSprite` covering the
 whole image. `single_image_atlas()` wraps that sprite into a one-image
 `TextureAtlas`, which is enough to feed the current renderer metadata contract.
+Generated metadata uses nearest texture sampling by default.
 
 ## Current Limits
 
@@ -48,4 +49,4 @@ whole image. `single_image_atlas()` wraps that sprite into a one-image
 ## Follow-Ups
 
 - #45: Build texture atlas packing MVP.
-- #47: Add texture filtering and hot reload plan.
+- #78: Prototype texture asset hot reload.

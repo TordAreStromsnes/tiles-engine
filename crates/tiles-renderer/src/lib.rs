@@ -1,6 +1,10 @@
+use std::{error::Error, fmt};
+
 use serde::{Deserialize, Serialize};
 
 pub const SPRITE_BATCH_SCHEMA_VERSION: u32 = 0;
+pub const PREVIEW_OVERLAY_ATLAS_ID: &str = "preview.overlay";
+pub const PREVIEW_OVERLAY_SPRITE_ID: &str = "overlay.selection";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -88,7 +92,48 @@ pub struct SpriteSourceRef {
 pub struct TextureAtlas {
     pub id: String,
     pub size: TextureSize,
+    #[serde(default)]
+    pub sampling: TextureSampling,
     pub sprites: Vec<TextureAtlasSprite>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextureSampling {
+    pub magnify_filter: TextureFilterMode,
+    pub minify_filter: TextureFilterMode,
+    pub mipmap_filter: TextureFilterMode,
+}
+
+impl TextureSampling {
+    pub const fn nearest() -> Self {
+        Self {
+            magnify_filter: TextureFilterMode::Nearest,
+            minify_filter: TextureFilterMode::Nearest,
+            mipmap_filter: TextureFilterMode::Nearest,
+        }
+    }
+
+    pub const fn linear() -> Self {
+        Self {
+            magnify_filter: TextureFilterMode::Linear,
+            minify_filter: TextureFilterMode::Linear,
+            mipmap_filter: TextureFilterMode::Linear,
+        }
+    }
+}
+
+impl Default for TextureSampling {
+    fn default() -> Self {
+        Self::nearest()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TextureFilterMode {
+    Nearest,
+    Linear,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -114,6 +159,79 @@ pub struct TextureRect {
     pub height: u32,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OverlayPrimitiveBatch {
+    pub id: String,
+    pub primitives: Vec<OverlayPrimitive>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OverlayPrimitive {
+    pub id: String,
+    pub shape: OverlayPrimitiveShape,
+    pub style: OverlayStyle,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum OverlayPrimitiveShape {
+    FilledQuad {
+        center: [f32; 2],
+        size: [f32; 2],
+    },
+    Line {
+        start: [f32; 2],
+        end: [f32; 2],
+        thickness: f32,
+    },
+    RectOutline {
+        center: [f32; 2],
+        size: [f32; 2],
+        thickness: f32,
+    },
+    Crosshair {
+        center: [f32; 2],
+        size: f32,
+        thickness: f32,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OverlayStyle {
+    pub color: [f32; 4],
+    pub layer: i32,
+    pub depth: f32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MoveGizmo {
+    pub id: String,
+    pub selection_id: String,
+    pub position: [f32; 2],
+    pub axis_length: f32,
+    pub handle_size: f32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MoveGizmoAxis {
+    Free,
+    X,
+    Y,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MoveGizmoDrag {
+    pub screen_delta: [f32; 2],
+    pub surface_size: [f32; 2],
+    pub axis: MoveGizmoAxis,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum SpriteBatchValidationError {
     UnsupportedSchemaVersion { actual: u32 },
@@ -137,6 +255,86 @@ pub enum TextureAtlasValidationError {
     InvalidSpriteRect { id: String },
     SpriteRectOutOfBounds { id: String },
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum OverlayPrimitiveValidationError {
+    EmptyBatchId,
+    EmptyPrimitiveId,
+    InvalidPoint { id: String },
+    InvalidSize { id: String },
+    InvalidThickness { id: String },
+    InvalidStyleColor { id: String },
+    InvalidStyleDepth { id: String },
+    DiagonalLineUnsupported { id: String },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum MoveGizmoValidationError {
+    EmptyGizmoId,
+    EmptySelectionId,
+    InvalidPosition,
+    InvalidAxisLength,
+    InvalidHandleSize,
+    InvalidScreenDelta,
+    InvalidSurfaceSize,
+}
+
+impl fmt::Display for MoveGizmoValidationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EmptyGizmoId => write!(formatter, "move gizmo id cannot be empty"),
+            Self::EmptySelectionId => write!(formatter, "move gizmo selection id cannot be empty"),
+            Self::InvalidPosition => write!(formatter, "move gizmo position is invalid"),
+            Self::InvalidAxisLength => write!(formatter, "move gizmo axis length is invalid"),
+            Self::InvalidHandleSize => write!(formatter, "move gizmo handle size is invalid"),
+            Self::InvalidScreenDelta => write!(formatter, "move gizmo screen delta is invalid"),
+            Self::InvalidSurfaceSize => write!(formatter, "move gizmo surface size is invalid"),
+        }
+    }
+}
+
+impl Error for MoveGizmoValidationError {}
+
+impl fmt::Display for OverlayPrimitiveValidationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EmptyBatchId => write!(formatter, "overlay primitive batch id cannot be empty"),
+            Self::EmptyPrimitiveId => write!(formatter, "overlay primitive id cannot be empty"),
+            Self::InvalidPoint { id } => {
+                write!(formatter, "overlay primitive '{id}' has an invalid point")
+            }
+            Self::InvalidSize { id } => {
+                write!(formatter, "overlay primitive '{id}' has an invalid size")
+            }
+            Self::InvalidThickness { id } => {
+                write!(
+                    formatter,
+                    "overlay primitive '{id}' has an invalid thickness"
+                )
+            }
+            Self::InvalidStyleColor { id } => {
+                write!(
+                    formatter,
+                    "overlay primitive '{id}' has an invalid style color"
+                )
+            }
+            Self::InvalidStyleDepth { id } => {
+                write!(
+                    formatter,
+                    "overlay primitive '{id}' has an invalid style depth"
+                )
+            }
+            Self::DiagonalLineUnsupported { id } => {
+                write!(
+                    formatter,
+                    "overlay primitive '{id}' uses a diagonal line; V0 supports axis-aligned lines"
+                )
+            }
+        }
+    }
+}
+
+impl Error for OverlayPrimitiveValidationError {}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Camera2dValidationError {
@@ -304,6 +502,338 @@ impl SpriteInstance {
     }
 }
 
+impl OverlayPrimitiveBatch {
+    pub fn validate(&self) -> Result<(), OverlayPrimitiveValidationError> {
+        if self.id.trim().is_empty() {
+            return Err(OverlayPrimitiveValidationError::EmptyBatchId);
+        }
+
+        for primitive in &self.primitives {
+            primitive.validate()?;
+        }
+
+        Ok(())
+    }
+
+    pub fn to_sprite_batch(&self) -> Result<SpriteBatch, OverlayPrimitiveValidationError> {
+        self.validate()?;
+
+        let mut instances = Vec::new();
+        for primitive in &self.primitives {
+            primitive.add_sprite_instances(&mut instances)?;
+        }
+
+        Ok(SpriteBatch {
+            schema_version: SPRITE_BATCH_SCHEMA_VERSION,
+            id: self.id.clone(),
+            instances,
+        })
+    }
+}
+
+impl OverlayPrimitive {
+    pub fn validate(&self) -> Result<(), OverlayPrimitiveValidationError> {
+        if self.id.trim().is_empty() {
+            return Err(OverlayPrimitiveValidationError::EmptyPrimitiveId);
+        }
+
+        if self
+            .style
+            .color
+            .iter()
+            .any(|channel| !channel.is_finite() || !(0.0..=1.0).contains(channel))
+        {
+            return Err(OverlayPrimitiveValidationError::InvalidStyleColor {
+                id: self.id.clone(),
+            });
+        }
+
+        if !self.style.depth.is_finite() {
+            return Err(OverlayPrimitiveValidationError::InvalidStyleDepth {
+                id: self.id.clone(),
+            });
+        }
+
+        self.shape.validate(&self.id)
+    }
+
+    fn add_sprite_instances(
+        &self,
+        instances: &mut Vec<SpriteInstance>,
+    ) -> Result<(), OverlayPrimitiveValidationError> {
+        match self.shape {
+            OverlayPrimitiveShape::FilledQuad { center, size } => {
+                instances.push(overlay_sprite_instance(
+                    self.id.clone(),
+                    center,
+                    size,
+                    self.style,
+                    0.0,
+                ));
+            }
+            OverlayPrimitiveShape::Line {
+                start,
+                end,
+                thickness,
+            } => {
+                let (position, size) = axis_aligned_line_rect(&self.id, start, end, thickness)?;
+                instances.push(overlay_sprite_instance(
+                    self.id.clone(),
+                    position,
+                    size,
+                    self.style,
+                    0.0,
+                ));
+            }
+            OverlayPrimitiveShape::RectOutline {
+                center,
+                size,
+                thickness,
+            } => {
+                let half_width = size[0] * 0.5;
+                let half_height = size[1] * 0.5;
+                for (suffix, position, edge_size, depth_offset) in [
+                    (
+                        "top",
+                        [center[0], center[1] + half_height],
+                        [size[0] + thickness * 2.0, thickness],
+                        0.0,
+                    ),
+                    (
+                        "bottom",
+                        [center[0], center[1] - half_height],
+                        [size[0] + thickness * 2.0, thickness],
+                        0.0001,
+                    ),
+                    (
+                        "left",
+                        [center[0] - half_width, center[1]],
+                        [thickness, size[1] + thickness * 2.0],
+                        0.0002,
+                    ),
+                    (
+                        "right",
+                        [center[0] + half_width, center[1]],
+                        [thickness, size[1] + thickness * 2.0],
+                        0.0003,
+                    ),
+                ] {
+                    instances.push(overlay_sprite_instance(
+                        format!("{}.{}", self.id, suffix),
+                        position,
+                        edge_size,
+                        self.style,
+                        depth_offset,
+                    ));
+                }
+            }
+            OverlayPrimitiveShape::Crosshair {
+                center,
+                size,
+                thickness,
+            } => {
+                for (suffix, edge_size, depth_offset) in [
+                    ("horizontal", [size, thickness], 0.0),
+                    ("vertical", [thickness, size], 0.0001),
+                ] {
+                    instances.push(overlay_sprite_instance(
+                        format!("{}.{}", self.id, suffix),
+                        center,
+                        edge_size,
+                        self.style,
+                        depth_offset,
+                    ));
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl OverlayPrimitiveShape {
+    fn validate(&self, id: &str) -> Result<(), OverlayPrimitiveValidationError> {
+        match self {
+            Self::FilledQuad { center, size } => {
+                validate_point(id, *center)?;
+                validate_size(id, *size)?;
+            }
+            Self::Line {
+                start,
+                end,
+                thickness,
+            } => {
+                validate_point(id, *start)?;
+                validate_point(id, *end)?;
+                validate_thickness(id, *thickness)?;
+                axis_aligned_line_rect(id, *start, *end, *thickness)?;
+            }
+            Self::RectOutline {
+                center,
+                size,
+                thickness,
+            } => {
+                validate_point(id, *center)?;
+                validate_size(id, *size)?;
+                validate_thickness(id, *thickness)?;
+            }
+            Self::Crosshair {
+                center,
+                size,
+                thickness,
+            } => {
+                validate_point(id, *center)?;
+                if !size.is_finite() || *size <= 0.0 {
+                    return Err(OverlayPrimitiveValidationError::InvalidSize {
+                        id: id.to_string(),
+                    });
+                }
+                validate_thickness(id, *thickness)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl MoveGizmo {
+    pub fn validate(&self) -> Result<(), MoveGizmoValidationError> {
+        if self.id.trim().is_empty() {
+            return Err(MoveGizmoValidationError::EmptyGizmoId);
+        }
+
+        if self.selection_id.trim().is_empty() {
+            return Err(MoveGizmoValidationError::EmptySelectionId);
+        }
+
+        if self.position.iter().any(|value| !value.is_finite()) {
+            return Err(MoveGizmoValidationError::InvalidPosition);
+        }
+
+        if !self.axis_length.is_finite() || self.axis_length <= 0.0 {
+            return Err(MoveGizmoValidationError::InvalidAxisLength);
+        }
+
+        if !self.handle_size.is_finite() || self.handle_size <= 0.0 {
+            return Err(MoveGizmoValidationError::InvalidHandleSize);
+        }
+
+        Ok(())
+    }
+
+    pub fn overlay_primitives(&self) -> Result<OverlayPrimitiveBatch, MoveGizmoValidationError> {
+        self.validate()?;
+
+        let x_end = [self.position[0] + self.axis_length, self.position[1]];
+        let y_end = [self.position[0], self.position[1] + self.axis_length];
+
+        Ok(OverlayPrimitiveBatch {
+            id: format!("{}.overlay", self.id),
+            primitives: vec![
+                OverlayPrimitive {
+                    id: format!("{}.axis.x", self.id),
+                    shape: OverlayPrimitiveShape::Line {
+                        start: self.position,
+                        end: x_end,
+                        thickness: self.handle_size * 0.22,
+                    },
+                    style: OverlayStyle {
+                        color: [1.0, 0.25, 0.18, 0.94],
+                        layer: 1_020,
+                        depth: 0.0,
+                    },
+                },
+                OverlayPrimitive {
+                    id: format!("{}.axis.y", self.id),
+                    shape: OverlayPrimitiveShape::Line {
+                        start: self.position,
+                        end: y_end,
+                        thickness: self.handle_size * 0.22,
+                    },
+                    style: OverlayStyle {
+                        color: [0.18, 0.82, 0.42, 0.94],
+                        layer: 1_020,
+                        depth: 0.1,
+                    },
+                },
+                OverlayPrimitive {
+                    id: format!("{}.handle.x", self.id),
+                    shape: OverlayPrimitiveShape::FilledQuad {
+                        center: x_end,
+                        size: [self.handle_size, self.handle_size],
+                    },
+                    style: OverlayStyle {
+                        color: [1.0, 0.25, 0.18, 0.94],
+                        layer: 1_021,
+                        depth: 0.0,
+                    },
+                },
+                OverlayPrimitive {
+                    id: format!("{}.handle.y", self.id),
+                    shape: OverlayPrimitiveShape::FilledQuad {
+                        center: y_end,
+                        size: [self.handle_size, self.handle_size],
+                    },
+                    style: OverlayStyle {
+                        color: [0.18, 0.82, 0.42, 0.94],
+                        layer: 1_021,
+                        depth: 0.1,
+                    },
+                },
+                OverlayPrimitive {
+                    id: format!("{}.center", self.id),
+                    shape: OverlayPrimitiveShape::Crosshair {
+                        center: self.position,
+                        size: self.handle_size * 1.6,
+                        thickness: self.handle_size * 0.24,
+                    },
+                    style: OverlayStyle {
+                        color: [1.0, 1.0, 1.0, 0.72],
+                        layer: 1_022,
+                        depth: 0.0,
+                    },
+                },
+            ],
+        })
+    }
+
+    pub fn moved_position(
+        &self,
+        camera: &Camera2d,
+        drag: MoveGizmoDrag,
+    ) -> Result<[f32; 2], MoveGizmoValidationError> {
+        self.validate()?;
+        drag.validate()?;
+
+        let mut delta = camera.screen_delta_to_world_delta(drag.screen_delta, drag.surface_size);
+        match drag.axis {
+            MoveGizmoAxis::Free => {}
+            MoveGizmoAxis::X => delta[1] = 0.0,
+            MoveGizmoAxis::Y => delta[0] = 0.0,
+        }
+
+        Ok([self.position[0] + delta[0], self.position[1] + delta[1]])
+    }
+}
+
+impl MoveGizmoDrag {
+    pub fn validate(&self) -> Result<(), MoveGizmoValidationError> {
+        if self.screen_delta.iter().any(|value| !value.is_finite()) {
+            return Err(MoveGizmoValidationError::InvalidScreenDelta);
+        }
+
+        if self
+            .surface_size
+            .iter()
+            .any(|value| !value.is_finite() || *value <= 0.0)
+        {
+            return Err(MoveGizmoValidationError::InvalidSurfaceSize);
+        }
+
+        Ok(())
+    }
+}
+
 impl Camera2d {
     pub fn validate(&self) -> Result<(), Camera2dValidationError> {
         if self.position.iter().any(|value| !value.is_finite()) {
@@ -340,6 +870,41 @@ impl Camera2d {
         [
             size[0] / (viewport_size[0] * 0.5),
             size[1] / (viewport_size[1] * 0.5),
+        ]
+    }
+
+    pub fn clip_to_world(&self, position: [f32; 2]) -> [f32; 2] {
+        let viewport_size = self.effective_viewport_size();
+
+        [
+            self.position[0] + position[0] * viewport_size[0] * 0.5,
+            self.position[1] + position[1] * viewport_size[1] * 0.5,
+        ]
+    }
+
+    pub fn screen_to_world(&self, position: [f32; 2], surface_size: [f32; 2]) -> [f32; 2] {
+        let width = surface_size[0].max(1.0);
+        let height = surface_size[1].max(1.0);
+        let clip = [
+            (position[0] / width) * 2.0 - 1.0,
+            1.0 - (position[1] / height) * 2.0,
+        ];
+
+        self.clip_to_world(clip)
+    }
+
+    pub fn screen_delta_to_world_delta(
+        &self,
+        screen_delta: [f32; 2],
+        surface_size: [f32; 2],
+    ) -> [f32; 2] {
+        let viewport_size = self.effective_viewport_size();
+        let width = surface_size[0].max(1.0);
+        let height = surface_size[1].max(1.0);
+
+        [
+            screen_delta[0] / width * viewport_size[0],
+            -screen_delta[1] / height * viewport_size[1],
         ]
     }
 
@@ -445,6 +1010,7 @@ pub fn preview_texture_atlas() -> TextureAtlas {
             width: 4,
             height: 1,
         },
+        sampling: TextureSampling::nearest(),
         sprites: vec![
             TextureAtlasSprite {
                 id: "tile.checker.a".to_string(),
@@ -488,13 +1054,14 @@ pub fn preview_texture_atlas() -> TextureAtlas {
 
 pub fn preview_overlay_texture_atlas() -> TextureAtlas {
     TextureAtlas {
-        id: "preview.overlay".to_string(),
+        id: PREVIEW_OVERLAY_ATLAS_ID.to_string(),
         size: TextureSize {
             width: 1,
             height: 1,
         },
+        sampling: TextureSampling::nearest(),
         sprites: vec![TextureAtlasSprite {
-            id: "overlay.selection".to_string(),
+            id: PREVIEW_OVERLAY_SPRITE_ID.to_string(),
             source_rect: TextureRect {
                 x: 0,
                 y: 0,
@@ -513,83 +1080,40 @@ pub fn preview_editor_overlay_batch(scene: &PreviewScene, elapsed_seconds: f32) 
     let sprite_position = sprite_position(scene, elapsed_seconds);
     let sprite_size = scene.sprite.size;
     let outline_thickness = 0.014;
-    let outline_color = [1.0, 0.92, 0.42, 0.96];
-    let origin_color = [1.0, 1.0, 1.0, 0.68];
-    let mut instances = Vec::with_capacity(6);
 
-    for (id, position, size, depth) in [
-        (
-            "preview.overlay.selection.top",
-            [
-                sprite_position[0],
-                sprite_position[1] + sprite_size[1] * 0.5,
-            ],
-            [sprite_size[0] + outline_thickness * 2.0, outline_thickness],
-            0.0,
-        ),
-        (
-            "preview.overlay.selection.bottom",
-            [
-                sprite_position[0],
-                sprite_position[1] - sprite_size[1] * 0.5,
-            ],
-            [sprite_size[0] + outline_thickness * 2.0, outline_thickness],
-            0.1,
-        ),
-        (
-            "preview.overlay.selection.left",
-            [
-                sprite_position[0] - sprite_size[0] * 0.5,
-                sprite_position[1],
-            ],
-            [outline_thickness, sprite_size[1] + outline_thickness * 2.0],
-            0.2,
-        ),
-        (
-            "preview.overlay.selection.right",
-            [
-                sprite_position[0] + sprite_size[0] * 0.5,
-                sprite_position[1],
-            ],
-            [outline_thickness, sprite_size[1] + outline_thickness * 2.0],
-            0.3,
-        ),
-    ] {
-        instances.push(SpriteInstance {
-            id: id.to_string(),
-            source: overlay_source_ref(),
-            position,
-            size,
-            layer: 1_000,
-            depth,
-            tint: outline_color,
-            flip_x: false,
-            flip_y: false,
-        });
-    }
-
-    for (id, size, depth) in [
-        ("preview.overlay.origin.horizontal", [0.34, 0.008], 1.0),
-        ("preview.overlay.origin.vertical", [0.008, 0.34], 1.1),
-    ] {
-        instances.push(SpriteInstance {
-            id: id.to_string(),
-            source: overlay_source_ref(),
-            position: [0.0, 0.0],
-            size,
-            layer: 1_001,
-            depth,
-            tint: origin_color,
-            flip_x: false,
-            flip_y: false,
-        });
-    }
-
-    SpriteBatch {
-        schema_version: SPRITE_BATCH_SCHEMA_VERSION,
+    OverlayPrimitiveBatch {
         id: "preview.editor-overlay".to_string(),
-        instances,
+        primitives: vec![
+            OverlayPrimitive {
+                id: "preview.overlay.selection".to_string(),
+                shape: OverlayPrimitiveShape::RectOutline {
+                    center: sprite_position,
+                    size: sprite_size,
+                    thickness: outline_thickness,
+                },
+                style: OverlayStyle {
+                    color: [1.0, 0.92, 0.42, 0.96],
+                    layer: 1_000,
+                    depth: 0.0,
+                },
+            },
+            OverlayPrimitive {
+                id: "preview.overlay.origin".to_string(),
+                shape: OverlayPrimitiveShape::Crosshair {
+                    center: [0.0, 0.0],
+                    size: 0.34,
+                    thickness: 0.008,
+                },
+                style: OverlayStyle {
+                    color: [1.0, 1.0, 1.0, 0.68],
+                    layer: 1_001,
+                    depth: 1.0,
+                },
+            },
+        ],
     }
+    .to_sprite_batch()
+    .expect("preview overlay primitives should convert")
 }
 
 pub fn preview_sprite_batch(scene: &PreviewScene, elapsed_seconds: f32) -> SpriteBatch {
@@ -680,8 +1204,8 @@ pub fn preview_sprite_batch(scene: &PreviewScene, elapsed_seconds: f32) -> Sprit
 
 fn overlay_source_ref() -> SpriteSourceRef {
     SpriteSourceRef {
-        atlas_id: "preview.overlay".to_string(),
-        sprite_id: "overlay.selection".to_string(),
+        atlas_id: PREVIEW_OVERLAY_ATLAS_ID.to_string(),
+        sprite_id: PREVIEW_OVERLAY_SPRITE_ID.to_string(),
         source_rect: Some(TextureRect {
             x: 0,
             y: 0,
@@ -689,6 +1213,78 @@ fn overlay_source_ref() -> SpriteSourceRef {
             height: 1,
         }),
     }
+}
+
+fn overlay_sprite_instance(
+    id: String,
+    position: [f32; 2],
+    size: [f32; 2],
+    style: OverlayStyle,
+    depth_offset: f32,
+) -> SpriteInstance {
+    SpriteInstance {
+        id,
+        source: overlay_source_ref(),
+        position,
+        size,
+        layer: style.layer,
+        depth: style.depth + depth_offset,
+        tint: style.color,
+        flip_x: false,
+        flip_y: false,
+    }
+}
+
+fn axis_aligned_line_rect(
+    id: &str,
+    start: [f32; 2],
+    end: [f32; 2],
+    thickness: f32,
+) -> Result<([f32; 2], [f32; 2]), OverlayPrimitiveValidationError> {
+    const EPSILON: f32 = 0.0001;
+
+    let delta_x = (end[0] - start[0]).abs();
+    let delta_y = (end[1] - start[1]).abs();
+
+    if delta_x <= EPSILON && delta_y <= EPSILON {
+        return Err(OverlayPrimitiveValidationError::InvalidSize { id: id.to_string() });
+    }
+
+    if delta_x > EPSILON && delta_y > EPSILON {
+        return Err(OverlayPrimitiveValidationError::DiagonalLineUnsupported {
+            id: id.to_string(),
+        });
+    }
+
+    if delta_x <= EPSILON {
+        Ok(([start[0], (start[1] + end[1]) * 0.5], [thickness, delta_y]))
+    } else {
+        Ok(([(start[0] + end[0]) * 0.5, start[1]], [delta_x, thickness]))
+    }
+}
+
+fn validate_point(id: &str, point: [f32; 2]) -> Result<(), OverlayPrimitiveValidationError> {
+    if point.iter().any(|value| !value.is_finite()) {
+        return Err(OverlayPrimitiveValidationError::InvalidPoint { id: id.to_string() });
+    }
+
+    Ok(())
+}
+
+fn validate_size(id: &str, size: [f32; 2]) -> Result<(), OverlayPrimitiveValidationError> {
+    if size.iter().any(|value| !value.is_finite() || *value <= 0.0) {
+        return Err(OverlayPrimitiveValidationError::InvalidSize { id: id.to_string() });
+    }
+
+    Ok(())
+}
+
+fn validate_thickness(id: &str, thickness: f32) -> Result<(), OverlayPrimitiveValidationError> {
+    if !thickness.is_finite() || thickness <= 0.0 {
+        return Err(OverlayPrimitiveValidationError::InvalidThickness { id: id.to_string() });
+    }
+
+    Ok(())
 }
 
 pub fn default_preview_scene() -> PreviewScene {
@@ -799,6 +1395,38 @@ mod tests {
     }
 
     #[test]
+    fn camera_maps_screen_delta_to_world_delta() {
+        let camera = Camera2d {
+            position: [0.0, 0.0],
+            viewport_size: [10.0, 5.0],
+            zoom: 1.0,
+        };
+
+        assert_eq!(
+            camera.screen_delta_to_world_delta([100.0, 50.0], [1000.0, 500.0]),
+            [1.0, -0.5]
+        );
+        assert_eq!(
+            camera.screen_to_world([500.0, 250.0], [1000.0, 500.0]),
+            [0.0, 0.0]
+        );
+    }
+
+    #[test]
+    fn camera_zoom_affects_screen_delta_to_world_delta() {
+        let camera = Camera2d {
+            position: [0.0, 0.0],
+            viewport_size: [10.0, 5.0],
+            zoom: 2.0,
+        };
+
+        assert_eq!(
+            camera.screen_delta_to_world_delta([100.0, 50.0], [1000.0, 500.0]),
+            [0.5, -0.25]
+        );
+    }
+
+    #[test]
     fn preview_sprite_batch_validates_and_sorts() {
         let scene = default_preview_scene();
         let batch = preview_sprite_batch(&scene, 0.0);
@@ -848,6 +1476,203 @@ mod tests {
     }
 
     #[test]
+    fn overlay_primitives_convert_to_sprite_instances() {
+        let batch = OverlayPrimitiveBatch {
+            id: "test.overlay".to_string(),
+            primitives: vec![
+                OverlayPrimitive {
+                    id: "test.selection".to_string(),
+                    shape: OverlayPrimitiveShape::RectOutline {
+                        center: [2.0, 3.0],
+                        size: [4.0, 2.0],
+                        thickness: 0.1,
+                    },
+                    style: test_overlay_style(10, 0.5),
+                },
+                OverlayPrimitive {
+                    id: "test.crosshair".to_string(),
+                    shape: OverlayPrimitiveShape::Crosshair {
+                        center: [0.0, 0.0],
+                        size: 1.0,
+                        thickness: 0.05,
+                    },
+                    style: test_overlay_style(11, 0.0),
+                },
+            ],
+        };
+
+        let sprite_batch = batch.to_sprite_batch().expect("primitives should convert");
+
+        sprite_batch
+            .validate()
+            .expect("converted overlay batch should validate");
+        assert_eq!(sprite_batch.instances.len(), 6);
+        assert!(sprite_batch
+            .instances
+            .iter()
+            .any(|instance| instance.id == "test.selection.top"));
+        assert!(sprite_batch
+            .instances
+            .iter()
+            .any(|instance| instance.id == "test.crosshair.vertical"));
+        assert!(sprite_batch
+            .instances
+            .iter()
+            .all(|instance| instance.source.atlas_id == PREVIEW_OVERLAY_ATLAS_ID));
+    }
+
+    #[test]
+    fn overlay_filled_quad_and_axis_aligned_line_convert() {
+        let batch = OverlayPrimitiveBatch {
+            id: "test.overlay".to_string(),
+            primitives: vec![
+                OverlayPrimitive {
+                    id: "test.quad".to_string(),
+                    shape: OverlayPrimitiveShape::FilledQuad {
+                        center: [1.0, 1.0],
+                        size: [2.0, 3.0],
+                    },
+                    style: test_overlay_style(8, 0.0),
+                },
+                OverlayPrimitive {
+                    id: "test.line".to_string(),
+                    shape: OverlayPrimitiveShape::Line {
+                        start: [-1.0, 2.0],
+                        end: [3.0, 2.0],
+                        thickness: 0.2,
+                    },
+                    style: test_overlay_style(9, 0.0),
+                },
+            ],
+        };
+
+        let sprite_batch = batch.to_sprite_batch().expect("line should convert");
+
+        assert_eq!(sprite_batch.instances.len(), 2);
+        assert_eq!(sprite_batch.instances[1].position, [1.0, 2.0]);
+        assert_eq!(sprite_batch.instances[1].size, [4.0, 0.2]);
+    }
+
+    #[test]
+    fn overlay_primitives_reject_diagonal_lines_for_v0() {
+        let batch = OverlayPrimitiveBatch {
+            id: "test.overlay".to_string(),
+            primitives: vec![OverlayPrimitive {
+                id: "test.diagonal".to_string(),
+                shape: OverlayPrimitiveShape::Line {
+                    start: [0.0, 0.0],
+                    end: [1.0, 1.0],
+                    thickness: 0.1,
+                },
+                style: test_overlay_style(9, 0.0),
+            }],
+        };
+
+        assert!(matches!(
+            batch.to_sprite_batch(),
+            Err(OverlayPrimitiveValidationError::DiagonalLineUnsupported { id })
+                if id == "test.diagonal"
+        ));
+    }
+
+    #[test]
+    fn overlay_primitive_batch_serializes_for_editor_transfer() {
+        let batch = OverlayPrimitiveBatch {
+            id: "test.overlay".to_string(),
+            primitives: vec![OverlayPrimitive {
+                id: "test.quad".to_string(),
+                shape: OverlayPrimitiveShape::FilledQuad {
+                    center: [1.0, 1.0],
+                    size: [2.0, 3.0],
+                },
+                style: test_overlay_style(8, 0.0),
+            }],
+        };
+
+        let json = serde_json::to_string(&batch).expect("overlay primitive batch should serialize");
+
+        assert!(json.contains("filledQuad"));
+        assert!(json.contains("color"));
+        assert!(json.contains("layer"));
+    }
+
+    #[test]
+    fn move_gizmo_converts_to_overlay_primitives_and_sprite_batch() {
+        let gizmo = test_move_gizmo();
+        let primitive_batch = gizmo
+            .overlay_primitives()
+            .expect("move gizmo primitives should build");
+        let sprite_batch = primitive_batch
+            .to_sprite_batch()
+            .expect("move gizmo primitives should convert");
+
+        assert_eq!(primitive_batch.primitives.len(), 5);
+        assert!(primitive_batch
+            .primitives
+            .iter()
+            .any(|primitive| primitive.id == "gizmo.hero.axis.x"));
+        assert!(sprite_batch
+            .instances
+            .iter()
+            .any(|instance| instance.id == "gizmo.hero.center.horizontal"));
+        sprite_batch
+            .validate()
+            .expect("move gizmo sprite batch should validate");
+    }
+
+    #[test]
+    fn move_gizmo_drag_updates_world_position_with_axis_lock() {
+        let gizmo = test_move_gizmo();
+        let camera = Camera2d {
+            position: [0.0, 0.0],
+            viewport_size: [10.0, 5.0],
+            zoom: 1.0,
+        };
+
+        let moved = gizmo
+            .moved_position(
+                &camera,
+                MoveGizmoDrag {
+                    screen_delta: [100.0, 50.0],
+                    surface_size: [1000.0, 500.0],
+                    axis: MoveGizmoAxis::Free,
+                },
+            )
+            .expect("free drag should move");
+        let x_locked = gizmo
+            .moved_position(
+                &camera,
+                MoveGizmoDrag {
+                    screen_delta: [100.0, 50.0],
+                    surface_size: [1000.0, 500.0],
+                    axis: MoveGizmoAxis::X,
+                },
+            )
+            .expect("x drag should move");
+
+        assert_eq!(moved, [3.0, 2.5]);
+        assert_eq!(x_locked, [3.0, 3.0]);
+    }
+
+    #[test]
+    fn move_gizmo_rejects_invalid_drag_surface_size() {
+        let gizmo = test_move_gizmo();
+        let camera = preview_camera(&default_preview_scene());
+
+        assert!(matches!(
+            gizmo.moved_position(
+                &camera,
+                MoveGizmoDrag {
+                    screen_delta: [10.0, 0.0],
+                    surface_size: [0.0, 500.0],
+                    axis: MoveGizmoAxis::Free,
+                },
+            ),
+            Err(MoveGizmoValidationError::InvalidSurfaceSize)
+        ));
+    }
+
+    #[test]
     fn sprite_batch_groups_instances_by_atlas_in_draw_order() {
         let mut batch = SpriteBatch {
             schema_version: SPRITE_BATCH_SCHEMA_VERSION,
@@ -892,6 +1717,7 @@ mod tests {
 
         atlas.validate().expect("preview atlas should validate");
         assert_eq!(atlas.size.width, 4);
+        assert_eq!(atlas.sampling, TextureSampling::nearest());
         assert!(atlas
             .sprites
             .iter()
@@ -916,8 +1742,39 @@ mod tests {
             .expect("texture atlas should serialize");
 
         assert!(json.contains("preview.generated"));
+        assert!(json.contains("sampling"));
+        assert!(json.contains("nearest"));
         assert!(json.contains("sourceRect"));
         assert!(json.contains("sprite.hero.placeholder"));
+    }
+
+    #[test]
+    fn texture_sampling_defaults_to_nearest_for_older_metadata() {
+        let json = r#"{
+            "id": "atlas.legacy",
+            "size": { "width": 1, "height": 1 },
+            "sprites": [
+                {
+                    "id": "sprite.legacy",
+                    "sourceRect": { "x": 0, "y": 0, "width": 1, "height": 1 }
+                }
+            ]
+        }"#;
+
+        let atlas: TextureAtlas =
+            serde_json::from_str(json).expect("legacy atlas should deserialize");
+
+        assert_eq!(atlas.sampling, TextureSampling::nearest());
+        atlas.validate().expect("legacy atlas should validate");
+    }
+
+    #[test]
+    fn texture_sampling_can_express_linear_filtering() {
+        let sampling = TextureSampling::linear();
+
+        assert_eq!(sampling.magnify_filter, TextureFilterMode::Linear);
+        assert_eq!(sampling.minify_filter, TextureFilterMode::Linear);
+        assert_eq!(sampling.mipmap_filter, TextureFilterMode::Linear);
     }
 
     #[test]
@@ -951,6 +1808,24 @@ mod tests {
             tint: [1.0, 1.0, 1.0, 1.0],
             flip_x: false,
             flip_y: false,
+        }
+    }
+
+    fn test_overlay_style(layer: i32, depth: f32) -> OverlayStyle {
+        OverlayStyle {
+            color: [1.0, 0.8, 0.2, 0.9],
+            layer,
+            depth,
+        }
+    }
+
+    fn test_move_gizmo() -> MoveGizmo {
+        MoveGizmo {
+            id: "gizmo.hero".to_string(),
+            selection_id: "selection.hero".to_string(),
+            position: [2.0, 3.0],
+            axis_length: 0.8,
+            handle_size: 0.14,
         }
     }
 }
