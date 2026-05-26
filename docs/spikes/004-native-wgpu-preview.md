@@ -59,4 +59,6 @@ runtime loop.
 - #16: Add camera and editor overlay pass to native preview.
 - #17: Launch native preview from the Tauri desktop shell.
 - #18: Research embedded native viewport feasibility after sibling preview is
-  stable.
+  stable. Recommendation recorded in
+  [../embedded-native-viewport-feasibility.md](../embedded-native-viewport-feasibility.md):
+  defer embedded viewport work for MVP.

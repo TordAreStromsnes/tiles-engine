@@ -87,8 +87,9 @@ Preferred preview path:
    Tauri editor for MVP.
 2. Keep editor-to-renderer data serializable so the Tauri shell can launch and
    drive previews without owning the GPU lifecycle.
-3. Investigate an embedded native viewport only after the renderer API is
-   stable.
+3. Defer embedded native viewport work until the renderer API, packaged preview
+   lookup, and live scene streaming are stable. See
+   [embedded-native-viewport-feasibility.md](embedded-native-viewport-feasibility.md).
 4. Use the same renderer/runtime path for exported games where practical.
 
 ### Data Model
