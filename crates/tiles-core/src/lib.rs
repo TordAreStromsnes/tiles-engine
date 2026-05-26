@@ -2,14 +2,28 @@ use serde::{Deserialize, Serialize};
 
 pub mod animation;
 pub mod assets;
+pub mod interaction;
+pub mod lighting;
 pub mod maps;
+pub mod material;
+pub mod particles;
 pub mod project;
+pub mod reactions;
 pub mod scene;
+pub mod selection;
+pub mod sprite_images;
 pub use animation::*;
 pub use assets::*;
+pub use interaction::*;
+pub use lighting::*;
 pub use maps::*;
+pub use material::*;
+pub use particles::*;
 pub use project::*;
+pub use reactions::*;
 pub use scene::*;
+pub use selection::*;
+pub use sprite_images::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -39,7 +53,6 @@ pub struct NativeBoundaryStatus {
 }
 
 pub fn engine_status() -> EngineStatus {
-    let runtime = tiles_runtime::native_runtime_boundary();
     let renderer = tiles_renderer::native_renderer_plan();
 
     EngineStatus {
@@ -50,7 +63,7 @@ pub fn engine_status() -> EngineStatus {
             editor_ui: "React editor surface".to_string(),
         },
         native_boundary: NativeBoundaryStatus {
-            runtime: runtime.game_loop_owner,
+            runtime: "Rust owns the native game loop".to_string(),
             renderer: renderer.backend_summary(),
             editor: "React owns editor panels only".to_string(),
             preview: renderer.preview_strategy,

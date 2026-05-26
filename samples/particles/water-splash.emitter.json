@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 0,
+  "id": "effect.water.splash",
+  "name": "Water Splash",
+  "description": "Short splash burst for water impacts.",
+  "spawn": {
+    "ratePerSecond": 0.0,
+    "maxParticles": 48
+  },
+  "lifetimeSeconds": {
+    "min": 0.3,
+    "max": 0.7
+  },
+  "velocity": {
+    "x": {
+      "min": -0.9,
+      "max": 0.9
+    },
+    "y": {
+      "min": -1.1,
+      "max": -0.25
+    },
+    "z": {
+      "min": 0.0,
+      "max": 0.0
+    }
+  },
+  "colorOverLifetime": [
+    {
+      "time": 0.0,
+      "color": {
+        "red": 0.35,
+        "green": 0.78,
+        "blue": 1.0,
+        "alpha": 0.9
+      }
+    },
+    {
+      "time": 1.0,
+      "color": {
+        "red": 0.1,
+        "green": 0.38,
+        "blue": 0.85,
+        "alpha": 0.0
+      }
+    }
+  ],
+  "sizeOverLifetime": [
+    {
+      "time": 0.0,
+      "size": 0.18
+    },
+    {
+      "time": 1.0,
+      "size": 0.08
+    }
+  ],
+  "acceleration": {
+    "gravity": {
+      "x": 0.0,
+      "y": 1.4,
+      "z": 0.0
+    },
+    "drift": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    }
+  },
+  "blendMode": "alpha",
+  "emissionMode": {
+    "kind": "burst",
+    "data": {
+      "count": 18
+    }
+  },
+  "attachment": {
+    "kind": "mapPosition",
+    "data": {
+      "mapId": "map.village",
+      "position": {
+        "x": 6.0,
+        "y": 4.0,
+        "z": 0.0
+      }
+    }
+  },
+  "tags": ["water", "burst"]
+}

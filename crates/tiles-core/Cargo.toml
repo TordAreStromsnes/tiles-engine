@@ -9,4 +9,3 @@ repository.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tiles-renderer.workspace = true
-tiles-runtime.workspace = true
