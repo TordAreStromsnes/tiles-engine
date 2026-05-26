@@ -39,6 +39,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Product plan: [docs/product-plan.md](docs/product-plan.md)
 - Roadmap: [docs/roadmap.md](docs/roadmap.md)
 - Delivery process: [docs/delivery-process.md](docs/delivery-process.md)
+- Licensing: [docs/licensing.md](docs/licensing.md)
 - GitHub setup: [docs/github-setup.md](docs/github-setup.md)
 - Seed backlog: [docs/backlog/seed-issues.md](docs/backlog/seed-issues.md)
 - Agent roles: [.agents/agents.yaml](.agents/agents.yaml)
@@ -68,5 +69,9 @@ before Tauri can run normally on Windows.
 
 ## License
 
-Open source is intended, but the license is not chosen yet. Decide this before
-accepting external contributions.
+Tiles Engine source code, documentation, schemas, tests, configuration, and
+repo-native tooling are dual-licensed under `MIT OR Apache-2.0`.
+
+User-created assets, games, worlds, and future community asset packs keep their
+own licenses. See [docs/licensing.md](docs/licensing.md) and
+[CONTRIBUTING.md](CONTRIBUTING.md).

@@ -10,7 +10,7 @@ members = [
 
 [workspace.package]
 edition = "2021"
-license = "UNLICENSED"
+license = "MIT OR Apache-2.0"
 repository = "https://github.com/TordAreStromsnes/tiles-engine"
 
 [workspace.dependencies]
