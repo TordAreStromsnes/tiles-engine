@@ -64,6 +64,8 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Multiple atlases per frame: [docs/multiple-atlases-per-frame.md](docs/multiple-atlases-per-frame.md)
 - Texture filtering and hot reload plan: [docs/texture-filtering-hot-reload-plan.md](docs/texture-filtering-hot-reload-plan.md)
 - Editor selection model MVP: [docs/editor-selection-model-mvp.md](docs/editor-selection-model-mvp.md)
+- Overlay primitive library MVP: [docs/overlay-primitive-library-mvp.md](docs/overlay-primitive-library-mvp.md)
+- Transform gizmo overlay prototype: [docs/transform-gizmo-overlay-prototype.md](docs/transform-gizmo-overlay-prototype.md)
 - Renderer sprite batch contract: [docs/renderer-sprite-batch-contract.md](docs/renderer-sprite-batch-contract.md)
 - Licensing: [docs/licensing.md](docs/licensing.md)
 - GitHub setup: [docs/github-setup.md](docs/github-setup.md)
