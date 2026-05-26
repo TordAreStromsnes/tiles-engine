@@ -88,6 +88,10 @@ using the source rectangles in the batch instances.
 The editor overlay uses a separate overlay batch and render pass after the scene
 sprite pass. The current preview draws a selection outline around the animated
 sprite and an origin marker, both projected through the same `Camera2d`.
+Reusable overlay primitive conversion is described in
+[overlay-primitive-library-mvp.md](overlay-primitive-library-mvp.md).
+The move-only transform gizmo prototype is described in
+[transform-gizmo-overlay-prototype.md](transform-gizmo-overlay-prototype.md).
 
 ## Known Limits
 
@@ -95,4 +99,4 @@ sprite and an origin marker, both projected through the same `Camera2d`.
 - No imported-pixel upload yet.
 - No packed-atlas edge extrusion for linear filtering yet.
 - No clipping, blend modes, or material flags yet.
-- No full selection UI, gizmo editing, or overlay primitive library yet.
+- No full selection UI, pointer input wiring, or polished gizmo editing yet.
