@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 0,
+  "id": "creator.hero",
+  "name": "Hero Creator Definition",
+  "bodyPlanId": "humanoid",
+  "tags": ["character", "humanoid", "playable"],
+  "proportions": {
+    "bodyHeight": 1.0,
+    "bodyWidth": 1.0,
+    "headSize": 1.08,
+    "shoulderWidth": 1.0,
+    "armLength": 1.0,
+    "legLength": 1.0,
+    "footSize": 1.0
+  },
+  "palettes": [
+    {
+      "slot": "skin",
+      "swatches": ["#f0c7a4", "#c98f6b"]
+    },
+    {
+      "slot": "hair",
+      "swatches": ["#5a3523", "#2a1710"]
+    },
+    {
+      "slot": "eye",
+      "swatches": ["#3d6fa3"]
+    },
+    {
+      "slot": "clothingPrimary",
+      "swatches": ["#3f74a3"]
+    },
+    {
+      "slot": "clothingSecondary",
+      "swatches": ["#c84f4f"]
+    },
+    {
+      "slot": "accessory",
+      "swatches": ["#f2c14e"]
+    },
+    {
+      "slot": "outline",
+      "swatches": ["#25323f"]
+    }
+  ],
+  "parts": [
+    {
+      "slot": "bodyBase",
+      "partId": "humanoid.body.average",
+      "variantId": null,
+      "paletteSlots": ["skin"]
+    },
+    {
+      "slot": "hair",
+      "partId": "humanoid.hair.short",
+      "variantId": "side-part",
+      "paletteSlots": ["hair"]
+    },
+    {
+      "slot": "eyes",
+      "partId": "humanoid.eyes.round",
+      "variantId": null,
+      "paletteSlots": ["eye"]
+    },
+    {
+      "slot": "clothingTop",
+      "partId": "humanoid.clothing.tunic",
+      "variantId": "short-sleeve",
+      "paletteSlots": ["clothingPrimary", "clothingSecondary"]
+    },
+    {
+      "slot": "clothingBottom",
+      "partId": "humanoid.clothing.trousers",
+      "variantId": null,
+      "paletteSlots": ["clothingPrimary"]
+    },
+    {
+      "slot": "shoesFeet",
+      "partId": "humanoid.shoes.simple",
+      "variantId": null,
+      "paletteSlots": ["accessory"]
+    },
+    {
+      "slot": "accessory",
+      "partId": "humanoid.accessory.none",
+      "variantId": null,
+      "paletteSlots": ["accessory"]
+    }
+  ],
+  "outputs": {
+    "spriteAssetId": "sprite.hero",
+    "spriteAssetPath": "samples/assets/hero.sprite.json"
+  }
+}

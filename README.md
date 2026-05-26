@@ -45,6 +45,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Sprite asset schema V0: [docs/sprite-asset-schema-v0.md](docs/sprite-asset-schema-v0.md)
 - Animation clip schema V0: [docs/animation-clip-schema-v0.md](docs/animation-clip-schema-v0.md)
 - Humanoid creator MVP: [docs/humanoid-character-creator-mvp.md](docs/humanoid-character-creator-mvp.md)
+- Humanoid creator definition schema: [docs/humanoid-creator-definition-schema.md](docs/humanoid-creator-definition-schema.md)
 - Tile map and portal schema V0: [docs/tile-map-portal-schema-v0.md](docs/tile-map-portal-schema-v0.md)
 - Procedural generation inputs: [docs/procedural-world-generation-inputs.md](docs/procedural-world-generation-inputs.md)
 - Scene composer/runtime preview MVP: [docs/scene-composer-runtime-preview-mvp.md](docs/scene-composer-runtime-preview-mvp.md)

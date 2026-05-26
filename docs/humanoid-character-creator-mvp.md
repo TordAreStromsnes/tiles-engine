@@ -7,7 +7,8 @@ from one shared character definition.
 
 The MVP should save:
 
-- Character definition metadata.
+- Character definition metadata with
+  [humanoid-creator-definition-schema.md](humanoid-creator-definition-schema.md).
 - Sprite asset metadata with optional `viewSet` output.
 - Five-view layer mapping: `front`, `back`, `left`, `right`, `topDown`.
 - Palette selections.
