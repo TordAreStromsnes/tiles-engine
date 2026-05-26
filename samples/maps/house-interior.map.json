@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 0,
+  "id": "map.house-interior",
+  "name": "House Interior",
+  "grid": {
+    "columns": 10,
+    "rows": 8,
+    "cellSize": {
+      "width": 24,
+      "height": 24
+    }
+  },
+  "layers": [
+    {
+      "id": "terrain",
+      "name": "Terrain",
+      "kind": "terrain",
+      "zIndex": 0,
+      "visibleByDefault": true
+    },
+    {
+      "id": "objects",
+      "name": "Objects",
+      "kind": "object",
+      "zIndex": 10,
+      "visibleByDefault": true
+    },
+    {
+      "id": "overlays",
+      "name": "Overlays",
+      "kind": "overlay",
+      "zIndex": 20,
+      "visibleByDefault": true
+    }
+  ],
+  "placements": [
+    {
+      "id": "floor.0",
+      "layerId": "terrain",
+      "assetId": "tileset.house-floor",
+      "tileId": "floor",
+      "position": {
+        "column": 0,
+        "row": 0
+      },
+      "span": {
+        "columns": 10,
+        "rows": 8
+      }
+    },
+    {
+      "id": "bed.0",
+      "layerId": "objects",
+      "assetId": "sprite.bed",
+      "tileId": null,
+      "position": {
+        "column": 2,
+        "row": 2
+      },
+      "span": {
+        "columns": 2,
+        "rows": 3
+      }
+    }
+  ],
+  "collisions": [
+    {
+      "id": "bed-blocker",
+      "rect": {
+        "origin": {
+          "column": 2,
+          "row": 2
+        },
+        "size": {
+          "columns": 2,
+          "rows": 3
+        }
+      },
+      "blocksMovement": true,
+      "tags": ["furniture"]
+    }
+  ],
+  "portals": [
+    {
+      "id": "portal.house.exit",
+      "name": "House Exit",
+      "trigger": {
+        "origin": {
+          "column": 4,
+          "row": 7
+        },
+        "size": {
+          "columns": 2,
+          "rows": 1
+        }
+      },
+      "target": {
+        "mapId": "map.village",
+        "portalId": "portal.house.front-door",
+        "spawn": {
+          "column": 11,
+          "row": 9
+        },
+        "facing": "south"
+      },
+      "tags": ["door", "exterior"]
+    }
+  ]
+}
