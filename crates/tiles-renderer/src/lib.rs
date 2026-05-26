@@ -233,6 +233,42 @@ pub struct MoveGizmoDrag {
     pub axis: MoveGizmoAxis,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RotateScaleGizmo {
+    pub id: String,
+    pub selection_id: String,
+    pub center: [f32; 2],
+    pub size: [f32; 2],
+    pub handle_size: f32,
+    pub rotation_handle_offset: f32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ScaleGizmoHandle {
+    NorthWest,
+    NorthEast,
+    SouthEast,
+    SouthWest,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScaleGizmoDrag {
+    pub screen_delta: [f32; 2],
+    pub surface_size: [f32; 2],
+    pub handle: ScaleGizmoHandle,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RotateGizmoDrag {
+    pub start_screen: [f32; 2],
+    pub current_screen: [f32; 2],
+    pub surface_size: [f32; 2],
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum SpriteBatchValidationError {
     UnsupportedSchemaVersion { actual: u32 },
@@ -280,6 +316,20 @@ pub enum MoveGizmoValidationError {
     InvalidSurfaceSize,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum RotateScaleGizmoValidationError {
+    EmptyGizmoId,
+    EmptySelectionId,
+    InvalidCenter,
+    InvalidSize,
+    InvalidHandleSize,
+    InvalidRotationHandleOffset,
+    InvalidCamera,
+    InvalidScreenDelta,
+    InvalidPointer,
+    InvalidSurfaceSize,
+}
+
 impl fmt::Display for MoveGizmoValidationError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -295,6 +345,36 @@ impl fmt::Display for MoveGizmoValidationError {
 }
 
 impl Error for MoveGizmoValidationError {}
+
+impl fmt::Display for RotateScaleGizmoValidationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EmptyGizmoId => write!(formatter, "rotate/scale gizmo id cannot be empty"),
+            Self::EmptySelectionId => {
+                write!(formatter, "rotate/scale gizmo selection id cannot be empty")
+            }
+            Self::InvalidCenter => write!(formatter, "rotate/scale gizmo center is invalid"),
+            Self::InvalidSize => write!(formatter, "rotate/scale gizmo size is invalid"),
+            Self::InvalidHandleSize => {
+                write!(formatter, "rotate/scale gizmo handle size is invalid")
+            }
+            Self::InvalidRotationHandleOffset => {
+                write!(
+                    formatter,
+                    "rotate/scale gizmo rotation handle offset is invalid"
+                )
+            }
+            Self::InvalidCamera => write!(formatter, "rotate/scale gizmo camera is invalid"),
+            Self::InvalidScreenDelta => write!(formatter, "scale gizmo screen delta is invalid"),
+            Self::InvalidPointer => write!(formatter, "rotate gizmo pointer is invalid"),
+            Self::InvalidSurfaceSize => {
+                write!(formatter, "transform gizmo surface size is invalid")
+            }
+        }
+    }
+}
+
+impl Error for RotateScaleGizmoValidationError {}
 
 impl fmt::Display for OverlayPrimitiveValidationError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -975,6 +1055,233 @@ impl MoveGizmoDrag {
 
         Ok(())
     }
+}
+
+impl RotateScaleGizmo {
+    pub fn validate(&self) -> Result<(), RotateScaleGizmoValidationError> {
+        if self.id.trim().is_empty() {
+            return Err(RotateScaleGizmoValidationError::EmptyGizmoId);
+        }
+
+        if self.selection_id.trim().is_empty() {
+            return Err(RotateScaleGizmoValidationError::EmptySelectionId);
+        }
+
+        if self.center.iter().any(|value| !value.is_finite()) {
+            return Err(RotateScaleGizmoValidationError::InvalidCenter);
+        }
+
+        if self
+            .size
+            .iter()
+            .any(|value| !value.is_finite() || *value <= 0.0)
+        {
+            return Err(RotateScaleGizmoValidationError::InvalidSize);
+        }
+
+        if !self.handle_size.is_finite() || self.handle_size <= 0.0 {
+            return Err(RotateScaleGizmoValidationError::InvalidHandleSize);
+        }
+
+        if !self.rotation_handle_offset.is_finite() || self.rotation_handle_offset <= 0.0 {
+            return Err(RotateScaleGizmoValidationError::InvalidRotationHandleOffset);
+        }
+
+        Ok(())
+    }
+
+    pub fn overlay_primitives(
+        &self,
+    ) -> Result<OverlayPrimitiveBatch, RotateScaleGizmoValidationError> {
+        self.validate()?;
+
+        let corners = self.corners();
+        let rotate_anchor = [
+            self.center[0],
+            self.center[1] + self.size[1] * 0.5 + self.rotation_handle_offset,
+        ];
+        let top_center = [self.center[0], self.center[1] + self.size[1] * 0.5];
+
+        Ok(OverlayPrimitiveBatch {
+            id: format!("{}.overlay", self.id),
+            primitives: vec![
+                OverlayPrimitive {
+                    id: format!("{}.scale.box", self.id),
+                    shape: OverlayPrimitiveShape::RectOutline {
+                        center: self.center,
+                        size: self.size,
+                        thickness: self.handle_size * 0.18,
+                    },
+                    style: transform_gizmo_style([0.98, 0.82, 0.22, 0.92], 1_030, 0.0),
+                },
+                scale_handle_primitive(self, ScaleGizmoHandle::NorthWest, corners[0]),
+                scale_handle_primitive(self, ScaleGizmoHandle::NorthEast, corners[1]),
+                scale_handle_primitive(self, ScaleGizmoHandle::SouthEast, corners[2]),
+                scale_handle_primitive(self, ScaleGizmoHandle::SouthWest, corners[3]),
+                OverlayPrimitive {
+                    id: format!("{}.rotate.stem", self.id),
+                    shape: OverlayPrimitiveShape::Line {
+                        start: top_center,
+                        end: rotate_anchor,
+                        thickness: self.handle_size * 0.14,
+                    },
+                    style: transform_gizmo_style([0.42, 0.78, 1.0, 0.9], 1_031, 0.0),
+                },
+                OverlayPrimitive {
+                    id: format!("{}.rotate.handle", self.id),
+                    shape: OverlayPrimitiveShape::Crosshair {
+                        center: rotate_anchor,
+                        size: self.handle_size * 1.5,
+                        thickness: self.handle_size * 0.18,
+                    },
+                    style: transform_gizmo_style([0.42, 0.78, 1.0, 0.94], 1_032, 0.0),
+                },
+            ],
+        })
+    }
+
+    pub fn scaled_size(
+        &self,
+        camera: &Camera2d,
+        drag: ScaleGizmoDrag,
+    ) -> Result<[f32; 2], RotateScaleGizmoValidationError> {
+        self.validate()?;
+        drag.validate()?;
+        camera
+            .validate()
+            .map_err(|_| RotateScaleGizmoValidationError::InvalidCamera)?;
+
+        let delta = camera.screen_delta_to_world_delta(drag.screen_delta, drag.surface_size);
+        let width_delta = match drag.handle {
+            ScaleGizmoHandle::NorthEast | ScaleGizmoHandle::SouthEast => delta[0] * 2.0,
+            ScaleGizmoHandle::NorthWest | ScaleGizmoHandle::SouthWest => -delta[0] * 2.0,
+        };
+        let height_delta = match drag.handle {
+            ScaleGizmoHandle::NorthEast | ScaleGizmoHandle::NorthWest => delta[1] * 2.0,
+            ScaleGizmoHandle::SouthEast | ScaleGizmoHandle::SouthWest => -delta[1] * 2.0,
+        };
+
+        Ok([
+            (self.size[0] + width_delta).max(self.handle_size),
+            (self.size[1] + height_delta).max(self.handle_size),
+        ])
+    }
+
+    pub fn rotation_delta_radians(
+        &self,
+        camera: &Camera2d,
+        drag: RotateGizmoDrag,
+    ) -> Result<f32, RotateScaleGizmoValidationError> {
+        self.validate()?;
+        drag.validate()?;
+        camera
+            .validate()
+            .map_err(|_| RotateScaleGizmoValidationError::InvalidCamera)?;
+
+        let start_world = camera.screen_to_world(drag.start_screen, drag.surface_size);
+        let current_world = camera.screen_to_world(drag.current_screen, drag.surface_size);
+        let start_angle = (start_world[1] - self.center[1]).atan2(start_world[0] - self.center[0]);
+        let current_angle =
+            (current_world[1] - self.center[1]).atan2(current_world[0] - self.center[0]);
+
+        Ok(normalize_radians(current_angle - start_angle))
+    }
+
+    fn corners(&self) -> [[f32; 2]; 4] {
+        let half_width = self.size[0] * 0.5;
+        let half_height = self.size[1] * 0.5;
+
+        [
+            [self.center[0] - half_width, self.center[1] + half_height],
+            [self.center[0] + half_width, self.center[1] + half_height],
+            [self.center[0] + half_width, self.center[1] - half_height],
+            [self.center[0] - half_width, self.center[1] - half_height],
+        ]
+    }
+}
+
+impl ScaleGizmoDrag {
+    pub fn validate(&self) -> Result<(), RotateScaleGizmoValidationError> {
+        if self.screen_delta.iter().any(|value| !value.is_finite()) {
+            return Err(RotateScaleGizmoValidationError::InvalidScreenDelta);
+        }
+
+        validate_transform_surface_size(self.surface_size)
+    }
+}
+
+impl RotateGizmoDrag {
+    pub fn validate(&self) -> Result<(), RotateScaleGizmoValidationError> {
+        if self
+            .start_screen
+            .iter()
+            .chain(self.current_screen.iter())
+            .any(|value| !value.is_finite())
+        {
+            return Err(RotateScaleGizmoValidationError::InvalidPointer);
+        }
+
+        validate_transform_surface_size(self.surface_size)
+    }
+}
+
+fn scale_handle_primitive(
+    gizmo: &RotateScaleGizmo,
+    handle: ScaleGizmoHandle,
+    center: [f32; 2],
+) -> OverlayPrimitive {
+    OverlayPrimitive {
+        id: format!("{}.scale.{}", gizmo.id, scale_handle_id(handle)),
+        shape: OverlayPrimitiveShape::FilledQuad {
+            center,
+            size: [gizmo.handle_size, gizmo.handle_size],
+        },
+        style: transform_gizmo_style([0.98, 0.82, 0.22, 0.96], 1_031, handle as u8 as f32),
+    }
+}
+
+fn scale_handle_id(handle: ScaleGizmoHandle) -> &'static str {
+    match handle {
+        ScaleGizmoHandle::NorthWest => "north-west",
+        ScaleGizmoHandle::NorthEast => "north-east",
+        ScaleGizmoHandle::SouthEast => "south-east",
+        ScaleGizmoHandle::SouthWest => "south-west",
+    }
+}
+
+fn transform_gizmo_style(color: [f32; 4], layer: i32, depth: f32) -> OverlayStyle {
+    OverlayStyle {
+        color,
+        layer,
+        depth,
+    }
+}
+
+fn validate_transform_surface_size(
+    surface_size: [f32; 2],
+) -> Result<(), RotateScaleGizmoValidationError> {
+    if surface_size
+        .iter()
+        .any(|value| !value.is_finite() || *value <= 0.0)
+    {
+        return Err(RotateScaleGizmoValidationError::InvalidSurfaceSize);
+    }
+
+    Ok(())
+}
+
+fn normalize_radians(radians: f32) -> f32 {
+    let mut normalized = radians;
+
+    while normalized > std::f32::consts::PI {
+        normalized -= std::f32::consts::TAU;
+    }
+
+    while normalized < -std::f32::consts::PI {
+        normalized += std::f32::consts::TAU;
+    }
+
+    normalized
 }
 
 impl Camera2d {
@@ -1871,6 +2178,88 @@ mod tests {
     }
 
     #[test]
+    fn rotate_scale_gizmo_converts_to_overlay_primitives() {
+        let gizmo = test_rotate_scale_gizmo();
+        let primitive_batch = gizmo
+            .overlay_primitives()
+            .expect("rotate/scale gizmo primitives should build");
+        let sprite_batch = primitive_batch
+            .to_sprite_batch()
+            .expect("rotate/scale gizmo primitives should convert");
+
+        assert_eq!(primitive_batch.primitives.len(), 7);
+        assert!(primitive_batch
+            .primitives
+            .iter()
+            .any(|primitive| primitive.id == "gizmo.hero.scale.north-east"));
+        assert!(primitive_batch
+            .primitives
+            .iter()
+            .any(|primitive| primitive.id == "gizmo.hero.rotate.handle"));
+        sprite_batch
+            .validate()
+            .expect("rotate/scale gizmo sprite batch should validate");
+    }
+
+    #[test]
+    fn scale_gizmo_drag_updates_size_with_camera_math() {
+        let gizmo = test_rotate_scale_gizmo();
+        let camera = Camera2d {
+            position: [0.0, 0.0],
+            viewport_size: [10.0, 10.0],
+            zoom: 1.0,
+        };
+
+        let scaled = gizmo
+            .scaled_size(
+                &camera,
+                ScaleGizmoDrag {
+                    screen_delta: [100.0, -50.0],
+                    surface_size: [1000.0, 1000.0],
+                    handle: ScaleGizmoHandle::NorthEast,
+                },
+            )
+            .expect("scale drag should produce a size");
+
+        assert_near(scaled[0], 4.0);
+        assert_near(scaled[1], 3.0);
+    }
+
+    #[test]
+    fn rotate_gizmo_drag_returns_angle_delta() {
+        let gizmo = test_rotate_scale_gizmo();
+        let camera = Camera2d {
+            position: [0.0, 0.0],
+            viewport_size: [10.0, 10.0],
+            zoom: 1.0,
+        };
+
+        let delta = gizmo
+            .rotation_delta_radians(
+                &camera,
+                RotateGizmoDrag {
+                    start_screen: [600.0, 500.0],
+                    current_screen: [500.0, 400.0],
+                    surface_size: [1000.0, 1000.0],
+                },
+            )
+            .expect("rotation drag should produce an angle");
+
+        assert!((delta - std::f32::consts::FRAC_PI_2).abs() < 0.0001);
+    }
+
+    #[test]
+    fn rotate_scale_gizmo_rejects_invalid_bounds() {
+        let mut gizmo = test_rotate_scale_gizmo();
+        gizmo.size = [0.0, 2.0];
+
+        assert!(matches!(
+            gizmo.overlay_primitives(),
+            Err(RotateScaleGizmoValidationError::InvalidSize)
+        ));
+    }
+
+    #[test]
     fn sprite_batch_groups_instances_by_atlas_in_draw_order() {
         let mut batch = SpriteBatch {
             schema_version: SPRITE_BATCH_SCHEMA_VERSION,
@@ -2025,5 +2414,20 @@ mod tests {
             axis_length: 0.8,
             handle_size: 0.14,
         }
+    }
+
+    fn test_rotate_scale_gizmo() -> RotateScaleGizmo {
+        RotateScaleGizmo {
+            id: "gizmo.hero".to_string(),
+            selection_id: "selection.hero".to_string(),
+            center: [0.0, 0.0],
+            size: [2.0, 2.0],
+            handle_size: 0.2,
+            rotation_handle_offset: 0.8,
+        }
+    }
+
+    fn assert_near(actual: f32, expected: f32) {
+        assert!((actual - expected).abs() < 0.0001);
     }
 }

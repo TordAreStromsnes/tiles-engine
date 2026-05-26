@@ -4,6 +4,9 @@ The first transform gizmo slice is move-only. It proves that selection bounds,
 camera math, and overlay primitives can work together before adding rotate,
 scale, snapping, or polished input states.
 
+Rotate and scale handles are now prototyped separately in
+[rotate-scale-gizmo-handles-prototype.md](rotate-scale-gizmo-handles-prototype.md).
+
 ## Move Gizmo
 
 `MoveGizmo` contains:
@@ -62,7 +65,7 @@ preview rendering.
 
 - No pointer input wiring yet.
 - No hit testing yet.
-- No rotation or scale handles.
+- Rotate and scale handles are prototype-level and not wired to pointer input.
 - No snapping or keyboard modifier behavior.
 - No final hover, active, disabled, or status states.
 
