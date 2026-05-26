@@ -2,6 +2,7 @@ use std::{
     error::Error,
     fmt, fs, io,
     path::{Component, Path, PathBuf},
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 use serde::{Deserialize, Serialize};
@@ -22,6 +23,15 @@ pub struct TextureAtlasPackingConfig {
     pub atlas_id: String,
     pub max_width: u32,
     pub padding: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextureAssetWatchState {
+    pub asset_id: String,
+    pub source_path: String,
+    pub byte_len: u64,
+    pub modified_unix_millis: u64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -60,6 +70,57 @@ pub enum TextureAtlasPackingError {
         width: u32,
         max_width: u32,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum TextureAssetHotReloadAction {
+    NoChange {
+        asset_id: String,
+        source_path: String,
+    },
+    ReplaceAtlasTexture {
+        atlas_id: String,
+        asset_id: String,
+        source_path: String,
+    },
+    RefreshAtlasSnapshot {
+        atlas_id: String,
+        asset_id: String,
+        source_path: String,
+        reason: TextureAssetHotReloadRefreshReason,
+    },
+    ReportFailure {
+        asset_id: String,
+        source_path: String,
+        reason: TextureAssetHotReloadFailureReason,
+        message: String,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum TextureAssetHotReloadRefreshReason {
+    ImageDimensionsChanged {
+        before: TextureSize,
+        after: TextureSize,
+    },
+    AtlasSpriteMissing,
+    AtlasSpriteRectMismatch {
+        expected: TextureSize,
+        actual: TextureSize,
+    },
+    AssetIdentityMismatch,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TextureAssetHotReloadFailureReason {
+    InvalidSourcePath,
+    MissingFile,
+    UnsupportedFormat,
+    InvalidImage,
+    Io,
 }
 
 impl fmt::Display for SpriteImageLoadError {
@@ -270,6 +331,138 @@ pub fn pack_sprite_images_into_atlas(
     Ok(atlas)
 }
 
+pub fn texture_asset_watch_state(
+    project_root: impl AsRef<Path>,
+    asset_id: impl AsRef<str>,
+    source_path: impl AsRef<Path>,
+) -> Result<TextureAssetWatchState, SpriteImageLoadError> {
+    let project_root = project_root.as_ref();
+    let asset_id = asset_id.as_ref();
+    let source_path = source_path.as_ref();
+
+    if asset_id.trim().is_empty() {
+        return Err(SpriteImageLoadError::EmptyAssetId);
+    }
+
+    validate_relative_source_path(source_path)?;
+    let _ = image_format_from_path(source_path)?;
+
+    let absolute_path = project_root.join(source_path);
+    let metadata = fs::metadata(&absolute_path).map_err(|source| {
+        if source.kind() == io::ErrorKind::NotFound {
+            SpriteImageLoadError::MissingFile {
+                path: absolute_path.clone(),
+            }
+        } else {
+            SpriteImageLoadError::Io {
+                path: absolute_path.clone(),
+                source,
+            }
+        }
+    })?;
+
+    Ok(TextureAssetWatchState {
+        asset_id: asset_id.to_string(),
+        source_path: source_path.to_string_lossy().replace('\\', "/"),
+        byte_len: metadata.len(),
+        modified_unix_millis: system_time_to_unix_millis(metadata.modified().map_err(
+            |source| SpriteImageLoadError::Io {
+                path: absolute_path.clone(),
+                source,
+            },
+        )?),
+    })
+}
+
+pub fn texture_asset_file_changed(
+    previous: Option<&TextureAssetWatchState>,
+    current: &TextureAssetWatchState,
+) -> bool {
+    previous.is_none_or(|previous| {
+        previous.asset_id != current.asset_id
+            || previous.source_path != current.source_path
+            || previous.byte_len != current.byte_len
+            || previous.modified_unix_millis != current.modified_unix_millis
+    })
+}
+
+pub fn plan_texture_asset_hot_reload(
+    previous_image: &SpriteImageMetadata,
+    reload_result: Result<SpriteImageMetadata, SpriteImageLoadError>,
+    atlas: &TextureAtlas,
+) -> TextureAssetHotReloadAction {
+    let reloaded_image = match reload_result {
+        Ok(reloaded_image) => reloaded_image,
+        Err(error) => {
+            return TextureAssetHotReloadAction::ReportFailure {
+                asset_id: previous_image.asset_id.clone(),
+                source_path: previous_image.source_path.clone(),
+                reason: texture_hot_reload_failure_reason(&error),
+                message: error.to_string(),
+            };
+        }
+    };
+
+    if reloaded_image.asset_id != previous_image.asset_id
+        || reloaded_image.source_path != previous_image.source_path
+    {
+        return TextureAssetHotReloadAction::RefreshAtlasSnapshot {
+            atlas_id: atlas.id.clone(),
+            asset_id: previous_image.asset_id.clone(),
+            source_path: previous_image.source_path.clone(),
+            reason: TextureAssetHotReloadRefreshReason::AssetIdentityMismatch,
+        };
+    }
+
+    let Some(atlas_sprite) = atlas
+        .sprites
+        .iter()
+        .find(|sprite| sprite.id == previous_image.asset_id)
+    else {
+        return TextureAssetHotReloadAction::RefreshAtlasSnapshot {
+            atlas_id: atlas.id.clone(),
+            asset_id: previous_image.asset_id.clone(),
+            source_path: previous_image.source_path.clone(),
+            reason: TextureAssetHotReloadRefreshReason::AtlasSpriteMissing,
+        };
+    };
+
+    let atlas_sprite_size = TextureSize {
+        width: atlas_sprite.source_rect.width,
+        height: atlas_sprite.source_rect.height,
+    };
+
+    if atlas_sprite_size != previous_image.size {
+        return TextureAssetHotReloadAction::RefreshAtlasSnapshot {
+            atlas_id: atlas.id.clone(),
+            asset_id: previous_image.asset_id.clone(),
+            source_path: previous_image.source_path.clone(),
+            reason: TextureAssetHotReloadRefreshReason::AtlasSpriteRectMismatch {
+                expected: previous_image.size,
+                actual: atlas_sprite_size,
+            },
+        };
+    }
+
+    if reloaded_image.size != previous_image.size {
+        return TextureAssetHotReloadAction::RefreshAtlasSnapshot {
+            atlas_id: atlas.id.clone(),
+            asset_id: previous_image.asset_id.clone(),
+            source_path: previous_image.source_path.clone(),
+            reason: TextureAssetHotReloadRefreshReason::ImageDimensionsChanged {
+                before: previous_image.size,
+                after: reloaded_image.size,
+            },
+        };
+    }
+
+    TextureAssetHotReloadAction::ReplaceAtlasTexture {
+        atlas_id: atlas.id.clone(),
+        asset_id: previous_image.asset_id.clone(),
+        source_path: previous_image.source_path.clone(),
+    }
+}
+
 pub fn load_sprite_image_metadata(
     project_root: impl AsRef<Path>,
     asset_id: impl AsRef<str>,
@@ -370,6 +563,34 @@ fn png_size(bytes: &[u8], path: &Path) -> Result<TextureSize, SpriteImageLoadErr
     }
 
     Ok(TextureSize { width, height })
+}
+
+fn system_time_to_unix_millis(time: SystemTime) -> u64 {
+    time.duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_millis().min(u128::from(u64::MAX)) as u64)
+        .unwrap_or(0)
+}
+
+fn texture_hot_reload_failure_reason(
+    error: &SpriteImageLoadError,
+) -> TextureAssetHotReloadFailureReason {
+    match error {
+        SpriteImageLoadError::EmptyAssetId
+        | SpriteImageLoadError::EmptySourcePath
+        | SpriteImageLoadError::AbsoluteSourcePath { .. }
+        | SpriteImageLoadError::ParentComponentInSourcePath { .. } => {
+            TextureAssetHotReloadFailureReason::InvalidSourcePath
+        }
+        SpriteImageLoadError::MissingFile { .. } => TextureAssetHotReloadFailureReason::MissingFile,
+        SpriteImageLoadError::UnsupportedFormat { .. } => {
+            TextureAssetHotReloadFailureReason::UnsupportedFormat
+        }
+        SpriteImageLoadError::InvalidPng { .. }
+        | SpriteImageLoadError::InvalidDimensions { .. } => {
+            TextureAssetHotReloadFailureReason::InvalidImage
+        }
+        SpriteImageLoadError::Io { .. } => TextureAssetHotReloadFailureReason::Io,
+    }
 }
 
 #[cfg(test)]
@@ -554,6 +775,118 @@ mod tests {
             result,
             Err(TextureAtlasPackingError::DuplicateImageAssetId { asset_id })
                 if asset_id == "sprite.hero"
+        ));
+    }
+
+    #[test]
+    fn texture_asset_watch_state_detects_project_file_changes() {
+        let root = prepare_fixture("texture_asset_watch_state_detects_project_file_changes");
+        let image_path = root.join("assets/sprites/hero.png");
+        write_fixture(&image_path, PNG_2X3_HEADER);
+
+        let first = texture_asset_watch_state(&root, "sprite.hero", "assets/sprites/hero.png")
+            .expect("initial watch state should load");
+        let repeated = texture_asset_watch_state(&root, "sprite.hero", "assets/sprites/hero.png")
+            .expect("repeated watch state should load");
+
+        assert!(texture_asset_file_changed(None, &first));
+        assert!(!texture_asset_file_changed(Some(&first), &repeated));
+
+        let mut changed_png = PNG_2X3_HEADER.to_vec();
+        changed_png.extend_from_slice(b"extra");
+        write_fixture(&image_path, &changed_png);
+        let changed = texture_asset_watch_state(&root, "sprite.hero", "assets/sprites/hero.png")
+            .expect("changed watch state should load");
+
+        assert!(texture_asset_file_changed(Some(&first), &changed));
+    }
+
+    #[test]
+    fn compatible_texture_reload_replaces_existing_atlas_texture() {
+        let previous = image_metadata("sprite.hero", 16, 16);
+        let reloaded = image_metadata("sprite.hero", 16, 16);
+        let atlas = previous.single_image_atlas("atlas.hero");
+
+        let action = plan_texture_asset_hot_reload(&previous, Ok(reloaded), &atlas);
+
+        assert!(matches!(
+            action,
+            TextureAssetHotReloadAction::ReplaceAtlasTexture {
+                atlas_id,
+                asset_id,
+                source_path
+            } if atlas_id == "atlas.hero"
+                && asset_id == "sprite.hero"
+                && source_path == "assets/sprites/sprite.hero.png"
+        ));
+    }
+
+    #[test]
+    fn changed_texture_dimensions_request_atlas_refresh() {
+        let previous = image_metadata("sprite.hero", 16, 16);
+        let reloaded = image_metadata("sprite.hero", 32, 16);
+        let atlas = previous.single_image_atlas("atlas.hero");
+
+        let action = plan_texture_asset_hot_reload(&previous, Ok(reloaded), &atlas);
+
+        assert!(matches!(
+            action,
+            TextureAssetHotReloadAction::RefreshAtlasSnapshot {
+                reason: TextureAssetHotReloadRefreshReason::ImageDimensionsChanged {
+                    before,
+                    after
+                },
+                ..
+            } if before == TextureSize { width: 16, height: 16 }
+                && after == TextureSize { width: 32, height: 16 }
+        ));
+    }
+
+    #[test]
+    fn missing_or_invalid_texture_reload_reports_visible_failure() {
+        let previous = image_metadata("sprite.hero", 16, 16);
+        let atlas = previous.single_image_atlas("atlas.hero");
+
+        let action = plan_texture_asset_hot_reload(
+            &previous,
+            Err(SpriteImageLoadError::MissingFile {
+                path: PathBuf::from("assets/sprites/missing.png"),
+            }),
+            &atlas,
+        );
+
+        assert!(matches!(
+            action,
+            TextureAssetHotReloadAction::ReportFailure {
+                reason: TextureAssetHotReloadFailureReason::MissingFile,
+                message,
+                ..
+            } if message.contains("does not exist")
+        ));
+    }
+
+    #[test]
+    fn atlas_layout_mismatch_requests_snapshot_refresh() {
+        let previous = image_metadata("sprite.hero", 16, 16);
+        let mut atlas = previous.single_image_atlas("atlas.hero");
+        atlas.sprites[0].source_rect.width = 12;
+
+        let action = plan_texture_asset_hot_reload(
+            &previous,
+            Ok(image_metadata("sprite.hero", 16, 16)),
+            &atlas,
+        );
+
+        assert!(matches!(
+            action,
+            TextureAssetHotReloadAction::RefreshAtlasSnapshot {
+                reason: TextureAssetHotReloadRefreshReason::AtlasSpriteRectMismatch {
+                    expected,
+                    actual
+                },
+                ..
+            } if expected == TextureSize { width: 16, height: 16 }
+                && actual == TextureSize { width: 12, height: 16 }
         ));
     }
 
