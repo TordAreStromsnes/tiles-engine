@@ -7,6 +7,9 @@ use tiles_core::{
     ScenePosition, SceneValidationError, TileMap, TileMapValidationError,
 };
 
+pub mod generic_interactions;
+pub use generic_interactions::*;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NativeRuntimeBoundary {

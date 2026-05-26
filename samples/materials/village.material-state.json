@@ -77,6 +77,11 @@
           "description": "Currently affected by water."
         },
         {
+          "id": "smoking",
+          "name": "Smoking",
+          "description": "Currently emitting smoke after fire or water interaction."
+        },
+        {
           "id": "lit",
           "name": "Lit",
           "description": "Currently emitting light."

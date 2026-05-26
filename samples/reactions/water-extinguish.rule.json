@@ -2,7 +2,7 @@
   "schemaVersion": 0,
   "id": "rule.water.extinguish-fire",
   "name": "Water Extinguishes Burning Target",
-  "description": "Water sources remove burning state and add wet state, then trigger smoke.",
+  "description": "Water sources remove burning state, add wet/smoking state, then trigger smoke.",
   "sourceTags": [
     {
       "namespace": "source",
@@ -20,6 +20,10 @@
     {
       "namespace": "state",
       "tag": "wet"
+    },
+    {
+      "namespace": "state",
+      "tag": "smoking"
     }
   ],
   "removeStateTags": [
@@ -28,7 +32,10 @@
       "tag": "burning"
     }
   ],
-  "assetVariantSwitch": null,
+  "assetVariantSwitch": {
+    "stateVariantId": "wet",
+    "when": "onStart"
+  },
   "timing": {
     "delaySeconds": 0.0,
     "durationSeconds": 1.0,

@@ -260,6 +260,11 @@ pub fn sample_material_state_catalog() -> MaterialStateCatalog {
                 tag("burning", "Burning", "Currently affected by fire."),
                 tag("burned", "Burned", "Has completed a burn transition."),
                 tag("wet", "Wet", "Currently affected by water."),
+                tag(
+                    "smoking",
+                    "Smoking",
+                    "Currently emitting smoke after fire or water interaction.",
+                ),
                 tag("lit", "Lit", "Currently emitting light."),
             ],
         )],

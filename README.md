@@ -58,6 +58,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Attached light source component schema V0: [docs/attached-light-source-schema-v0.md](docs/attached-light-source-schema-v0.md)
 - Fire and water reaction rule schema V0: [docs/reaction-rule-schema-v0.md](docs/reaction-rule-schema-v0.md)
 - Particle emitter preset schema V0: [docs/particle-emitter-preset-schema-v0.md](docs/particle-emitter-preset-schema-v0.md)
+- Generic interaction runtime slice: [docs/generic-interaction-runtime-slice.md](docs/generic-interaction-runtime-slice.md)
 - Renderer sprite batch contract: [docs/renderer-sprite-batch-contract.md](docs/renderer-sprite-batch-contract.md)
 - Licensing: [docs/licensing.md](docs/licensing.md)
 - GitHub setup: [docs/github-setup.md](docs/github-setup.md)
