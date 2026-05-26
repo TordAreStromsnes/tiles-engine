@@ -28,6 +28,8 @@ V0 supports:
 
 Lines are axis-aligned in V0 because the current `SpriteInstance` contract does
 not include rotation. Diagonal/vector lines are tracked separately in #82.
+The text/vector design is captured in
+[overlay-text-vector-primitives-design.md](overlay-text-vector-primitives-design.md).
 
 ## Style
 
