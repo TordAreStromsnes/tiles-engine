@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
+pub mod animation;
 pub mod assets;
 pub mod project;
+pub use animation::*;
 pub use assets::*;
 pub use project::*;
 

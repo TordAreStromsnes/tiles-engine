@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-animation-clip.schema.json",
+  "title": "Tiles Engine Animation Clip",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "target",
+    "frameRate",
+    "loopMode",
+    "tags",
+    "viewTracks"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target": {
+      "$ref": "#/$defs/target"
+    },
+    "frameRate": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "loopMode": {
+      "type": "string",
+      "enum": ["once", "loop", "pingPong"]
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    },
+    "viewTracks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/viewTrack"
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetId", "bodyPlanId"],
+      "properties": {
+        "assetId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bodyPlanId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "viewTrack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["view", "frames"],
+      "properties": {
+        "view": {
+          "$ref": "#/$defs/view"
+        },
+        "frames": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/frame"
+          }
+        }
+      }
+    },
+    "view": {
+      "type": "string",
+      "enum": ["front", "back", "left", "right", "topDown"]
+    },
+    "frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["durationTicks", "layerPoses", "attachmentPoses", "eventIds"],
+      "properties": {
+        "durationTicks": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "layerPoses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/layerPose"
+          }
+        },
+        "attachmentPoses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attachmentPose"
+          }
+        },
+        "eventIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "layerPose": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "layerId",
+        "translation",
+        "rotationDegrees",
+        "scale",
+        "opacity"
+      ],
+      "properties": {
+        "layerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "translation": {
+          "$ref": "#/$defs/point2"
+        },
+        "rotationDegrees": {
+          "type": "number"
+        },
+        "scale": {
+          "$ref": "#/$defs/positivePoint2"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      }
+    },
+    "attachmentPose": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attachmentPointId", "translation", "rotationDegrees"],
+      "properties": {
+        "attachmentPointId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "translation": {
+          "$ref": "#/$defs/point2"
+        },
+        "rotationDegrees": {
+          "type": "number"
+        }
+      }
+    },
+    "point2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      }
+    },
+    "positivePoint2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": {
+          "type": "number",
+          "exclusiveMinimum": 0.0
+        },
+        "y": {
+          "type": "number",
+          "exclusiveMinimum": 0.0
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}
