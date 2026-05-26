@@ -1,10 +1,18 @@
-use std::{borrow::Cow, collections::HashMap, env, error::Error, fmt, time::Instant};
+use std::{
+    borrow::Cow,
+    collections::HashMap,
+    env,
+    error::Error,
+    fmt, fs,
+    path::{Path, PathBuf},
+    time::Instant,
+};
 
 use bytemuck::{Pod, Zeroable};
 use tiles_renderer::{
-    default_preview_scene, preview_camera, preview_editor_overlay_batch, preview_sprite_batch,
-    preview_texture_atlases, Camera2d, PreviewScene, SpriteBatch, TextureAtlas, TextureFilterMode,
-    TextureRect,
+    default_preview_scene, preview_editor_overlay_batch, preview_snapshot, preview_sprite_batch,
+    preview_texture_atlases, Camera2d, PreviewScene, PreviewSnapshot, SpriteBatch, TextureAtlas,
+    TextureFilterMode, TextureRect,
 };
 use wgpu::util::DeviceExt;
 use winit::{
@@ -120,7 +128,9 @@ impl InstanceRaw {
 enum PreviewError {
     AdapterUnavailable,
     CreateSurface(wgpu::CreateSurfaceError),
+    InvalidArgs(String),
     RequestDevice(wgpu::RequestDeviceError),
+    SnapshotLoad { path: PathBuf, reason: String },
     Window(winit::error::OsError),
     EventLoop(winit::error::EventLoopError),
 }
@@ -132,8 +142,16 @@ impl fmt::Display for PreviewError {
             Self::CreateSurface(error) => {
                 write!(formatter, "failed to create GPU surface: {error}")
             }
+            Self::InvalidArgs(reason) => write!(formatter, "invalid preview arguments: {reason}"),
             Self::RequestDevice(error) => {
                 write!(formatter, "failed to request GPU device: {error}")
+            }
+            Self::SnapshotLoad { path, reason } => {
+                write!(
+                    formatter,
+                    "failed to load preview snapshot {}: {reason}",
+                    path.display()
+                )
             }
             Self::Window(error) => write!(formatter, "failed to create native window: {error}"),
             Self::EventLoop(error) => write!(formatter, "native event loop failed: {error}"),
@@ -169,6 +187,7 @@ impl From<wgpu::RequestDeviceError> for PreviewError {
 
 struct PreviewRenderer<'window> {
     scene: PreviewScene,
+    base_camera: Camera2d,
     surface: wgpu::Surface<'window>,
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -186,7 +205,11 @@ struct PreviewRenderer<'window> {
 }
 
 impl<'window> PreviewRenderer<'window> {
-    async fn new(window: &'window Window, scene: PreviewScene) -> Result<Self, PreviewError> {
+    async fn new(
+        window: &'window Window,
+        scene: PreviewScene,
+        base_camera: Camera2d,
+    ) -> Result<Self, PreviewError> {
         let size = window.inner_size();
         let instance = wgpu::Instance::default();
         let surface = instance.create_surface(window)?;
@@ -226,7 +249,7 @@ impl<'window> PreviewRenderer<'window> {
         let alpha_mode = capabilities.alpha_modes[0];
         let config = surface_config(size, format, present_mode, alpha_mode);
         surface.configure(&device, &config);
-        let camera = camera_for_surface(&scene, size);
+        let camera = camera_for_surface(base_camera, size);
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("tiles-preview-shader"),
@@ -335,6 +358,7 @@ impl<'window> PreviewRenderer<'window> {
 
         Ok(Self {
             scene,
+            base_camera,
             surface,
             device,
             queue,
@@ -358,7 +382,7 @@ impl<'window> PreviewRenderer<'window> {
         }
 
         self.size = size;
-        self.camera = camera_for_surface(&self.scene, size);
+        self.camera = camera_for_surface(self.base_camera, size);
         self.config.width = size.width;
         self.config.height = size.height;
         self.surface.configure(&self.device, &self.config);
@@ -466,20 +490,31 @@ impl<'window> PreviewRenderer<'window> {
 }
 
 fn main() -> Result<(), PreviewError> {
-    let frame_limit = parse_frame_limit();
-    pollster::block_on(run(frame_limit))
+    let args = parse_preview_args(env::args().skip(1))?;
+    pollster::block_on(run(args))
 }
 
-async fn run(frame_limit: Option<u32>) -> Result<(), PreviewError> {
+async fn run(args: PreviewArgs) -> Result<(), PreviewError> {
     let renderer = tiles_renderer::native_renderer_plan();
     let runtime = tiles_runtime::native_runtime_boundary();
-    let scene = default_preview_scene();
-    let camera = preview_camera(&scene);
+    let snapshot = match &args.snapshot_path {
+        Some(path) => load_preview_snapshot(path)?,
+        None => preview_snapshot(&default_preview_scene(), 0.0),
+    };
+    let scene = snapshot.scene;
+    let camera = snapshot.camera;
 
     println!("Tiles Engine native preview");
     println!("renderer: {}", renderer.backend_summary());
     println!("preview: {}", renderer.preview_strategy);
     println!("runtime: {}", runtime.game_loop_owner);
+    println!(
+        "snapshot: schema {}, source {}, {} scene instances, {} overlay instances",
+        snapshot.schema_version,
+        snapshot.source,
+        snapshot.scene_batch.instances.len(),
+        snapshot.editor_overlay_batch.instances.len()
+    );
     println!(
         "scene: {}x{} tile grid with animated sprite",
         scene.grid.columns, scene.grid.rows
@@ -498,7 +533,7 @@ async fn run(frame_limit: Option<u32>) -> Result<(), PreviewError> {
         ))
         .build(&event_loop)?;
     let window: &'static Window = Box::leak(Box::new(window));
-    let mut renderer = PreviewRenderer::new(window, scene).await?;
+    let mut renderer = PreviewRenderer::new(window, scene, camera).await?;
     let start_time = Instant::now();
     let mut rendered_frames = 0_u32;
 
@@ -516,7 +551,10 @@ async fn run(frame_limit: Option<u32>) -> Result<(), PreviewError> {
                         Ok(()) => {
                             rendered_frames += 1;
 
-                            if frame_limit.is_some_and(|limit| rendered_frames >= limit) {
+                            if args
+                                .frame_limit
+                                .is_some_and(|limit| rendered_frames >= limit)
+                            {
                                 target.exit();
                             }
                         }
@@ -640,8 +678,8 @@ fn build_batch_instances(
     RenderInstanceGroups { instances, groups }
 }
 
-fn camera_for_surface(scene: &PreviewScene, size: PhysicalSize<u32>) -> Camera2d {
-    let mut camera = preview_camera(scene);
+fn camera_for_surface(base_camera: Camera2d, size: PhysicalSize<u32>) -> Camera2d {
+    let mut camera = base_camera;
     let width = size.width.max(1) as f32;
     let height = size.height.max(1) as f32;
     camera.viewport_size[0] = camera.viewport_size[1] * (width / height);
@@ -769,20 +807,114 @@ fn uv_size(rect: Option<TextureRect>, atlas: &TextureAtlas) -> [f32; 2] {
     ]
 }
 
-fn parse_frame_limit() -> Option<u32> {
-    let mut args = env::args().skip(1);
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PreviewArgs {
+    frame_limit: Option<u32>,
+    snapshot_path: Option<PathBuf>,
+}
+
+fn parse_preview_args(args: impl IntoIterator<Item = String>) -> Result<PreviewArgs, PreviewError> {
+    let mut parsed = PreviewArgs {
+        frame_limit: None,
+        snapshot_path: None,
+    };
+    let mut args = args.into_iter();
 
     while let Some(arg) = args.next() {
         match arg.as_str() {
-            "--smoke-test" => return Some(3),
+            "--smoke-test" => parsed.frame_limit = Some(3),
             "--frames" => {
-                if let Some(value) = args.next().and_then(|value| value.parse().ok()) {
-                    return Some(value);
-                }
+                let Some(value) = args.next() else {
+                    return Err(PreviewError::InvalidArgs(
+                        "--frames requires a positive integer".to_string(),
+                    ));
+                };
+                parsed.frame_limit = Some(value.parse().map_err(|_| {
+                    PreviewError::InvalidArgs(format!("invalid frame count '{value}'"))
+                })?);
+            }
+            "--snapshot" => {
+                let Some(path) = args.next() else {
+                    return Err(PreviewError::InvalidArgs(
+                        "--snapshot requires a JSON file path".to_string(),
+                    ));
+                };
+                parsed.snapshot_path = Some(PathBuf::from(path));
             }
             _ => {}
         }
     }
 
-    None
+    Ok(parsed)
+}
+
+fn load_preview_snapshot(path: &Path) -> Result<PreviewSnapshot, PreviewError> {
+    let bytes = fs::read(path).map_err(|error| PreviewError::SnapshotLoad {
+        path: path.to_path_buf(),
+        reason: error.to_string(),
+    })?;
+    let snapshot: PreviewSnapshot =
+        serde_json::from_slice(&bytes).map_err(|error| PreviewError::SnapshotLoad {
+            path: path.to_path_buf(),
+            reason: error.to_string(),
+        })?;
+
+    snapshot
+        .validate()
+        .map_err(|error| PreviewError::SnapshotLoad {
+            path: path.to_path_buf(),
+            reason: error.to_string(),
+        })?;
+
+    Ok(snapshot)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_preview_args_accepts_smoke_test_and_snapshot() {
+        let args = parse_preview_args([
+            "--smoke-test".to_string(),
+            "--snapshot".to_string(),
+            "target/tiles-preview/preview-snapshot.json".to_string(),
+        ])
+        .expect("args should parse");
+
+        assert_eq!(args.frame_limit, Some(3));
+        assert_eq!(
+            args.snapshot_path,
+            Some(PathBuf::from("target/tiles-preview/preview-snapshot.json"))
+        );
+    }
+
+    #[test]
+    fn parse_preview_args_rejects_missing_snapshot_path() {
+        let error = parse_preview_args(["--snapshot".to_string()])
+            .expect_err("missing snapshot path should fail");
+
+        assert!(matches!(error, PreviewError::InvalidArgs(_)));
+    }
+
+    #[test]
+    fn load_preview_snapshot_reads_and_validates_json() {
+        let path = std::env::temp_dir().join(format!(
+            "tiles-preview-snapshot-{}.json",
+            std::process::id()
+        ));
+        let snapshot = preview_snapshot(&default_preview_scene(), 0.0);
+        let json = serde_json::to_vec_pretty(&snapshot).expect("snapshot should serialize");
+
+        fs::write(&path, json).expect("snapshot fixture should write");
+        let loaded = load_preview_snapshot(&path).expect("snapshot should load");
+        let _ = fs::remove_file(&path);
+
+        assert_eq!(loaded.schema_version, snapshot.schema_version);
+        assert_eq!(loaded.scene, snapshot.scene);
+        assert_eq!(
+            loaded.scene_batch.instances.len(),
+            snapshot.scene_batch.instances.len()
+        );
+    }
 }

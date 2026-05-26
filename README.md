@@ -53,6 +53,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Scene composer/runtime preview MVP: [docs/scene-composer-runtime-preview-mvp.md](docs/scene-composer-runtime-preview-mvp.md)
 - Scene entity schema V0: [docs/scene-entity-schema-v0.md](docs/scene-entity-schema-v0.md)
 - Runtime preview loop slice: [docs/runtime-preview-loop-slice.md](docs/runtime-preview-loop-slice.md)
+- Live scene streaming native preview: [docs/live-scene-streaming-native-preview.md](docs/live-scene-streaming-native-preview.md)
 - Scene composer placement prototype: [docs/scene-composer-placement-prototype.md](docs/scene-composer-placement-prototype.md)
 - Interaction trigger schema V0: [docs/interaction-trigger-schema-v0.md](docs/interaction-trigger-schema-v0.md)
 - Menus and save/load after runtime preview: [docs/menus-save-load-after-runtime-preview.md](docs/menus-save-load-after-runtime-preview.md)

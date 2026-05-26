@@ -22,6 +22,8 @@ type PreviewLaunch = {
   launched: boolean;
   processId: number;
   command: string;
+  snapshotPath: string;
+  snapshotSchemaVersion: number;
   message: string;
 };
 
@@ -314,10 +316,12 @@ export function App() {
     setPreviewLaunchState("launching");
     setPreviewLaunchMessage("Launching native preview window...");
 
-    invoke<PreviewLaunch>("launch_native_preview")
+    invoke<PreviewLaunch>("launch_native_preview", { scene })
       .then((response) => {
         setPreviewLaunchState(response.launched ? "launched" : "error");
-        setPreviewLaunchMessage(`${response.message} Process ${response.processId}.`);
+        setPreviewLaunchMessage(
+          `${response.message} Snapshot v${response.snapshotSchemaVersion}: ${response.snapshotPath}. Process ${response.processId}.`,
+        );
       })
       .catch((error) => {
         setPreviewLaunchState("error");

@@ -3,6 +3,7 @@ use std::{error::Error, fmt};
 use serde::{Deserialize, Serialize};
 
 pub const SPRITE_BATCH_SCHEMA_VERSION: u32 = 0;
+pub const PREVIEW_SNAPSHOT_SCHEMA_VERSION: u32 = 0;
 pub const PREVIEW_OVERLAY_ATLAS_ID: &str = "preview.overlay";
 pub const PREVIEW_OVERLAY_SPRITE_ID: &str = "overlay.selection";
 
@@ -343,6 +344,24 @@ pub enum Camera2dValidationError {
     InvalidZoom,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum PreviewSceneValidationError {
+    InvalidGridSize,
+    InvalidWorldSize,
+    InvalidSpriteSize,
+    InvalidSpriteColor,
+    InvalidMotionPath,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum PreviewSnapshotValidationError {
+    UnsupportedSchemaVersion { actual: u32 },
+    InvalidScene(PreviewSceneValidationError),
+    InvalidCamera(Camera2dValidationError),
+    InvalidSceneBatch(SpriteBatchValidationError),
+    InvalidEditorOverlayBatch(SpriteBatchValidationError),
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PreviewScene {
@@ -375,11 +394,135 @@ pub struct SpriteMotionPath {
     pub seconds_per_loop: f32,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PreviewSnapshot {
+    pub schema_version: u32,
+    pub source: String,
+    pub scene: PreviewScene,
+    pub camera: Camera2d,
+    pub scene_batch: SpriteBatch,
+    pub editor_overlay_batch: SpriteBatch,
+}
+
+impl fmt::Display for PreviewSceneValidationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidGridSize => write!(formatter, "preview scene grid size is invalid"),
+            Self::InvalidWorldSize => write!(formatter, "preview scene world size is invalid"),
+            Self::InvalidSpriteSize => write!(formatter, "preview scene sprite size is invalid"),
+            Self::InvalidSpriteColor => write!(formatter, "preview scene sprite color is invalid"),
+            Self::InvalidMotionPath => write!(formatter, "preview scene motion path is invalid"),
+        }
+    }
+}
+
+impl Error for PreviewSceneValidationError {}
+
+impl fmt::Display for PreviewSnapshotValidationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::UnsupportedSchemaVersion { actual } => write!(
+                formatter,
+                "preview snapshot schema version {actual} is not supported"
+            ),
+            Self::InvalidScene(error) => write!(formatter, "{error}"),
+            Self::InvalidCamera(error) => {
+                write!(formatter, "preview snapshot camera is invalid: {error:?}")
+            }
+            Self::InvalidSceneBatch(error) => {
+                write!(
+                    formatter,
+                    "preview snapshot scene batch is invalid: {error:?}"
+                )
+            }
+            Self::InvalidEditorOverlayBatch(error) => write!(
+                formatter,
+                "preview snapshot editor overlay batch is invalid: {error:?}"
+            ),
+        }
+    }
+}
+
+impl Error for PreviewSnapshotValidationError {}
+
 impl NativeRendererPlan {
     pub fn backend_summary(&self) -> String {
         match &self.backend {
             RenderBackend::NativeGpu { api } => format!("Native Rust GPU renderer ({api})"),
         }
+    }
+}
+
+impl PreviewScene {
+    pub fn validate(&self) -> Result<(), PreviewSceneValidationError> {
+        if self.grid.columns == 0 || self.grid.rows == 0 {
+            return Err(PreviewSceneValidationError::InvalidGridSize);
+        }
+
+        if !self.grid.world_width.is_finite()
+            || !self.grid.world_height.is_finite()
+            || self.grid.world_width <= 0.0
+            || self.grid.world_height <= 0.0
+        {
+            return Err(PreviewSceneValidationError::InvalidWorldSize);
+        }
+
+        if self
+            .sprite
+            .size
+            .iter()
+            .any(|value| !value.is_finite() || *value <= 0.0)
+        {
+            return Err(PreviewSceneValidationError::InvalidSpriteSize);
+        }
+
+        if self
+            .sprite
+            .color
+            .iter()
+            .any(|value| !value.is_finite() || !(0.0..=1.0).contains(value))
+        {
+            return Err(PreviewSceneValidationError::InvalidSpriteColor);
+        }
+
+        let path = self.sprite.path;
+        if !path.horizontal_amplitude.is_finite()
+            || !path.vertical_amplitude.is_finite()
+            || !path.seconds_per_loop.is_finite()
+            || path.horizontal_amplitude < 0.0
+            || path.vertical_amplitude < 0.0
+            || path.seconds_per_loop <= 0.0
+        {
+            return Err(PreviewSceneValidationError::InvalidMotionPath);
+        }
+
+        Ok(())
+    }
+}
+
+impl PreviewSnapshot {
+    pub fn validate(&self) -> Result<(), PreviewSnapshotValidationError> {
+        if self.schema_version != PREVIEW_SNAPSHOT_SCHEMA_VERSION {
+            return Err(PreviewSnapshotValidationError::UnsupportedSchemaVersion {
+                actual: self.schema_version,
+            });
+        }
+
+        self.scene
+            .validate()
+            .map_err(PreviewSnapshotValidationError::InvalidScene)?;
+        self.camera
+            .validate()
+            .map_err(PreviewSnapshotValidationError::InvalidCamera)?;
+        self.scene_batch
+            .validate()
+            .map_err(PreviewSnapshotValidationError::InvalidSceneBatch)?;
+        self.editor_overlay_batch
+            .validate()
+            .map_err(PreviewSnapshotValidationError::InvalidEditorOverlayBatch)?;
+
+        Ok(())
     }
 }
 
@@ -1003,6 +1146,17 @@ pub fn preview_camera(scene: &PreviewScene) -> Camera2d {
     }
 }
 
+pub fn preview_snapshot(scene: &PreviewScene, elapsed_seconds: f32) -> PreviewSnapshot {
+    PreviewSnapshot {
+        schema_version: PREVIEW_SNAPSHOT_SCHEMA_VERSION,
+        source: "tiles-engine.desktop.dev".to_string(),
+        scene: *scene,
+        camera: preview_camera(scene),
+        scene_batch: preview_sprite_batch(scene, elapsed_seconds),
+        editor_overlay_batch: preview_editor_overlay_batch(scene, elapsed_seconds),
+    }
+}
+
 pub fn preview_texture_atlas() -> TextureAtlas {
     TextureAtlas {
         id: "preview.generated".to_string(),
@@ -1392,6 +1546,50 @@ mod tests {
 
         assert!(json.contains("viewportSize"));
         assert!(json.contains("zoom"));
+    }
+
+    #[test]
+    fn preview_snapshot_serializes_scene_camera_and_batches() {
+        let scene = default_preview_scene();
+        let snapshot = preview_snapshot(&scene, 0.0);
+        let json = serde_json::to_string(&snapshot).expect("snapshot should serialize");
+
+        snapshot
+            .validate()
+            .expect("generated preview snapshot should validate");
+        assert_eq!(snapshot.schema_version, PREVIEW_SNAPSHOT_SCHEMA_VERSION);
+        assert_eq!(snapshot.scene, scene);
+        assert_eq!(
+            snapshot.scene_batch.instances.len(),
+            scene.grid.columns as usize * scene.grid.rows as usize + 1
+        );
+        assert!(json.contains("sceneBatch"));
+        assert!(json.contains("editorOverlayBatch"));
+    }
+
+    #[test]
+    fn preview_snapshot_rejects_unsupported_schema_version() {
+        let mut snapshot = preview_snapshot(&default_preview_scene(), 0.0);
+        snapshot.schema_version = PREVIEW_SNAPSHOT_SCHEMA_VERSION + 1;
+
+        assert!(matches!(
+            snapshot.validate(),
+            Err(PreviewSnapshotValidationError::UnsupportedSchemaVersion { actual })
+                if actual == PREVIEW_SNAPSHOT_SCHEMA_VERSION + 1
+        ));
+    }
+
+    #[test]
+    fn preview_snapshot_rejects_invalid_scene_motion_path() {
+        let mut snapshot = preview_snapshot(&default_preview_scene(), 0.0);
+        snapshot.scene.sprite.path.seconds_per_loop = 0.0;
+
+        assert!(matches!(
+            snapshot.validate(),
+            Err(PreviewSnapshotValidationError::InvalidScene(
+                PreviewSceneValidationError::InvalidMotionPath
+            ))
+        ));
     }
 
     #[test]
