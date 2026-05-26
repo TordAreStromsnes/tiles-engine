@@ -55,6 +55,16 @@
         "$ref": "#/$defs/attachmentPoint"
       },
       "uniqueItems": true
+    },
+    "viewSet": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/viewSet"
+        }
+      ]
     }
   },
   "$defs": {
@@ -232,6 +242,158 @@
         },
         "tags": {
           "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "viewSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["views"],
+      "properties": {
+        "views": {
+          "type": "array",
+          "minItems": 5,
+          "items": {
+            "$ref": "#/$defs/spriteView"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "spriteView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "mirror", "layers", "attachmentPoints"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/spriteViewId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mirror": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/spriteViewMirror"
+            }
+          ]
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/spriteViewLayer"
+          },
+          "uniqueItems": true
+        },
+        "attachmentPoints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/spriteViewAttachmentPoint"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "spriteViewId": {
+      "type": "string",
+      "enum": ["front", "back", "left", "right", "topDown"]
+    },
+    "spriteViewMirror": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceView", "axis"],
+      "properties": {
+        "sourceView": {
+          "$ref": "#/$defs/spriteViewId"
+        },
+        "axis": {
+          "type": "string",
+          "enum": ["horizontal", "vertical"]
+        }
+      }
+    },
+    "spriteViewLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["layerId", "source", "zIndex", "opacity", "anchor", "visible"],
+      "properties": {
+        "layerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/imageSource"
+            }
+          ]
+        },
+        "zIndex": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
+        "opacity": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0
+            }
+          ]
+        },
+        "anchor": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/point2"
+            }
+          ]
+        },
+        "visible": {
+          "type": "boolean"
+        }
+      }
+    },
+    "spriteViewAttachmentPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pointId", "targetLayerId", "position"],
+      "properties": {
+        "pointId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetLayerId": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "position": {
+          "$ref": "#/$defs/point2"
         }
       }
     },

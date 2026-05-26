@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-humanoid-creator.schema.json",
+  "title": "Tiles Engine Humanoid Creator Definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "bodyPlanId",
+    "tags",
+    "proportions",
+    "palettes",
+    "parts",
+    "outputs"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bodyPlanId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    },
+    "proportions": {
+      "$ref": "#/$defs/proportions"
+    },
+    "palettes": {
+      "type": "array",
+      "minItems": 7,
+      "items": {
+        "$ref": "#/$defs/paletteSelection"
+      },
+      "uniqueItems": true
+    },
+    "parts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/partSelection"
+      },
+      "uniqueItems": true
+    },
+    "outputs": {
+      "$ref": "#/$defs/outputs"
+    }
+  },
+  "$defs": {
+    "proportions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bodyHeight",
+        "bodyWidth",
+        "headSize",
+        "shoulderWidth",
+        "armLength",
+        "legLength",
+        "footSize"
+      ],
+      "properties": {
+        "bodyHeight": {
+          "$ref": "#/$defs/proportion"
+        },
+        "bodyWidth": {
+          "$ref": "#/$defs/proportion"
+        },
+        "headSize": {
+          "$ref": "#/$defs/proportion"
+        },
+        "shoulderWidth": {
+          "$ref": "#/$defs/proportion"
+        },
+        "armLength": {
+          "$ref": "#/$defs/proportion"
+        },
+        "legLength": {
+          "$ref": "#/$defs/proportion"
+        },
+        "footSize": {
+          "$ref": "#/$defs/proportion"
+        }
+      }
+    },
+    "proportion": {
+      "type": "number",
+      "minimum": 0.1,
+      "maximum": 3.0
+    },
+    "paletteSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slot", "swatches"],
+      "properties": {
+        "slot": {
+          "$ref": "#/$defs/paletteSlot"
+        },
+        "swatches": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "paletteSlot": {
+      "type": "string",
+      "enum": [
+        "skin",
+        "hair",
+        "eye",
+        "clothingPrimary",
+        "clothingSecondary",
+        "accessory",
+        "outline"
+      ]
+    },
+    "partSelection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slot", "partId", "variantId", "paletteSlots"],
+      "properties": {
+        "slot": {
+          "$ref": "#/$defs/partSlot"
+        },
+        "partId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "variantId": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "paletteSlots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/paletteSlot"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "partSlot": {
+      "type": "string",
+      "enum": [
+        "bodyBase",
+        "head",
+        "hair",
+        "eyes",
+        "clothingTop",
+        "clothingBottom",
+        "shoesFeet",
+        "accessory",
+        "equipment"
+      ]
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["spriteAssetId", "spriteAssetPath"],
+      "properties": {
+        "spriteAssetId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "spriteAssetPath": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}

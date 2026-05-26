@@ -7,8 +7,11 @@ from one shared character definition.
 
 The MVP should save:
 
-- Character definition metadata.
-- Sprite asset metadata.
+- Character definition metadata with
+  [humanoid-creator-definition-schema.md](humanoid-creator-definition-schema.md).
+- Starter part-pack metadata with
+  [starter-humanoid-part-pack-spec.md](starter-humanoid-part-pack-spec.md).
+- Sprite asset metadata with optional `viewSet` output.
 - Five-view layer mapping: `front`, `back`, `left`, `right`, `topDown`.
 - Palette selections.
 - Proportion controls.
@@ -16,6 +19,8 @@ The MVP should save:
 
 The editor can assemble the layers at preview/export time. Baking a final image
 sheet can come later once renderer and export flows are stable.
+The first Rust-side assembly prototype is documented in
+[five-view-humanoid-assembly-prototype.md](five-view-humanoid-assembly-prototype.md).
 
 ## Five-View Assembly Model
 
@@ -37,6 +42,10 @@ front, back, side, and top-down shapes while still sharing one color palette.
 Left/right views may mirror if the part is symmetric. The part data must support
 explicit overrides so creators can make asymmetric characters.
 
+The base sprite asset schema now keeps five-view output in `viewSet`. That lets
+the asset remain generic for props and creatures, while humanoid creator output
+can still require complete coordinated views.
+
 ## MVP Controls
 
 Proportions:
@@ -52,6 +61,7 @@ Proportions:
 Part choices:
 
 - Body base.
+- Head.
 - Hair.
 - Eyes.
 - Clothing top.

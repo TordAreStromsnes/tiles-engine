@@ -132,5 +132,457 @@
       },
       "tags": ["movement", "shadow"]
     }
-  ]
+  ],
+  "viewSet": {
+    "views": [
+      {
+        "id": "front",
+        "name": "Front",
+        "mirror": null,
+        "layers": [
+          {
+            "layerId": "body",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 0,
+                "y": 0,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "tunic",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 0,
+                "y": 48,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "hair",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 0,
+                "y": 96,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "wet-overlay",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 0,
+                "y": 144,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          }
+        ],
+        "attachmentPoints": [
+          {
+            "pointId": "hand.right",
+            "targetLayerId": "body",
+            "position": {
+              "x": 23.0,
+              "y": 26.0
+            }
+          },
+          {
+            "pointId": "feet.ground",
+            "targetLayerId": "body",
+            "position": {
+              "x": 16.0,
+              "y": 44.0
+            }
+          }
+        ]
+      },
+      {
+        "id": "back",
+        "name": "Back",
+        "mirror": null,
+        "layers": [
+          {
+            "layerId": "body",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 32,
+                "y": 0,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "tunic",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 32,
+                "y": 48,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "hair",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 32,
+                "y": 96,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "wet-overlay",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 32,
+                "y": 144,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          }
+        ],
+        "attachmentPoints": [
+          {
+            "pointId": "hand.right",
+            "targetLayerId": "body",
+            "position": {
+              "x": 9.0,
+              "y": 26.0
+            }
+          },
+          {
+            "pointId": "feet.ground",
+            "targetLayerId": "body",
+            "position": {
+              "x": 16.0,
+              "y": 44.0
+            }
+          }
+        ]
+      },
+      {
+        "id": "left",
+        "name": "Left Side",
+        "mirror": null,
+        "layers": [
+          {
+            "layerId": "body",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 64,
+                "y": 0,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "tunic",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 64,
+                "y": 48,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "hair",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 64,
+                "y": 96,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "wet-overlay",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 64,
+                "y": 144,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          }
+        ],
+        "attachmentPoints": [
+          {
+            "pointId": "hand.right",
+            "targetLayerId": "body",
+            "position": {
+              "x": 11.0,
+              "y": 27.0
+            }
+          },
+          {
+            "pointId": "feet.ground",
+            "targetLayerId": "body",
+            "position": {
+              "x": 16.0,
+              "y": 44.0
+            }
+          }
+        ]
+      },
+      {
+        "id": "right",
+        "name": "Right Side",
+        "mirror": {
+          "sourceView": "left",
+          "axis": "horizontal"
+        },
+        "layers": [
+          {
+            "layerId": "body",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 64,
+                "y": 0,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "tunic",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 64,
+                "y": 48,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "hair",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 96,
+                "y": 96,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "wet-overlay",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 64,
+                "y": 144,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          }
+        ],
+        "attachmentPoints": [
+          {
+            "pointId": "hand.right",
+            "targetLayerId": "body",
+            "position": {
+              "x": 21.0,
+              "y": 27.0
+            }
+          },
+          {
+            "pointId": "feet.ground",
+            "targetLayerId": "body",
+            "position": {
+              "x": 16.0,
+              "y": 44.0
+            }
+          }
+        ]
+      },
+      {
+        "id": "topDown",
+        "name": "Top Down",
+        "mirror": null,
+        "layers": [
+          {
+            "layerId": "body",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 128,
+                "y": 0,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "tunic",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 128,
+                "y": 48,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "hair",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 128,
+                "y": 96,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          },
+          {
+            "layerId": "wet-overlay",
+            "source": {
+              "path": "assets/sprites/hero.png",
+              "frame": {
+                "x": 128,
+                "y": 144,
+                "width": 32,
+                "height": 48
+              }
+            },
+            "zIndex": null,
+            "opacity": null,
+            "anchor": null,
+            "visible": true
+          }
+        ],
+        "attachmentPoints": [
+          {
+            "pointId": "hand.right",
+            "targetLayerId": "body",
+            "position": {
+              "x": 22.0,
+              "y": 22.0
+            }
+          },
+          {
+            "pointId": "feet.ground",
+            "targetLayerId": "body",
+            "position": {
+              "x": 16.0,
+              "y": 32.0
+            }
+          }
+        ]
+      }
+    ]
+  }
 }
