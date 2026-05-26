@@ -61,8 +61,10 @@ Texture atlas upload is represented by `TextureAtlas` metadata:
 
 The native preview currently uploads a generated in-memory atlas. Project PNG
 metadata loading is documented in
-[sprite-image-loading-mvp.md](sprite-image-loading-mvp.md); atlas packing and
-pixel upload from imported images are still future work.
+[sprite-image-loading-mvp.md](sprite-image-loading-mvp.md), and deterministic
+metadata packing is documented in
+[texture-atlas-packing-mvp.md](texture-atlas-packing-mvp.md). Pixel upload from
+imported images is still future work.
 
 ## Native Preview Use
 
@@ -77,6 +79,6 @@ sprite and an origin marker, both projected through the same `Camera2d`.
 ## Known Limits
 
 - No batching across multiple texture atlases yet.
-- No atlas packing or imported-pixel upload yet.
+- No imported-pixel upload yet.
 - No clipping, blend modes, or material flags yet.
 - No full selection UI, gizmo editing, or overlay primitive library yet.

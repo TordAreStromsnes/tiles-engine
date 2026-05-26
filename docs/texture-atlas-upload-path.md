@@ -23,8 +23,10 @@ The preview atlas is `preview.generated` and contains:
 
 These are generated colored pixels, not imported image files. Sprite image
 metadata loading now exists separately in
-[sprite-image-loading-mvp.md](sprite-image-loading-mvp.md), and atlas packing is
-the next step before imported pixels replace the generated preview atlas.
+[sprite-image-loading-mvp.md](sprite-image-loading-mvp.md), and metadata atlas
+packing now exists in [texture-atlas-packing-mvp.md](texture-atlas-packing-mvp.md).
+Imported pixels still need a later upload integration before they replace the
+generated preview atlas.
 
 ## Contract Assumptions
 
@@ -39,7 +41,6 @@ the renderer/asset pipeline to pack source images into an atlas.
 
 ## Deferred Work
 
-- Atlas packing: #45.
 - Multiple atlases per frame: #46.
 - Texture filtering controls and asset hot reload: #47.
 - Sprite import UI.
