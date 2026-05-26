@@ -3,11 +3,15 @@ use serde::{Deserialize, Serialize};
 pub mod animation;
 pub mod assets;
 pub mod humanoid;
+pub mod humanoid_assembly;
+pub mod humanoid_part_pack;
 pub mod maps;
 pub mod project;
 pub use animation::*;
 pub use assets::*;
 pub use humanoid::*;
+pub use humanoid_assembly::*;
+pub use humanoid_part_pack::*;
 pub use maps::*;
 pub use project::*;
 

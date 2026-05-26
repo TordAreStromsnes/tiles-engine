@@ -51,6 +51,12 @@
       "paletteSlots": ["skin"]
     },
     {
+      "slot": "head",
+      "partId": "humanoid.head.round",
+      "variantId": null,
+      "paletteSlots": ["skin"]
+    },
+    {
       "slot": "hair",
       "partId": "humanoid.hair.short",
       "variantId": "side-part",
