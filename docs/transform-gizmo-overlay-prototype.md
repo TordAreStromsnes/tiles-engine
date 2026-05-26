@@ -6,6 +6,8 @@ scale, snapping, or polished input states.
 
 Rotate and scale handles are now prototyped separately in
 [rotate-scale-gizmo-handles-prototype.md](rotate-scale-gizmo-handles-prototype.md).
+First-pass hover, active, snapping, axis-lock, and status state is documented in
+[transform-gizmo-ux-polish.md](transform-gizmo-ux-polish.md).
 
 ## Move Gizmo
 
@@ -67,7 +69,8 @@ preview rendering.
 - No hit testing yet.
 - Rotate and scale handles are prototype-level and not wired to pointer input.
 - No snapping or keyboard modifier behavior.
-- No final hover, active, disabled, or status states.
+- Hover, active, disabled, and status states are defined but not wired to input.
+- Snapping and keyboard modifier behavior is state-only.
 
 ## Manual Verification
 

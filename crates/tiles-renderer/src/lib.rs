@@ -269,6 +269,54 @@ pub struct RotateGizmoDrag {
     pub surface_size: [f32; 2],
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransformGizmoHandle {
+    MoveFree,
+    MoveX,
+    MoveY,
+    Rotate,
+    ScaleNorthWest,
+    ScaleNorthEast,
+    ScaleSouthEast,
+    ScaleSouthWest,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransformGizmoHandleVisualState {
+    Resting,
+    Hovered,
+    Active,
+    Disabled,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransformGizmoSnapState {
+    pub enabled: bool,
+    pub grid_size: f32,
+    pub angle_degrees: f32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransformGizmoKeyboardModifiers {
+    pub snap: bool,
+    pub axis_lock: Option<MoveGizmoAxis>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TransformGizmoUxState {
+    pub selection_id: String,
+    pub hovered_handle: Option<TransformGizmoHandle>,
+    pub active_handle: Option<TransformGizmoHandle>,
+    pub snapping: TransformGizmoSnapState,
+    pub keyboard_modifiers: TransformGizmoKeyboardModifiers,
+    pub error_message: Option<String>,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum SpriteBatchValidationError {
     UnsupportedSchemaVersion { actual: u32 },
@@ -330,6 +378,14 @@ pub enum RotateScaleGizmoValidationError {
     InvalidSurfaceSize,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum TransformGizmoUxValidationError {
+    EmptySelectionId,
+    InvalidSnapGridSize,
+    InvalidSnapAngle,
+    EmptyErrorMessage,
+}
+
 impl fmt::Display for MoveGizmoValidationError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -375,6 +431,21 @@ impl fmt::Display for RotateScaleGizmoValidationError {
 }
 
 impl Error for RotateScaleGizmoValidationError {}
+
+impl fmt::Display for TransformGizmoUxValidationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EmptySelectionId => write!(formatter, "transform gizmo selection id is empty"),
+            Self::InvalidSnapGridSize => {
+                write!(formatter, "transform gizmo snap grid size is invalid")
+            }
+            Self::InvalidSnapAngle => write!(formatter, "transform gizmo snap angle is invalid"),
+            Self::EmptyErrorMessage => write!(formatter, "transform gizmo error message is empty"),
+        }
+    }
+}
+
+impl Error for TransformGizmoUxValidationError {}
 
 impl fmt::Display for OverlayPrimitiveValidationError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -1222,6 +1293,158 @@ impl RotateGizmoDrag {
         }
 
         validate_transform_surface_size(self.surface_size)
+    }
+}
+
+impl TransformGizmoSnapState {
+    pub const fn disabled() -> Self {
+        Self {
+            enabled: false,
+            grid_size: 1.0,
+            angle_degrees: 15.0,
+        }
+    }
+
+    pub const fn grid_and_angle(grid_size: f32, angle_degrees: f32) -> Self {
+        Self {
+            enabled: true,
+            grid_size,
+            angle_degrees,
+        }
+    }
+}
+
+impl TransformGizmoKeyboardModifiers {
+    pub const fn none() -> Self {
+        Self {
+            snap: false,
+            axis_lock: None,
+        }
+    }
+}
+
+impl TransformGizmoUxState {
+    pub fn idle(selection_id: impl Into<String>) -> Self {
+        Self {
+            selection_id: selection_id.into(),
+            hovered_handle: None,
+            active_handle: None,
+            snapping: TransformGizmoSnapState::disabled(),
+            keyboard_modifiers: TransformGizmoKeyboardModifiers::none(),
+            error_message: None,
+        }
+    }
+
+    pub fn validate(&self) -> Result<(), TransformGizmoUxValidationError> {
+        if self.selection_id.trim().is_empty() {
+            return Err(TransformGizmoUxValidationError::EmptySelectionId);
+        }
+
+        let snap_requested = self.snapping.enabled || self.keyboard_modifiers.snap;
+
+        if snap_requested
+            && (!self.snapping.grid_size.is_finite() || self.snapping.grid_size <= 0.0)
+        {
+            return Err(TransformGizmoUxValidationError::InvalidSnapGridSize);
+        }
+
+        if snap_requested
+            && (!self.snapping.angle_degrees.is_finite()
+                || self.snapping.angle_degrees <= 0.0
+                || self.snapping.angle_degrees > 360.0)
+        {
+            return Err(TransformGizmoUxValidationError::InvalidSnapAngle);
+        }
+
+        if self
+            .error_message
+            .as_ref()
+            .is_some_and(|message| message.trim().is_empty())
+        {
+            return Err(TransformGizmoUxValidationError::EmptyErrorMessage);
+        }
+
+        Ok(())
+    }
+
+    pub fn handle_visual_state(
+        &self,
+        handle: TransformGizmoHandle,
+    ) -> Result<TransformGizmoHandleVisualState, TransformGizmoUxValidationError> {
+        self.validate()?;
+
+        if self.error_message.is_some() {
+            return Ok(TransformGizmoHandleVisualState::Disabled);
+        }
+
+        if self.active_handle == Some(handle) {
+            return Ok(TransformGizmoHandleVisualState::Active);
+        }
+
+        if self.hovered_handle == Some(handle) {
+            return Ok(TransformGizmoHandleVisualState::Hovered);
+        }
+
+        Ok(TransformGizmoHandleVisualState::Resting)
+    }
+
+    pub fn status_message(&self) -> Result<String, TransformGizmoUxValidationError> {
+        self.validate()?;
+
+        if let Some(message) = &self.error_message {
+            return Ok(format!("Transform gizmo error: {message}"));
+        }
+
+        let interaction = if let Some(handle) = self.active_handle {
+            format!("Dragging {}", handle.label())
+        } else if let Some(handle) = self.hovered_handle {
+            format!("Ready to drag {}", handle.label())
+        } else {
+            "Transform gizmo ready".to_string()
+        };
+
+        Ok(format!(
+            "{interaction}. {} {}",
+            self.snapping.status_fragment(self.keyboard_modifiers.snap),
+            axis_lock_status_fragment(self.keyboard_modifiers.axis_lock)
+        ))
+    }
+}
+
+impl TransformGizmoSnapState {
+    fn status_fragment(&self, modifier_pressed: bool) -> String {
+        if self.enabled || modifier_pressed {
+            format!(
+                "Snapping grid {:.2}, angle {:.1} deg.",
+                self.grid_size, self.angle_degrees
+            )
+        } else {
+            "Snapping off.".to_string()
+        }
+    }
+}
+
+impl TransformGizmoHandle {
+    fn label(self) -> &'static str {
+        match self {
+            Self::MoveFree => "move center",
+            Self::MoveX => "move X axis",
+            Self::MoveY => "move Y axis",
+            Self::Rotate => "rotation handle",
+            Self::ScaleNorthWest => "north-west scale handle",
+            Self::ScaleNorthEast => "north-east scale handle",
+            Self::ScaleSouthEast => "south-east scale handle",
+            Self::ScaleSouthWest => "south-west scale handle",
+        }
+    }
+}
+
+fn axis_lock_status_fragment(axis_lock: Option<MoveGizmoAxis>) -> &'static str {
+    match axis_lock {
+        Some(MoveGizmoAxis::X) => "Axis lock X.",
+        Some(MoveGizmoAxis::Y) => "Axis lock Y.",
+        Some(MoveGizmoAxis::Free) => "Axis lock free.",
+        None => "Axis lock off.",
     }
 }
 
@@ -2256,6 +2479,94 @@ mod tests {
         assert!(matches!(
             gizmo.overlay_primitives(),
             Err(RotateScaleGizmoValidationError::InvalidSize)
+        ));
+    }
+
+    #[test]
+    fn transform_gizmo_ux_prioritizes_active_over_hover_state() {
+        let state = TransformGizmoUxState {
+            hovered_handle: Some(TransformGizmoHandle::Rotate),
+            active_handle: Some(TransformGizmoHandle::ScaleNorthEast),
+            ..TransformGizmoUxState::idle("selection.hero")
+        };
+
+        assert_eq!(
+            state
+                .handle_visual_state(TransformGizmoHandle::ScaleNorthEast)
+                .expect("active handle should validate"),
+            TransformGizmoHandleVisualState::Active
+        );
+        assert_eq!(
+            state
+                .handle_visual_state(TransformGizmoHandle::Rotate)
+                .expect("hovered handle should validate"),
+            TransformGizmoHandleVisualState::Hovered
+        );
+        assert_eq!(
+            state
+                .handle_visual_state(TransformGizmoHandle::MoveFree)
+                .expect("resting handle should validate"),
+            TransformGizmoHandleVisualState::Resting
+        );
+    }
+
+    #[test]
+    fn transform_gizmo_ux_status_mentions_snapping_and_axis_lock() {
+        let state = TransformGizmoUxState {
+            active_handle: Some(TransformGizmoHandle::MoveX),
+            snapping: TransformGizmoSnapState::grid_and_angle(0.5, 15.0),
+            keyboard_modifiers: TransformGizmoKeyboardModifiers {
+                snap: true,
+                axis_lock: Some(MoveGizmoAxis::X),
+            },
+            ..TransformGizmoUxState::idle("selection.hero")
+        };
+
+        let message = state.status_message().expect("status should validate");
+
+        assert!(message.contains("Dragging move X axis"));
+        assert!(message.contains("Snapping grid 0.50, angle 15.0 deg."));
+        assert!(message.contains("Axis lock X."));
+    }
+
+    #[test]
+    fn transform_gizmo_ux_error_disables_handles_and_surfaces_status() {
+        let state = TransformGizmoUxState {
+            hovered_handle: Some(TransformGizmoHandle::MoveFree),
+            error_message: Some("Selection has no editable transform.".to_string()),
+            ..TransformGizmoUxState::idle("selection.hero")
+        };
+
+        assert_eq!(
+            state
+                .handle_visual_state(TransformGizmoHandle::MoveFree)
+                .expect("error state should validate"),
+            TransformGizmoHandleVisualState::Disabled
+        );
+        assert_eq!(
+            state.status_message().expect("status should validate"),
+            "Transform gizmo error: Selection has no editable transform."
+        );
+    }
+
+    #[test]
+    fn transform_gizmo_ux_rejects_invalid_snap_settings_when_modifier_requests_snap() {
+        let state = TransformGizmoUxState {
+            snapping: TransformGizmoSnapState {
+                enabled: false,
+                grid_size: 0.0,
+                angle_degrees: 15.0,
+            },
+            keyboard_modifiers: TransformGizmoKeyboardModifiers {
+                snap: true,
+                axis_lock: None,
+            },
+            ..TransformGizmoUxState::idle("selection.hero")
+        };
+
+        assert!(matches!(
+            state.validate(),
+            Err(TransformGizmoUxValidationError::InvalidSnapGridSize)
         ));
     }
 
