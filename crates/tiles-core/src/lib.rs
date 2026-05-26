@@ -1,5 +1,14 @@
 use serde::{Deserialize, Serialize};
 
+pub mod animation;
+pub mod assets;
+pub mod maps;
+pub mod project;
+pub use animation::*;
+pub use assets::*;
+pub use maps::*;
+pub use project::*;
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EngineStatus {
