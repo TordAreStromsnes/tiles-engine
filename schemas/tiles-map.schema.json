@@ -1,0 +1,285 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-map.schema.json",
+  "title": "Tiles Engine Tile Map",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "grid",
+    "layers",
+    "placements",
+    "collisions",
+    "portals"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "grid": {
+      "$ref": "#/$defs/grid"
+    },
+    "layers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/layer"
+      },
+      "uniqueItems": true
+    },
+    "placements": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/placement"
+      },
+      "uniqueItems": true
+    },
+    "collisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/collision"
+      },
+      "uniqueItems": true
+    },
+    "portals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/portal"
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "grid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["columns", "rows", "cellSize"],
+      "properties": {
+        "columns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rows": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "cellSize": {
+          "$ref": "#/$defs/cellSize"
+        }
+      }
+    },
+    "cellSize": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "kind", "zIndex", "visibleByDefault"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9._-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["terrain", "object", "collision", "region", "overlay"]
+        },
+        "zIndex": {
+          "type": "integer"
+        },
+        "visibleByDefault": {
+          "type": "boolean"
+        }
+      }
+    },
+    "placement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "layerId", "assetId", "tileId", "position", "span"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "layerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assetId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tileId": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "position": {
+          "$ref": "#/$defs/gridPoint"
+        },
+        "span": {
+          "$ref": "#/$defs/gridSize"
+        }
+      }
+    },
+    "collision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "rect", "blocksMovement", "tags"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rect": {
+          "$ref": "#/$defs/gridRect"
+        },
+        "blocksMovement": {
+          "type": "boolean"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "portal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "trigger", "target", "tags"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trigger": {
+          "$ref": "#/$defs/gridRect"
+        },
+        "target": {
+          "$ref": "#/$defs/portalTarget"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "portalTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mapId", "portalId", "spawn", "facing"],
+      "properties": {
+        "mapId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "portalId": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "spawn": {
+          "$ref": "#/$defs/gridPoint"
+        },
+        "facing": {
+          "type": "string",
+          "enum": ["north", "south", "east", "west"]
+        }
+      }
+    },
+    "gridRect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origin", "size"],
+      "properties": {
+        "origin": {
+          "$ref": "#/$defs/gridPoint"
+        },
+        "size": {
+          "$ref": "#/$defs/gridSize"
+        }
+      }
+    },
+    "gridPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["column", "row"],
+      "properties": {
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "gridSize": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["columns", "rows"],
+      "properties": {
+        "columns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rows": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}

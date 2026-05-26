@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 0,
+  "id": "map.village",
+  "name": "Village",
+  "grid": {
+    "columns": 24,
+    "rows": 16,
+    "cellSize": {
+      "width": 16,
+      "height": 16
+    }
+  },
+  "layers": [
+    {
+      "id": "terrain",
+      "name": "Terrain",
+      "kind": "terrain",
+      "zIndex": 0,
+      "visibleByDefault": true
+    },
+    {
+      "id": "objects",
+      "name": "Objects",
+      "kind": "object",
+      "zIndex": 10,
+      "visibleByDefault": true
+    },
+    {
+      "id": "overlays",
+      "name": "Overlays",
+      "kind": "overlay",
+      "zIndex": 20,
+      "visibleByDefault": true
+    }
+  ],
+  "placements": [
+    {
+      "id": "tile.grass.0",
+      "layerId": "terrain",
+      "assetId": "tileset.grass",
+      "tileId": "grass",
+      "position": {
+        "column": 0,
+        "row": 0
+      },
+      "span": {
+        "columns": 24,
+        "rows": 16
+      }
+    },
+    {
+      "id": "house.0",
+      "layerId": "objects",
+      "assetId": "sprite.house",
+      "tileId": null,
+      "position": {
+        "column": 10,
+        "row": 5
+      },
+      "span": {
+        "columns": 4,
+        "rows": 4
+      }
+    }
+  ],
+  "collisions": [
+    {
+      "id": "house-walls",
+      "rect": {
+        "origin": {
+          "column": 10,
+          "row": 5
+        },
+        "size": {
+          "columns": 4,
+          "rows": 3
+        }
+      },
+      "blocksMovement": true,
+      "tags": ["building"]
+    }
+  ],
+  "portals": [
+    {
+      "id": "portal.house.front-door",
+      "name": "House Front Door",
+      "trigger": {
+        "origin": {
+          "column": 11,
+          "row": 8
+        },
+        "size": {
+          "columns": 2,
+          "rows": 1
+        }
+      },
+      "target": {
+        "mapId": "map.house-interior",
+        "portalId": "portal.house.exit",
+        "spawn": {
+          "column": 5,
+          "row": 7
+        },
+        "facing": "north"
+      },
+      "tags": ["door", "interior"]
+    }
+  ]
+}

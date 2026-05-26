@@ -48,6 +48,29 @@ project write automation.
 - #17: Launch Native Preview From Desktop Shell
 - #18: Research Embedded Native Viewport Feasibility
 
+## Created Humanoid Creator Follow-Up Issues
+
+- #23: Build Multi-View Sprite Asset Extension
+- #24: Build Humanoid Creator Definition Schema
+- #25: Create Starter Humanoid Part Pack Spec
+- #26: Prototype Five-View Humanoid Assembly
+
+## Created Scene Runtime Follow-Up Issues
+
+- #31: Build Scene Entity Schema V0
+- #32: Build Runtime Preview Loop Slice
+- #33: Build Scene Composer Placement Prototype
+- #34: Build Interaction Trigger Schema V0
+- #35: Design Menus And Save Load After Runtime Preview
+
+## Created Generic Interaction Follow-Up Issues
+
+- #37: Build Material Tag And Runtime State Schema V0
+- #38: Build Attached Light Source Component Schema V0
+- #39: Build Fire Water Reaction Rule Schema V0
+- #40: Build Particle Emitter Preset Schema V0
+- #41: Prototype Generic Interaction Runtime Slice
+
 ## CLI Setup
 
 GitHub CLI needs repo and project access:

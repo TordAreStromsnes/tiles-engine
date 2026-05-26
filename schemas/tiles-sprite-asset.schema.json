@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-sprite-asset.schema.json",
+  "title": "Tiles Engine Sprite Asset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "canvas",
+    "tags",
+    "stateVariants",
+    "layers",
+    "attachmentPoints"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "canvas": {
+      "$ref": "#/$defs/canvas"
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    },
+    "stateVariants": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/stateVariant"
+      },
+      "uniqueItems": true
+    },
+    "layers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/layer"
+      },
+      "uniqueItems": true
+    },
+    "attachmentPoints": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/attachmentPoint"
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "canvas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "pivot"],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pivot": {
+          "$ref": "#/$defs/point2"
+        }
+      }
+    },
+    "stateVariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "tags", "visibleLayerIds"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9._-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        },
+        "visibleLayerIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "role",
+        "source",
+        "zIndex",
+        "opacity",
+        "visibleByDefault",
+        "anchor"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9._-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "body",
+            "clothing",
+            "hair",
+            "equipment",
+            "prop",
+            "effect",
+            "shadow",
+            "custom"
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/imageSource"
+        },
+        "zIndex": {
+          "type": "integer"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "visibleByDefault": {
+          "type": "boolean"
+        },
+        "anchor": {
+          "$ref": "#/$defs/point2"
+        }
+      }
+    },
+    "imageSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "frame"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "frame": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/pixelRect"
+            }
+          ]
+        }
+      }
+    },
+    "pixelRect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "width", "height"],
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "attachmentPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "targetLayerId", "position", "tags"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9._-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetLayerId": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "position": {
+          "$ref": "#/$defs/point2"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "point2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-project-manifest.schema.json",
+  "title": "Tiles Engine Project Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "engineVersion", "project", "folders"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "engineVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "gameTypeTargets"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9._-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gameTypeTargets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "topDown",
+              "sideScroller",
+              "isometricPlanned",
+              "twoPointFiveDPlanned"
+            ]
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "folders": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assets", "maps", "scenes", "rules", "exports"],
+      "properties": {
+        "assets": {
+          "type": "string",
+          "minLength": 1
+        },
+        "maps": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scenes": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rules": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exports": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

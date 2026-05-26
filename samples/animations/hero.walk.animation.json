@@ -1,0 +1,313 @@
+{
+  "schemaVersion": 0,
+  "id": "animation.hero.walk",
+  "name": "Hero Walk",
+  "target": {
+    "assetId": "sprite.hero",
+    "bodyPlanId": "humanoid"
+  },
+  "frameRate": 12,
+  "loopMode": "loop",
+  "tags": ["humanoid", "walk"],
+  "viewTracks": [
+    {
+      "view": "front",
+      "frames": [
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.2 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [
+            {
+              "attachmentPointId": "hand.left",
+              "translation": { "x": 1.0, "y": 0.0 },
+              "rotationDegrees": 0.0
+            },
+            {
+              "attachmentPointId": "hand.right",
+              "translation": { "x": -1.0, "y": 0.0 },
+              "rotationDegrees": 0.0
+            }
+          ],
+          "eventIds": ["footstep.left"]
+        },
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.5 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        },
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": 0.2 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [
+            {
+              "attachmentPointId": "hand.left",
+              "translation": { "x": -1.0, "y": 0.0 },
+              "rotationDegrees": 0.0
+            },
+            {
+              "attachmentPointId": "hand.right",
+              "translation": { "x": 1.0, "y": 0.0 },
+              "rotationDegrees": 0.0
+            }
+          ],
+          "eventIds": ["footstep.right"]
+        },
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.5 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        }
+      ]
+    },
+    {
+      "view": "back",
+      "frames": [
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": 0.2 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": ["footstep.left"]
+        },
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.5 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        },
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.2 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": ["footstep.right"]
+        },
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.5 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        }
+      ]
+    },
+    {
+      "view": "left",
+      "frames": [
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": -0.4, "y": 0.0 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": ["footstep.left"]
+        },
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.5 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        },
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.4, "y": 0.0 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": ["footstep.right"]
+        },
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.5 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        }
+      ]
+    },
+    {
+      "view": "right",
+      "frames": [
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.4, "y": 0.0 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": ["footstep.left"]
+        },
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.5 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        },
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": -0.4, "y": 0.0 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": ["footstep.right"]
+        },
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.5 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        }
+      ]
+    },
+    {
+      "view": "topDown",
+      "frames": [
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.35 },
+              "rotationDegrees": -2.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": ["footstep.left"]
+        },
+        {
+          "durationTicks": 3,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": 0.35 },
+              "rotationDegrees": 2.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": ["footstep.right"]
+        }
+      ]
+    }
+  ]
+}
