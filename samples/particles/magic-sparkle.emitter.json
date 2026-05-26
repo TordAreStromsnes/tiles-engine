@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 0,
+  "id": "effect.magic.sparkle",
+  "name": "Magic Sparkle",
+  "description": "Looping additive sparkles for magic objects.",
+  "spawn": {
+    "ratePerSecond": 14.0,
+    "maxParticles": 80
+  },
+  "lifetimeSeconds": {
+    "min": 0.6,
+    "max": 1.4
+  },
+  "velocity": {
+    "x": {
+      "min": -0.35,
+      "max": 0.35
+    },
+    "y": {
+      "min": -0.35,
+      "max": 0.35
+    },
+    "z": {
+      "min": 0.0,
+      "max": 0.0
+    }
+  },
+  "colorOverLifetime": [
+    {
+      "time": 0.0,
+      "color": {
+        "red": 0.55,
+        "green": 0.35,
+        "blue": 1.0,
+        "alpha": 0.0
+      }
+    },
+    {
+      "time": 0.4,
+      "color": {
+        "red": 0.9,
+        "green": 0.82,
+        "blue": 1.0,
+        "alpha": 0.95
+      }
+    },
+    {
+      "time": 1.0,
+      "color": {
+        "red": 0.22,
+        "green": 0.68,
+        "blue": 1.0,
+        "alpha": 0.0
+      }
+    }
+  ],
+  "sizeOverLifetime": [
+    {
+      "time": 0.0,
+      "size": 0.08
+    },
+    {
+      "time": 0.5,
+      "size": 0.22
+    },
+    {
+      "time": 1.0,
+      "size": 0.05
+    }
+  ],
+  "acceleration": {
+    "gravity": {
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    "drift": {
+      "x": 0.0,
+      "y": -0.08,
+      "z": 0.0
+    }
+  },
+  "blendMode": "additive",
+  "emissionMode": {
+    "kind": "looping"
+  },
+  "attachment": {
+    "kind": "entity",
+    "data": {
+      "entityId": "entity.npc.guide"
+    }
+  },
+  "tags": ["magic", "looping"]
+}

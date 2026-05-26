@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 0,
+  "id": "light.street-lamp",
+  "name": "Street Lamp Light",
+  "target": {
+    "kind": "entity",
+    "data": {
+      "entityId": "entity.lamp.street"
+    }
+  },
+  "color": {
+    "red": 1.0,
+    "green": 0.82,
+    "blue": 0.55
+  },
+  "intensity": 1.25,
+  "radius": 6.0,
+  "falloff": "smooth",
+  "direction": {
+    "kind": "omnidirectional"
+  },
+  "followPosition": true,
+  "followFacing": false,
+  "enabled": true,
+  "tags": ["material.lightEmitter", "state.lit"]
+}
