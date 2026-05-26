@@ -40,6 +40,8 @@ Tags can appear on assets, tiles, regions, and scene entities.
 
 ## Attached Lights
 
+Implemented baseline: [attached light source component schema V0](attached-light-source-schema-v0.md).
+
 Lights are components that can attach to:
 
 - Entity position.
