@@ -12,6 +12,10 @@ to draw a tile grid plus an animated sprite. The preview scene data lives in
 `crates/tiles-renderer`, so the renderer crate defines the serializable data the
 editor/runtime can eventually send to the native preview.
 
+The preview now builds a renderer `SpriteBatch` contract before converting it to
+GPU instance data. See
+[../renderer-sprite-batch-contract.md](../renderer-sprite-batch-contract.md).
+
 Run the smoke test:
 
 ```powershell
@@ -39,8 +43,8 @@ cargo run -p tiles-native-preview
 - The editor should send serializable project/scene data, not GPU resources.
 - Embedded viewport work should wait until the renderer API and launch flow are
   stable.
-- This spike does not yet include texture atlases, cameras, transforms, input,
-  editor overlays, lighting, or particles.
+- This spike does not yet include texture atlas upload, cameras, transforms,
+  input, editor overlays, lighting, or particles.
 
 ## MVP Decision
 
@@ -55,4 +59,6 @@ runtime loop.
 - #16: Add camera and editor overlay pass to native preview.
 - #17: Launch native preview from the Tauri desktop shell.
 - #18: Research embedded native viewport feasibility after sibling preview is
-  stable.
+  stable. Recommendation recorded in
+  [../embedded-native-viewport-feasibility.md](../embedded-native-viewport-feasibility.md):
+  defer embedded viewport work for MVP.
