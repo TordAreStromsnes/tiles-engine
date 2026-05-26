@@ -52,6 +52,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Runtime preview loop slice: [docs/runtime-preview-loop-slice.md](docs/runtime-preview-loop-slice.md)
 - Scene composer placement prototype: [docs/scene-composer-placement-prototype.md](docs/scene-composer-placement-prototype.md)
 - Interaction trigger schema V0: [docs/interaction-trigger-schema-v0.md](docs/interaction-trigger-schema-v0.md)
+- Menus and save/load after runtime preview: [docs/menus-save-load-after-runtime-preview.md](docs/menus-save-load-after-runtime-preview.md)
 - Generic interaction systems: [docs/generic-interaction-systems.md](docs/generic-interaction-systems.md)
 - Renderer sprite batch contract: [docs/renderer-sprite-batch-contract.md](docs/renderer-sprite-batch-contract.md)
 - Licensing: [docs/licensing.md](docs/licensing.md)

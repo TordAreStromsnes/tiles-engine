@@ -17,6 +17,8 @@ The first slice includes:
 
 Menus, settings, save/load, dialogue trees, quest logic, and inventory are
 explicitly deferred.
+The first menu/settings/save-load boundary is documented in
+[menus-save-load-after-runtime-preview.md](menus-save-load-after-runtime-preview.md).
 
 ## Scene Data
 
