@@ -55,11 +55,13 @@ type SceneComponent =
       kind: "interactionTrigger";
       data: {
         triggerId: string;
+        name: string;
         promptId: string | null;
         eventId: string | null;
         targetEntityId: string | null;
-        radius: number;
+        activation: InteractionActivation;
         repeatable: boolean;
+        tags: string[];
       };
     }
   | {
@@ -91,6 +93,12 @@ type SceneDocument = {
   mapIds: string[];
   tags: string[];
   entities: SceneEntity[];
+};
+
+type InteractionActivation = {
+  shape:
+    | { kind: "circle"; data: { radius: number } }
+    | { kind: "rect"; data: { width: number; height: number } };
 };
 
 type SceneValidation = {
@@ -185,11 +193,13 @@ const fallbackScene: SceneDocument = {
           kind: "interactionTrigger",
           data: {
             triggerId: "trigger.welcome-sign",
+            name: "Welcome Sign Trigger",
             promptId: "prompt.welcome",
             eventId: "event.sign.read",
             targetEntityId: "entity.player",
-            radius: 1,
+            activation: { shape: { kind: "circle", data: { radius: 1 } } },
             repeatable: true,
+            tags: ["interaction", "sign"],
           },
         },
       ],
@@ -673,10 +683,18 @@ function componentSummary(component: SceneComponent) {
     case "npcBehavior":
       return component.data.behavior;
     case "interactionTrigger":
-      return component.data.promptId ?? component.data.eventId ?? "Untitled trigger";
+      return `${component.data.name}, ${triggerShapeSummary(component.data.activation)}`;
     case "portalLink":
       return `${component.data.portalId} -> ${component.data.targetMapId}`;
   }
+}
+
+function triggerShapeSummary(activation: InteractionActivation) {
+  if (activation.shape.kind === "circle") {
+    return `radius ${activation.shape.data.radius}`;
+  }
+
+  return `${activation.shape.data.width}x${activation.shape.data.height}`;
 }
 
 function updateFromNumber(value: string, onValidNumber: (value: number) => void) {

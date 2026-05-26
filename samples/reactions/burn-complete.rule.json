@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 0,
+  "id": "rule.fire.complete-burn",
+  "name": "Complete Burn Transition",
+  "description": "Burning targets can become burned after the burn duration completes.",
+  "sourceTags": [
+    {
+      "namespace": "state",
+      "tag": "burning"
+    }
+  ],
+  "requiredTargetTags": [
+    {
+      "namespace": "state",
+      "tag": "burning"
+    }
+  ],
+  "blockedTargetTags": [
+    {
+      "namespace": "state",
+      "tag": "wet"
+    }
+  ],
+  "addStateTags": [
+    {
+      "namespace": "state",
+      "tag": "burned"
+    }
+  ],
+  "removeStateTags": [
+    {
+      "namespace": "state",
+      "tag": "burning"
+    }
+  ],
+  "assetVariantSwitch": {
+    "stateVariantId": "burned",
+    "when": "onComplete"
+  },
+  "timing": {
+    "delaySeconds": 0.0,
+    "durationSeconds": 5.0,
+    "tickIntervalSeconds": null
+  },
+  "triggeredEffects": [
+    {
+      "effectId": "effect.smoke.puff",
+      "when": "onComplete"
+    }
+  ],
+  "tags": ["fire", "asset-variant"]
+}

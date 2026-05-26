@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-interaction-trigger.schema.json",
+  "title": "Tiles Engine Interaction Trigger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "promptId",
+    "eventId",
+    "targetEntityId",
+    "activation",
+    "repeatable",
+    "tags"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "promptId": {
+      "$ref": "#/$defs/optionalString"
+    },
+    "eventId": {
+      "$ref": "#/$defs/optionalString"
+    },
+    "targetEntityId": {
+      "$ref": "#/$defs/optionalString"
+    },
+    "activation": {
+      "$ref": "#/$defs/activation"
+    },
+    "repeatable": {
+      "type": "boolean"
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    }
+  },
+  "$defs": {
+    "activation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["shape"],
+      "properties": {
+        "shape": {
+          "$ref": "#/$defs/shape"
+        }
+      }
+    },
+    "shape": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/circleShape"
+        },
+        {
+          "$ref": "#/$defs/rectShape"
+        }
+      ]
+    },
+    "circleShape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "circle"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["radius"],
+          "properties": {
+            "radius": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        }
+      }
+    },
+    "rectShape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "rect"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width", "height"],
+          "properties": {
+            "width": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "height": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        }
+      }
+    },
+    "optionalString": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}

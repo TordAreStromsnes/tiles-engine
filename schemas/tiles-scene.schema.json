@@ -230,14 +230,20 @@
           "additionalProperties": false,
           "required": [
             "triggerId",
+            "name",
             "promptId",
             "eventId",
             "targetEntityId",
-            "radius",
-            "repeatable"
+            "activation",
+            "repeatable",
+            "tags"
           ],
           "properties": {
             "triggerId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
               "type": "string",
               "minLength": 1
             },
@@ -250,12 +256,14 @@
             "targetEntityId": {
               "$ref": "#/$defs/optionalString"
             },
-            "radius": {
-              "type": "number",
-              "exclusiveMinimum": 0
+            "activation": {
+              "$ref": "#/$defs/interactionActivation"
             },
             "repeatable": {
               "type": "boolean"
+            },
+            "tags": {
+              "$ref": "#/$defs/tags"
             }
           }
         }
@@ -314,6 +322,72 @@
         },
         "z": {
           "type": "number"
+        }
+      }
+    },
+    "interactionActivation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["shape"],
+      "properties": {
+        "shape": {
+          "$ref": "#/$defs/interactionShape"
+        }
+      }
+    },
+    "interactionShape": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/interactionCircleShape"
+        },
+        {
+          "$ref": "#/$defs/interactionRectShape"
+        }
+      ]
+    },
+    "interactionCircleShape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "circle"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["radius"],
+          "properties": {
+            "radius": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        }
+      }
+    },
+    "interactionRectShape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "rect"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["width", "height"],
+          "properties": {
+            "width": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "height": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
         }
       }
     },

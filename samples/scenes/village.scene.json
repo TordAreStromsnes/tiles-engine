@@ -93,11 +93,20 @@
           "kind": "interactionTrigger",
           "data": {
             "triggerId": "trigger.welcome-sign",
+            "name": "Welcome Sign Trigger",
             "promptId": "prompt.welcome",
             "eventId": "event.sign.read",
             "targetEntityId": "entity.player",
-            "radius": 1.0,
-            "repeatable": true
+            "activation": {
+              "shape": {
+                "kind": "circle",
+                "data": {
+                  "radius": 1.0
+                }
+              }
+            },
+            "repeatable": true,
+            "tags": ["interaction", "sign"]
           }
         }
       ]
