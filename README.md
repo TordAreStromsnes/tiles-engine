@@ -59,6 +59,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Menu and settings schema V0: [docs/menu-settings-schema-v0.md](docs/menu-settings-schema-v0.md)
 - Menus and save/load after runtime preview: [docs/menus-save-load-after-runtime-preview.md](docs/menus-save-load-after-runtime-preview.md)
 - Runtime save snapshot schema V0: [docs/runtime-save-snapshot-schema-v0.md](docs/runtime-save-snapshot-schema-v0.md)
+- Desktop save/load UI prototype: [docs/desktop-save-load-ui-prototype.md](docs/desktop-save-load-ui-prototype.md)
 - Generic interaction systems: [docs/generic-interaction-systems.md](docs/generic-interaction-systems.md)
 - Material tag and runtime state schema V0: [docs/material-runtime-state-schema-v0.md](docs/material-runtime-state-schema-v0.md)
 - Attached light source component schema V0: [docs/attached-light-source-schema-v0.md](docs/attached-light-source-schema-v0.md)

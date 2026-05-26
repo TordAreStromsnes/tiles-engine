@@ -258,6 +258,52 @@ h1 {
   border-radius: 50%;
 }
 
+.save-slots-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.save-slot-card {
+  position: absolute;
+  left: 50%;
+  display: grid;
+  width: min(360px, calc(100% - 48px));
+  min-height: 92px;
+  gap: 4px;
+  padding: 14px 16px;
+  color: #18242e;
+  background: rgba(248, 250, 252, 0.92);
+  border: 2px solid #d7dee5;
+  border-radius: 8px;
+  box-shadow: 0 12px 24px rgba(29, 40, 52, 0.2);
+  transform: translateX(-50%);
+}
+
+.save-slot-card-active {
+  border-color: #f2c14e;
+  box-shadow: 0 14px 28px rgba(88, 102, 116, 0.28);
+}
+
+.save-slot-card span,
+.save-slot-card small {
+  min-width: 0;
+  overflow: hidden;
+  color: #657687;
+  font-size: 12px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.save-slot-card strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .scene-composer-canvas {
   position: absolute;
   inset: 0;
@@ -330,6 +376,77 @@ dd {
 
 .preview-launch-error {
   color: #9b2525;
+}
+
+.save-inspector {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.save-status {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  color: #18242e;
+  background: #e6edf4;
+  border: 1px solid #c7d2de;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.save-status span {
+  overflow-wrap: anywhere;
+}
+
+.save-status-saved,
+.save-status-loaded {
+  background: #e2f4ea;
+  border-color: #8ed0ab;
+}
+
+.save-status-error {
+  background: #ffe5e2;
+  border-color: #e4968d;
+}
+
+.save-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.save-actions button {
+  min-height: 36px;
+  padding: 7px 8px;
+  color: #0e2536;
+  background: #ffffff;
+  border: 1px solid #c7d2de;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.save-actions button:hover:not(:disabled) {
+  background: #e8eff5;
+  border-color: #8da1b2;
+}
+
+.save-actions button:disabled {
+  color: #7c8894;
+  background: #edf2f6;
+  cursor: not-allowed;
+}
+
+.save-details {
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.save-details dd {
+  overflow-wrap: anywhere;
 }
 
 .scene-inspector {
