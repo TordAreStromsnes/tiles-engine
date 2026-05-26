@@ -14,5 +14,6 @@ tauri-build.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tauri.workspace = true
+tauri-plugin-shell.workspace = true
 tiles-core.workspace = true
 tiles-renderer.workspace = true

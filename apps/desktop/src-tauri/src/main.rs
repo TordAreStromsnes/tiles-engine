@@ -1,13 +1,17 @@
 use std::{
     fmt, fs,
     path::{Path, PathBuf},
-    process::Command,
+    process::Command as ProcessCommand,
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use serde::Serialize;
+use tauri_plugin_shell::ShellExt;
 use tiles_core::{sample_runtime_save_snapshot, RuntimeSaveSnapshot, SceneDocument};
 use tiles_renderer::{default_preview_scene, preview_snapshot, PreviewSnapshot};
+
+const NATIVE_PREVIEW_SIDECAR_NAME: &str = "tiles-native-preview";
+const NATIVE_PREVIEW_SIDECAR_EXTERNAL_BIN: &str = "binaries/tiles-native-preview";
 
 #[tauri::command]
 fn engine_status() -> tiles_core::EngineStatus {
@@ -154,6 +158,8 @@ enum PreviewLaunchError {
     SceneInvalid { reason: String },
     SnapshotWriteFailed { path: PathBuf, reason: String },
     SpawnFailed { path: PathBuf, reason: String },
+    SidecarUnavailable { name: String, reason: String },
+    SidecarSpawnFailed { name: String, reason: String },
 }
 
 impl fmt::Display for PreviewLaunchError {
@@ -177,12 +183,24 @@ impl fmt::Display for PreviewLaunchError {
                 "Failed to launch native preview at {}: {reason}",
                 path.display()
             ),
+            Self::SidecarUnavailable { name, reason } => write!(
+                formatter,
+                "Packaged native preview sidecar `{name}` could not be resolved from Tauri external binary `{}`: {reason}. Run `npm run sidecar:prepare -- --release` before packaging and verify the suffixed binary exists under `apps/desktop/src-tauri/binaries`.",
+                native_preview_sidecar_external_bin()
+            ),
+            Self::SidecarSpawnFailed { name, reason } => write!(
+                formatter,
+                "Failed to launch packaged native preview sidecar `{name}`: {reason}"
+            ),
         }
     }
 }
 
 #[tauri::command]
-fn launch_native_preview(scene: SceneDocument) -> Result<PreviewLaunch, String> {
+fn launch_native_preview(
+    app: tauri::AppHandle,
+    scene: SceneDocument,
+) -> Result<PreviewLaunch, String> {
     let workspace_root = workspace_root_from_manifest(Path::new(env!("CARGO_MANIFEST_DIR")));
 
     scene.validate().map_err(|error| {
@@ -192,10 +210,51 @@ fn launch_native_preview(scene: SceneDocument) -> Result<PreviewLaunch, String> 
         .to_string()
     })?;
 
-    launch_native_preview_from(&workspace_root, &scene).map_err(|error| error.to_string())
+    launch_native_preview_from(
+        Some(&app),
+        &workspace_root,
+        &scene,
+        native_preview_launch_strategy(),
+    )
+    .map_err(|error| error.to_string())
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum NativePreviewLaunchStrategy {
+    DevelopmentBinary,
+    PackagedSidecar,
+}
+
+fn native_preview_launch_strategy() -> NativePreviewLaunchStrategy {
+    if cfg!(debug_assertions) {
+        NativePreviewLaunchStrategy::DevelopmentBinary
+    } else {
+        NativePreviewLaunchStrategy::PackagedSidecar
+    }
 }
 
 fn launch_native_preview_from(
+    app: Option<&tauri::AppHandle>,
+    workspace_root: &Path,
+    scene_document: &SceneDocument,
+    strategy: NativePreviewLaunchStrategy,
+) -> Result<PreviewLaunch, PreviewLaunchError> {
+    match strategy {
+        NativePreviewLaunchStrategy::DevelopmentBinary => {
+            launch_native_preview_from_debug_binary(workspace_root, scene_document)
+        }
+        NativePreviewLaunchStrategy::PackagedSidecar => {
+            let app = app.ok_or_else(|| PreviewLaunchError::SidecarUnavailable {
+                name: native_preview_sidecar_name().to_string(),
+                reason: "A Tauri AppHandle is required for packaged sidecar launch.".to_string(),
+            })?;
+
+            launch_native_preview_from_sidecar(app, workspace_root, scene_document)
+        }
+    }
+}
+
+fn launch_native_preview_from_debug_binary(
     workspace_root: &Path,
     scene_document: &SceneDocument,
 ) -> Result<PreviewLaunch, PreviewLaunchError> {
@@ -207,7 +266,7 @@ fn launch_native_preview_from(
 
     let snapshot = preview_snapshot_for_launch(scene_document);
     let snapshot_path = write_preview_snapshot(workspace_root, &snapshot)?;
-    let child = Command::new(&binary_path)
+    let child = ProcessCommand::new(&binary_path)
         .current_dir(workspace_root)
         .arg("--snapshot")
         .arg(&snapshot_path)
@@ -229,6 +288,43 @@ fn launch_native_preview_from(
         snapshot_path: snapshot_path.display().to_string(),
         snapshot_schema_version: snapshot.schema_version,
         message: "Native preview launched with a scene snapshot.".to_string(),
+    })
+}
+
+fn launch_native_preview_from_sidecar(
+    app: &tauri::AppHandle,
+    workspace_root: &Path,
+    scene_document: &SceneDocument,
+) -> Result<PreviewLaunch, PreviewLaunchError> {
+    let snapshot = preview_snapshot_for_launch(scene_document);
+    let snapshot_path = write_preview_snapshot(workspace_root, &snapshot)?;
+    let snapshot_arg = snapshot_path.display().to_string();
+    let sidecar_name = native_preview_sidecar_name();
+    let sidecar_command = app
+        .shell()
+        .sidecar(sidecar_name)
+        .map_err(|error| PreviewLaunchError::SidecarUnavailable {
+            name: sidecar_name.to_string(),
+            reason: error.to_string(),
+        })?
+        .current_dir(workspace_root)
+        .args(["--snapshot", snapshot_arg.as_str()]);
+    let (_rx, child) =
+        sidecar_command
+            .spawn()
+            .map_err(|error| PreviewLaunchError::SidecarSpawnFailed {
+                name: sidecar_name.to_string(),
+                reason: error.to_string(),
+            })?;
+    let command = format!("{sidecar_name} --snapshot {}", snapshot_path.display());
+
+    Ok(PreviewLaunch {
+        launched: true,
+        process_id: child.pid(),
+        command,
+        snapshot_path: snapshot_path.display().to_string(),
+        snapshot_schema_version: snapshot.schema_version,
+        message: "Packaged native preview sidecar launched with a scene snapshot.".to_string(),
     })
 }
 
@@ -506,8 +602,33 @@ fn native_preview_binary_name() -> &'static str {
     }
 }
 
+fn native_preview_sidecar_name() -> &'static str {
+    NATIVE_PREVIEW_SIDECAR_NAME
+}
+
+fn native_preview_sidecar_external_bin() -> &'static str {
+    NATIVE_PREVIEW_SIDECAR_EXTERNAL_BIN
+}
+
+#[cfg(test)]
+fn native_preview_sidecar_binary_name(target_triple: &str) -> String {
+    let extension = if target_triple.contains("windows") {
+        ".exe"
+    } else {
+        ""
+    };
+
+    format!(
+        "{}-{}{}",
+        native_preview_sidecar_name(),
+        target_triple,
+        extension
+    )
+}
+
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             engine_status,
             sample_scene,
@@ -547,6 +668,39 @@ mod tests {
                 .join("debug")
                 .join(native_preview_binary_name())
         ));
+    }
+
+    #[test]
+    fn native_preview_launch_strategy_tracks_build_profile() {
+        assert_eq!(
+            native_preview_launch_strategy(),
+            NativePreviewLaunchStrategy::DevelopmentBinary
+        );
+    }
+
+    #[test]
+    fn native_preview_sidecar_config_uses_tauri_external_bin_name() {
+        assert_eq!(native_preview_sidecar_name(), "tiles-native-preview");
+        assert_eq!(
+            native_preview_sidecar_external_bin(),
+            "binaries/tiles-native-preview"
+        );
+    }
+
+    #[test]
+    fn native_preview_sidecar_binary_names_use_target_triple_suffix() {
+        assert_eq!(
+            native_preview_sidecar_binary_name("x86_64-pc-windows-msvc"),
+            "tiles-native-preview-x86_64-pc-windows-msvc.exe"
+        );
+        assert_eq!(
+            native_preview_sidecar_binary_name("aarch64-apple-darwin"),
+            "tiles-native-preview-aarch64-apple-darwin"
+        );
+        assert_eq!(
+            native_preview_sidecar_binary_name("x86_64-unknown-linux-gnu"),
+            "tiles-native-preview-x86_64-unknown-linux-gnu"
+        );
     }
 
     #[test]
@@ -642,8 +796,13 @@ mod tests {
     #[test]
     fn missing_native_preview_binary_returns_clear_error() {
         let scene = tiles_core::sample_village_scene();
-        let error = launch_native_preview_from(Path::new("__missing_tiles_workspace__"), &scene)
-            .expect_err("missing binary should fail");
+        let error = launch_native_preview_from(
+            None,
+            Path::new("__missing_tiles_workspace__"),
+            &scene,
+            NativePreviewLaunchStrategy::DevelopmentBinary,
+        )
+        .expect_err("missing binary should fail");
 
         assert!(matches!(
             error,
@@ -652,5 +811,24 @@ mod tests {
         assert!(error
             .to_string()
             .contains("cargo build -p tiles-native-preview"));
+    }
+
+    #[test]
+    fn packaged_sidecar_launch_without_app_handle_returns_packaging_hint() {
+        let scene = tiles_core::sample_village_scene();
+        let error = launch_native_preview_from(
+            None,
+            Path::new("__missing_tiles_workspace__"),
+            &scene,
+            NativePreviewLaunchStrategy::PackagedSidecar,
+        )
+        .expect_err("missing app handle should fail before sidecar spawn");
+
+        assert!(matches!(
+            error,
+            PreviewLaunchError::SidecarUnavailable { .. }
+        ));
+        assert!(error.to_string().contains("sidecar:prepare"));
+        assert!(error.to_string().contains("binaries/tiles-native-preview"));
     }
 }
