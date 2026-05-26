@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-selection-state.schema.json",
+  "title": "Tiles Selection State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "primarySelectionId", "items"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "primarySelectionId": {
+      "type": ["string", "null"]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/selectionItem"
+      }
+    }
+  },
+  "$defs": {
+    "selectionItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "target", "bounds"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "$ref": "#/$defs/selectionTarget"
+        },
+        "bounds": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/worldBounds"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "selectionTarget": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "assetId"],
+          "properties": {
+            "kind": {
+              "const": "asset"
+            },
+            "assetId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "sceneId", "entityId"],
+          "properties": {
+            "kind": {
+              "const": "sceneEntity"
+            },
+            "sceneId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "entityId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "mapId", "layerId", "position"],
+          "properties": {
+            "kind": {
+              "const": "mapTile"
+            },
+            "mapId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "layerId": {
+              "type": ["string", "null"]
+            },
+            "position": {
+              "$ref": "#/$defs/gridPoint"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "mapId", "placementId"],
+          "properties": {
+            "kind": {
+              "const": "mapPlacement"
+            },
+            "mapId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "placementId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "mapId", "regionId"],
+          "properties": {
+            "kind": {
+              "const": "mapRegion"
+            },
+            "mapId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "regionId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    },
+    "gridPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["column", "row"],
+      "properties": {
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "worldBounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z", "width", "height"],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    }
+  }
+}
