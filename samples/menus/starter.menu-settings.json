@@ -1,0 +1,373 @@
+{
+  "schemaVersion": 0,
+  "id": "menu-settings.village-preview",
+  "name": "Village Preview Menus",
+  "menus": [
+    {
+      "id": "menu.title",
+      "title": "Village Preview",
+      "kind": "title",
+      "items": [
+        {
+          "id": "item.title.start",
+          "label": "Start",
+          "kind": {
+            "kind": "action",
+            "data": {
+              "actionId": "action.startGame"
+            }
+          },
+          "enabled": true,
+          "visible": true
+        },
+        {
+          "id": "item.title.load",
+          "label": "Load",
+          "kind": {
+            "kind": "action",
+            "data": {
+              "actionId": "action.loadGame"
+            }
+          },
+          "enabled": true,
+          "visible": true
+        },
+        {
+          "id": "item.title.settings",
+          "label": "Settings",
+          "kind": {
+            "kind": "openMenu",
+            "data": {
+              "menuId": "menu.settings"
+            }
+          },
+          "enabled": true,
+          "visible": true
+        },
+        {
+          "id": "item.title.quit",
+          "label": "Quit",
+          "kind": {
+            "kind": "action",
+            "data": {
+              "actionId": "action.quitGame"
+            }
+          },
+          "enabled": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "id": "menu.pause",
+      "title": "Paused",
+      "kind": "pause",
+      "items": [
+        {
+          "id": "item.pause.resume",
+          "label": "Resume",
+          "kind": {
+            "kind": "action",
+            "data": {
+              "actionId": "action.resumeGame"
+            }
+          },
+          "enabled": true,
+          "visible": true
+        },
+        {
+          "id": "item.pause.save",
+          "label": "Save",
+          "kind": {
+            "kind": "action",
+            "data": {
+              "actionId": "action.saveGame"
+            }
+          },
+          "enabled": true,
+          "visible": true
+        },
+        {
+          "id": "item.pause.load",
+          "label": "Load",
+          "kind": {
+            "kind": "action",
+            "data": {
+              "actionId": "action.loadGame"
+            }
+          },
+          "enabled": true,
+          "visible": true
+        },
+        {
+          "id": "item.pause.settings",
+          "label": "Settings",
+          "kind": {
+            "kind": "openMenu",
+            "data": {
+              "menuId": "menu.settings"
+            }
+          },
+          "enabled": true,
+          "visible": true
+        },
+        {
+          "id": "item.pause.quitToEditor",
+          "label": "Quit To Editor",
+          "kind": {
+            "kind": "action",
+            "data": {
+              "actionId": "action.quitToEditor"
+            }
+          },
+          "enabled": true,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "id": "menu.settings",
+      "title": "Settings",
+      "kind": "settings",
+      "items": [
+        {
+          "id": "item.settings.fullscreen",
+          "label": "Fullscreen",
+          "kind": {
+            "kind": "setting",
+            "data": {
+              "settingId": "setting.video.fullscreen"
+            }
+          },
+          "enabled": true,
+          "visible": true
+        },
+        {
+          "id": "item.settings.music",
+          "label": "Music Volume",
+          "kind": {
+            "kind": "setting",
+            "data": {
+              "settingId": "setting.audio.musicVolume"
+            }
+          },
+          "enabled": true,
+          "visible": true
+        },
+        {
+          "id": "item.settings.sfx",
+          "label": "SFX Volume",
+          "kind": {
+            "kind": "setting",
+            "data": {
+              "settingId": "setting.audio.sfxVolume"
+            }
+          },
+          "enabled": true,
+          "visible": true
+        },
+        {
+          "id": "item.settings.textSpeed",
+          "label": "Text Speed",
+          "kind": {
+            "kind": "setting",
+            "data": {
+              "settingId": "setting.gameplay.textSpeed"
+            }
+          },
+          "enabled": true,
+          "visible": true
+        },
+        {
+          "id": "item.settings.back",
+          "label": "Back",
+          "kind": {
+            "kind": "back"
+          },
+          "enabled": true,
+          "visible": true
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "action.startGame",
+      "label": "Start Game",
+      "command": {
+        "kind": "startGame"
+      },
+      "tags": []
+    },
+    {
+      "id": "action.resumeGame",
+      "label": "Resume Game",
+      "command": {
+        "kind": "resumeGame"
+      },
+      "tags": []
+    },
+    {
+      "id": "action.saveGame",
+      "label": "Save Game",
+      "command": {
+        "kind": "saveGame"
+      },
+      "tags": []
+    },
+    {
+      "id": "action.loadGame",
+      "label": "Load Game",
+      "command": {
+        "kind": "loadGame"
+      },
+      "tags": []
+    },
+    {
+      "id": "action.quitToEditor",
+      "label": "Quit To Editor",
+      "command": {
+        "kind": "quitToEditor"
+      },
+      "tags": []
+    },
+    {
+      "id": "action.quitGame",
+      "label": "Quit Game",
+      "command": {
+        "kind": "quitGame"
+      },
+      "tags": []
+    }
+  ],
+  "settings": [
+    {
+      "id": "settings.video",
+      "title": "Video",
+      "description": "Display settings for the local game window.",
+      "settings": [
+        {
+          "id": "setting.video.fullscreen",
+          "label": "Fullscreen",
+          "description": "Run the game in fullscreen mode.",
+          "control": {
+            "kind": "toggle"
+          },
+          "defaultValue": {
+            "kind": "boolean",
+            "data": {
+              "value": false
+            }
+          },
+          "tags": ["video"]
+        },
+        {
+          "id": "setting.video.windowScale",
+          "label": "Window Scale",
+          "description": "Scale the pixel preview window.",
+          "control": {
+            "kind": "slider",
+            "data": {
+              "min": 1.0,
+              "max": 4.0,
+              "step": 1.0
+            }
+          },
+          "defaultValue": {
+            "kind": "number",
+            "data": {
+              "value": 2.0
+            }
+          },
+          "tags": ["video"]
+        }
+      ]
+    },
+    {
+      "id": "settings.audio",
+      "title": "Audio",
+      "description": "Volume settings for music and sound effects.",
+      "settings": [
+        {
+          "id": "setting.audio.musicVolume",
+          "label": "Music Volume",
+          "description": "Volume from 0 to 100.",
+          "control": {
+            "kind": "slider",
+            "data": {
+              "min": 0.0,
+              "max": 100.0,
+              "step": 5.0
+            }
+          },
+          "defaultValue": {
+            "kind": "number",
+            "data": {
+              "value": 80.0
+            }
+          },
+          "tags": ["audio"]
+        },
+        {
+          "id": "setting.audio.sfxVolume",
+          "label": "SFX Volume",
+          "description": "Volume from 0 to 100.",
+          "control": {
+            "kind": "slider",
+            "data": {
+              "min": 0.0,
+              "max": 100.0,
+              "step": 5.0
+            }
+          },
+          "defaultValue": {
+            "kind": "number",
+            "data": {
+              "value": 80.0
+            }
+          },
+          "tags": ["audio"]
+        }
+      ]
+    },
+    {
+      "id": "settings.gameplay",
+      "title": "Gameplay",
+      "description": "Simple player-facing gameplay preferences.",
+      "settings": [
+        {
+          "id": "setting.gameplay.textSpeed",
+          "label": "Text Speed",
+          "description": "How quickly dialogue text advances.",
+          "control": {
+            "kind": "select",
+            "data": {
+              "options": [
+                {
+                  "id": "slow",
+                  "label": "Slow"
+                },
+                {
+                  "id": "normal",
+                  "label": "Normal"
+                },
+                {
+                  "id": "fast",
+                  "label": "Fast"
+                }
+              ]
+            }
+          },
+          "defaultValue": {
+            "kind": "text",
+            "data": {
+              "value": "normal"
+            }
+          },
+          "tags": ["gameplay"]
+        }
+      ]
+    }
+  ],
+  "tags": ["preview", "menus"]
+}
