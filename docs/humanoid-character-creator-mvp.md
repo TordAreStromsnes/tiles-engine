@@ -19,6 +19,8 @@ The MVP should save:
 
 The editor can assemble the layers at preview/export time. Baking a final image
 sheet can come later once renderer and export flows are stable.
+The first Rust-side assembly prototype is documented in
+[five-view-humanoid-assembly-prototype.md](five-view-humanoid-assembly-prototype.md).
 
 ## Five-View Assembly Model
 
