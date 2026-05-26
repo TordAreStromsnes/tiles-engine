@@ -56,11 +56,28 @@ Texture atlas upload is represented by `TextureAtlas` metadata:
 
 - Atlas id.
 - Atlas pixel size.
+- Sampling metadata for magnify, minify, and mipmap filters.
 - Sprite ids.
 - Source rectangles.
 
-The native preview currently uploads a generated in-memory atlas. Real project
-asset loading, atlas packing, and image import are still future work.
+Multiple atlases per frame are represented by atlas ids on each
+`SpriteSourceRef`. `SpriteBatch::atlas_groups_in_draw_order()` sorts instances
+by layer/depth/id, then splits the sorted stream into contiguous atlas groups.
+The same atlas can appear in more than one group when cross-atlas ordering
+requires separate draw calls. See [multiple-atlases-per-frame.md](multiple-atlases-per-frame.md).
+
+The native preview currently uploads a generated in-memory atlas. Project PNG
+metadata loading is documented in
+[sprite-image-loading-mvp.md](sprite-image-loading-mvp.md), and deterministic
+metadata packing is documented in
+[texture-atlas-packing-mvp.md](texture-atlas-packing-mvp.md). Pixel upload from
+imported images is still future work. The native preview also uses a second
+`preview.overlay` atlas handle for editor overlays.
+
+Texture sampling defaults to nearest filtering for crisp pixel-art previews.
+Linear filtering can be represented in metadata, but packed atlas pixel
+extrusion is still future work. See
+[texture-filtering-hot-reload-plan.md](texture-filtering-hot-reload-plan.md).
 
 ## Native Preview Use
 
@@ -71,10 +88,15 @@ using the source rectangles in the batch instances.
 The editor overlay uses a separate overlay batch and render pass after the scene
 sprite pass. The current preview draws a selection outline around the animated
 sprite and an origin marker, both projected through the same `Camera2d`.
+Reusable overlay primitive conversion is described in
+[overlay-primitive-library-mvp.md](overlay-primitive-library-mvp.md).
+The move-only transform gizmo prototype is described in
+[transform-gizmo-overlay-prototype.md](transform-gizmo-overlay-prototype.md).
 
 ## Known Limits
 
-- No batching across multiple texture atlases yet.
-- No project image loading or atlas packing yet.
+- No optimization for repeated atlas groups split by cross-atlas ordering yet.
+- No imported-pixel upload yet.
+- No packed-atlas edge extrusion for linear filtering yet.
 - No clipping, blend modes, or material flags yet.
-- No full selection UI, gizmo editing, or overlay primitive library yet.
+- No full selection UI, pointer input wiring, or polished gizmo editing yet.

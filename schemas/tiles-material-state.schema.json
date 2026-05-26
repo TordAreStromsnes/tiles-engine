@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-material-state.schema.json",
+  "title": "Tiles Engine Material And Runtime State Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "materialNamespaces",
+    "runtimeStateNamespaces",
+    "resourceTags"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "materialNamespaces": {
+      "$ref": "#/$defs/tagNamespaces"
+    },
+    "runtimeStateNamespaces": {
+      "$ref": "#/$defs/tagNamespaces"
+    },
+    "resourceTags": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/resourceTagBinding"
+      }
+    }
+  },
+  "$defs": {
+    "tagNamespaces": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/tagNamespace"
+      },
+      "minItems": 1
+    },
+    "tagNamespace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "tags"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9._-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/tagDefinition"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "tagDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "description"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9._-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "resourceTagBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "tags"],
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/tagTarget"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/qualifiedTag"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "tagTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": {
+          "enum": ["asset", "tile", "mapRegion", "sceneEntity"]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "qualifiedTag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["namespace", "tag"],
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
