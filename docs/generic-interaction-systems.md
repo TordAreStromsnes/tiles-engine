@@ -16,26 +16,25 @@ Use five building blocks:
 
 ## Material And State Tags
 
+Implemented baseline: [material tag and runtime state schema V0](material-runtime-state-schema-v0.md).
+
 Material tags describe what something is:
 
 - `material.flammable`
 - `material.wettable`
-- `material.water`
-- `material.wood`
-- `material.stone`
-- `blocks.light`
-- `source.fire`
-- `source.water`
-- `source.light`
+- `material.liquid`
+- `material.lightEmitter`
+- `surface.grass`
+- `surface.wood`
+- `surface.water`
+- `surface.stone`
 
 State tags describe what is currently happening:
 
 - `state.wet`
 - `state.burning`
 - `state.burned`
-- `state.smoking`
 - `state.lit`
-- `state.extinguished`
 
 Tags can appear on assets, tiles, regions, and scene entities.
 

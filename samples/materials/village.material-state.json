@@ -1,0 +1,169 @@
+{
+  "schemaVersion": 0,
+  "id": "material-state.village-preview",
+  "name": "Village Preview Material And State Tags",
+  "materialNamespaces": [
+    {
+      "id": "material",
+      "name": "Material",
+      "tags": [
+        {
+          "id": "flammable",
+          "name": "Flammable",
+          "description": "Can ignite when fire rules are enabled."
+        },
+        {
+          "id": "wettable",
+          "name": "Wettable",
+          "description": "Can receive wet runtime state."
+        },
+        {
+          "id": "liquid",
+          "name": "Liquid",
+          "description": "Behaves as liquid terrain or effect."
+        },
+        {
+          "id": "lightEmitter",
+          "name": "Light Emitter",
+          "description": "Can own attached light sources."
+        }
+      ]
+    },
+    {
+      "id": "surface",
+      "name": "Surface",
+      "tags": [
+        {
+          "id": "grass",
+          "name": "Grass",
+          "description": "Organic walkable surface."
+        },
+        {
+          "id": "wood",
+          "name": "Wood",
+          "description": "Wooden prop or structure surface."
+        },
+        {
+          "id": "water",
+          "name": "Water",
+          "description": "Water surface or volume."
+        },
+        {
+          "id": "stone",
+          "name": "Stone",
+          "description": "Stone surface or wall."
+        }
+      ]
+    }
+  ],
+  "runtimeStateNamespaces": [
+    {
+      "id": "state",
+      "name": "Runtime State",
+      "tags": [
+        {
+          "id": "burning",
+          "name": "Burning",
+          "description": "Currently affected by fire."
+        },
+        {
+          "id": "burned",
+          "name": "Burned",
+          "description": "Has completed a burn transition."
+        },
+        {
+          "id": "wet",
+          "name": "Wet",
+          "description": "Currently affected by water."
+        },
+        {
+          "id": "lit",
+          "name": "Lit",
+          "description": "Currently emitting light."
+        }
+      ]
+    }
+  ],
+  "resourceTags": [
+    {
+      "target": {
+        "kind": "asset",
+        "id": "sprite.house"
+      },
+      "tags": [
+        {
+          "namespace": "material",
+          "tag": "flammable"
+        },
+        {
+          "namespace": "surface",
+          "tag": "wood"
+        }
+      ]
+    },
+    {
+      "target": {
+        "kind": "tile",
+        "id": "tile.grass"
+      },
+      "tags": [
+        {
+          "namespace": "material",
+          "tag": "flammable"
+        },
+        {
+          "namespace": "surface",
+          "tag": "grass"
+        }
+      ]
+    },
+    {
+      "target": {
+        "kind": "mapRegion",
+        "id": "region.village.pond"
+      },
+      "tags": [
+        {
+          "namespace": "material",
+          "tag": "liquid"
+        },
+        {
+          "namespace": "surface",
+          "tag": "water"
+        }
+      ]
+    },
+    {
+      "target": {
+        "kind": "sceneEntity",
+        "id": "entity.sign.welcome"
+      },
+      "tags": [
+        {
+          "namespace": "material",
+          "tag": "flammable"
+        },
+        {
+          "namespace": "surface",
+          "tag": "wood"
+        }
+      ]
+    },
+    {
+      "target": {
+        "kind": "sceneEntity",
+        "id": "entity.lamp.street"
+      },
+      "tags": [
+        {
+          "namespace": "material",
+          "tag": "lightEmitter"
+        },
+        {
+          "namespace": "state",
+          "tag": "lit"
+        }
+      ]
+    }
+  ]
+}

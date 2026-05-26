@@ -4,12 +4,14 @@ pub mod animation;
 pub mod assets;
 pub mod interaction;
 pub mod maps;
+pub mod material;
 pub mod project;
 pub mod scene;
 pub use animation::*;
 pub use assets::*;
 pub use interaction::*;
 pub use maps::*;
+pub use material::*;
 pub use project::*;
 pub use scene::*;
 
