@@ -97,6 +97,16 @@ The first manifest should include:
   capabilities.
 - Optional content hashes for deterministic validation.
 
+Issue #90 implements this as:
+
+- Rust model: `crates/tiles-core/src/export_manifest.rs`.
+- JSON schema: `schemas/tiles-export-manifest.schema.json`.
+- Sample manifest: `samples/exports/starter.export-manifest.json`.
+
+The manifest is runtime-facing package metadata. It points to content under the
+package `contentRoot`; it does not copy editor-only state such as selections,
+inspector panels, undo history, or preview snapshots.
+
 ## Storage Boundary
 
 Exported game content is read-only. Runtime saves belong in platform user data
