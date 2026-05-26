@@ -17,6 +17,8 @@ The first slice includes:
 
 Menus, settings, save/load, dialogue trees, quest logic, and inventory are
 explicitly deferred.
+The first menu/settings/save-load boundary is documented in
+[menus-save-load-after-runtime-preview.md](menus-save-load-after-runtime-preview.md).
 
 ## Scene Data
 
@@ -50,6 +52,8 @@ The editor should prepare preview data and launch a Rust-owned local preview.
 Rust owns the game loop, simulation, movement, interactions, and map transitions.
 The first runtime implementation slice is documented in
 [runtime-preview-loop-slice.md](runtime-preview-loop-slice.md).
+The first editor placement prototype is documented in
+[scene-composer-placement-prototype.md](scene-composer-placement-prototype.md).
 
 ```mermaid
 flowchart LR

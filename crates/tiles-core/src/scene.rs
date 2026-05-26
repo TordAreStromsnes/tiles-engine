@@ -2,6 +2,10 @@ use std::{collections::HashSet, error::Error, fmt};
 
 use serde::{Deserialize, Serialize};
 
+use crate::interaction::{
+    validate_trigger_fields, InteractionActivation, InteractionTriggerShape,
+    InteractionTriggerValidationError,
+};
 use crate::maps::{FacingDirection, GridPoint};
 
 pub const SCENE_SCHEMA_VERSION: u32 = 0;
@@ -88,11 +92,13 @@ pub enum NpcBehaviorKind {
 #[serde(rename_all = "camelCase")]
 pub struct InteractionTriggerComponent {
     pub trigger_id: String,
+    pub name: String,
     pub prompt_id: Option<String>,
     pub event_id: Option<String>,
     pub target_entity_id: Option<String>,
-    pub radius: f32,
+    pub activation: InteractionActivation,
     pub repeatable: bool,
+    pub tags: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -186,6 +192,10 @@ pub enum SceneValidationError {
     InvalidTriggerRadius {
         entity_id: String,
         trigger_id: String,
+    },
+    InvalidInteractionTrigger {
+        entity_id: String,
+        source: InteractionTriggerValidationError,
     },
     EmptyPortalId {
         entity_id: String,
@@ -283,6 +293,9 @@ impl fmt::Display for SceneValidationError {
                 formatter,
                 "scene entity `{entity_id}` interaction trigger `{trigger_id}` radius must be finite and positive"
             ),
+            Self::InvalidInteractionTrigger { entity_id, source } => {
+                write!(formatter, "scene entity `{entity_id}` has invalid interaction trigger: {source}")
+            }
             Self::EmptyPortalId { entity_id } => write!(
                 formatter,
                 "scene entity `{entity_id}` portal link id must not be empty"
@@ -437,11 +450,15 @@ pub fn sample_village_scene() -> SceneDocument {
                 components: vec![SceneComponent::InteractionTrigger(
                     InteractionTriggerComponent {
                         trigger_id: "trigger.welcome-sign".to_string(),
+                        name: "Welcome Sign Trigger".to_string(),
                         prompt_id: Some("prompt.welcome".to_string()),
                         event_id: Some("event.sign.read".to_string()),
                         target_entity_id: Some("entity.player".to_string()),
-                        radius: 1.0,
+                        activation: InteractionActivation {
+                            shape: InteractionTriggerShape::Circle { radius: 1.0 },
+                        },
                         repeatable: true,
+                        tags: vec!["interaction".to_string(), "sign".to_string()],
                     },
                 )],
             },
@@ -639,39 +656,19 @@ fn validate_interaction_trigger(
     entity: &SceneEntity,
     component: &InteractionTriggerComponent,
 ) -> Result<(), SceneValidationError> {
-    if component.trigger_id.trim().is_empty() {
-        return Err(SceneValidationError::EmptyInteractionTriggerId {
-            entity_id: entity.id.clone(),
-        });
-    }
-
-    if component
-        .prompt_id
-        .as_ref()
-        .is_none_or(|prompt_id| prompt_id.trim().is_empty())
-        && component
-            .event_id
-            .as_ref()
-            .is_none_or(|event_id| event_id.trim().is_empty())
-        && component
-            .target_entity_id
-            .as_ref()
-            .is_none_or(|target_entity_id| target_entity_id.trim().is_empty())
-    {
-        return Err(SceneValidationError::EmptyInteractionTriggerOutput {
-            entity_id: entity.id.clone(),
-            trigger_id: component.trigger_id.clone(),
-        });
-    }
-
-    if !component.radius.is_finite() || component.radius <= 0.0 {
-        return Err(SceneValidationError::InvalidTriggerRadius {
-            entity_id: entity.id.clone(),
-            trigger_id: component.trigger_id.clone(),
-        });
-    }
-
-    Ok(())
+    validate_trigger_fields(
+        &component.trigger_id,
+        &component.name,
+        &component.prompt_id,
+        &component.event_id,
+        &component.target_entity_id,
+        component.activation.shape,
+        &component.tags,
+    )
+    .map_err(|source| SceneValidationError::InvalidInteractionTrigger {
+        entity_id: entity.id.clone(),
+        source,
+    })
 }
 
 fn validate_portal_link(
@@ -808,10 +805,10 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(SceneValidationError::EmptyInteractionTriggerOutput {
-                trigger_id,
+            Err(SceneValidationError::InvalidInteractionTrigger {
+                source: InteractionTriggerValidationError::EmptyTriggerOutput { id },
                 ..
-            }) if trigger_id == "trigger.welcome-sign"
+            }) if id == "trigger.welcome-sign"
         ));
     }
 

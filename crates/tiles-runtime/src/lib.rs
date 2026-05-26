@@ -3,9 +3,12 @@ use std::{collections::HashMap, error::Error, fmt};
 use serde::{Deserialize, Serialize};
 use tiles_core::{
     sample_house_interior_map, sample_village_map, sample_village_scene, FacingDirection, GridRect,
-    NpcBehaviorKind, SceneComponent, SceneDocument, SceneEntity, ScenePosition,
-    SceneValidationError, TileMap, TileMapValidationError,
+    InteractionTriggerShape, NpcBehaviorKind, SceneComponent, SceneDocument, SceneEntity,
+    ScenePosition, SceneValidationError, TileMap, TileMapValidationError,
 };
+
+pub mod generic_interactions;
+pub use generic_interactions::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -378,7 +381,11 @@ fn interaction_event_if_near(
         .iter()
         .find_map(|component| match component {
             SceneComponent::InteractionTrigger(trigger)
-                if distance(player_position, entity.position) <= trigger.radius =>
+                if interaction_shape_contains(
+                    player_position,
+                    entity.position,
+                    trigger.activation.shape,
+                ) =>
             {
                 Some(RuntimeInteractionEvent {
                     trigger_id: trigger.trigger_id.clone(),
@@ -426,6 +433,27 @@ fn grid_point_in_rect(column: u32, row: u32, rect: GridRect) -> bool {
 
 fn same_tile(left: ScenePosition, right: ScenePosition) -> bool {
     left.x.floor() == right.x.floor() && left.y.floor() == right.y.floor()
+}
+
+fn interaction_shape_contains(
+    player_position: ScenePosition,
+    trigger_position: ScenePosition,
+    shape: InteractionTriggerShape,
+) -> bool {
+    match shape {
+        InteractionTriggerShape::Circle { radius } => {
+            distance(player_position, trigger_position) <= radius
+        }
+        InteractionTriggerShape::Rect { width, height } => {
+            let half_width = width / 2.0;
+            let half_height = height / 2.0;
+
+            player_position.x >= trigger_position.x - half_width
+                && player_position.x <= trigger_position.x + half_width
+                && player_position.y >= trigger_position.y - half_height
+                && player_position.y <= trigger_position.y + half_height
+        }
+    }
 }
 
 fn distance(left: ScenePosition, right: ScenePosition) -> f32 {
