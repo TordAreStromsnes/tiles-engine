@@ -52,6 +52,13 @@ cargo run -p tiles-native-preview
 
 ## Run The Desktop Shell
 
+Build the native preview binary first if you want the desktop shell's
+`Open Preview` button to launch the sibling preview window:
+
+```powershell
+cargo build -p tiles-native-preview
+```
+
 ```powershell
 npm run desktop:dev
 ```
@@ -59,6 +66,10 @@ npm run desktop:dev
 This starts Vite on `http://localhost:5173` and launches Tauri. The shell calls a
 Rust command named `engine_status` exposed by `apps/desktop/src-tauri/src/main.rs`
 and implemented by `crates/tiles-core`.
+
+The shell also exposes `launch_native_preview`. In development mode it starts the
+already-built `target/debug/tiles-native-preview.exe` binary and reports a clear
+error in the inspector if the binary is missing.
 
 ## Current Machine Note
 

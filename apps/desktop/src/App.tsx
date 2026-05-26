@@ -18,6 +18,13 @@ type EngineStatus = {
   nextSpike: string;
 };
 
+type PreviewLaunch = {
+  launched: boolean;
+  processId: number;
+  command: string;
+  message: string;
+};
+
 const fallbackStatus: EngineStatus = {
   engineName: "Tiles Engine",
   stack: {
@@ -37,10 +44,15 @@ const fallbackStatus: EngineStatus = {
 
 const panels = ["Assets", "Animation", "Maps", "Scene", "Systems"] as const;
 type ShellState = "checking" | "desktop" | "web" | "bridge-error";
+type PreviewLaunchState = "idle" | "launching" | "launched" | "error";
 
 export function App() {
   const [status, setStatus] = useState<EngineStatus>(fallbackStatus);
   const [shellState, setShellState] = useState<ShellState>("checking");
+  const [previewLaunchState, setPreviewLaunchState] = useState<PreviewLaunchState>("idle");
+  const [previewLaunchMessage, setPreviewLaunchMessage] = useState(
+    "Native preview launches from the desktop shell when connected.",
+  );
   const [activePanel, setActivePanel] = useState<(typeof panels)[number]>("Assets");
 
   useEffect(() => {
@@ -65,6 +77,27 @@ export function App() {
     if (shellState === "bridge-error") return "Rust bridge error";
     return "Local browser view";
   }, [shellState]);
+
+  const launchPreview = () => {
+    if (shellState !== "desktop") {
+      setPreviewLaunchState("error");
+      setPreviewLaunchMessage("Open the Tauri desktop shell before launching preview.");
+      return;
+    }
+
+    setPreviewLaunchState("launching");
+    setPreviewLaunchMessage("Launching native preview window...");
+
+    invoke<PreviewLaunch>("launch_native_preview")
+      .then((response) => {
+        setPreviewLaunchState(response.launched ? "launched" : "error");
+        setPreviewLaunchMessage(`${response.message} Process ${response.processId}.`);
+      })
+      .catch((error) => {
+        setPreviewLaunchState("error");
+        setPreviewLaunchMessage(String(error));
+      });
+  };
 
   return (
     <main className="app-shell">
@@ -99,7 +132,17 @@ export function App() {
               {status.stack.engineCore}, {status.stack.desktopShell} shell, {status.stack.editorUi}
             </strong>
           </div>
-          <span className={`bridge-pill bridge-${shellState}`}>{bridgeLabel}</span>
+          <div className="toolbar-actions">
+            <button
+              className="preview-launch-button"
+              disabled={shellState !== "desktop" || previewLaunchState === "launching"}
+              onClick={launchPreview}
+              type="button"
+            >
+              {previewLaunchState === "launching" ? "Launching..." : "Open Preview"}
+            </button>
+            <span className={`bridge-pill bridge-${shellState}`}>{bridgeLabel}</span>
+          </div>
         </header>
 
         <section className="workbench">
@@ -131,6 +174,12 @@ export function App() {
               <div>
                 <dt>Preview plan</dt>
                 <dd>{status.nativeBoundary.preview}</dd>
+              </div>
+              <div>
+                <dt>Preview launcher</dt>
+                <dd className={`preview-launch-message preview-launch-${previewLaunchState}`}>
+                  {previewLaunchMessage}
+                </dd>
               </div>
               <div>
                 <dt>Next spike</dt>
