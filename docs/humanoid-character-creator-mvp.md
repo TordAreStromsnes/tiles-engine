@@ -9,6 +9,8 @@ The MVP should save:
 
 - Character definition metadata with
   [humanoid-creator-definition-schema.md](humanoid-creator-definition-schema.md).
+- Starter part-pack metadata with
+  [starter-humanoid-part-pack-spec.md](starter-humanoid-part-pack-spec.md).
 - Sprite asset metadata with optional `viewSet` output.
 - Five-view layer mapping: `front`, `back`, `left`, `right`, `topDown`.
 - Palette selections.
@@ -57,6 +59,7 @@ Proportions:
 Part choices:
 
 - Body base.
+- Head.
 - Hair.
 - Eyes.
 - Clothing top.

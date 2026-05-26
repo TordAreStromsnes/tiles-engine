@@ -62,6 +62,7 @@ choose highlights, shadows, or accent colors without adding new global slots.
 Part selections are saved by slot:
 
 - `bodyBase`
+- `head`
 - `hair`
 - `eyes`
 - `clothingTop`
@@ -72,7 +73,8 @@ Part selections are saved by slot:
 
 Each selection stores a `partId`, optional `variantId`, and the palette slots
 that part uses. The definition does not describe the source art for the part
-pack; that is handled by the part-pack spec in #25.
+pack; that is handled by
+[starter-humanoid-part-pack-spec.md](starter-humanoid-part-pack-spec.md).
 
 ## Outputs
 
@@ -86,4 +88,4 @@ the `viewSet` from #23 once assembly exists.
 - No procedural pixel generation.
 - No animation generation.
 - No non-human body-plan schema.
-- No part-pack source-art schema yet.
+- No editor UI for browsing part packs yet.

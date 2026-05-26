@@ -62,6 +62,7 @@ pub struct HumanoidPartSelection {
 #[serde(rename_all = "camelCase")]
 pub enum HumanoidPartSlot {
     BodyBase,
+    Head,
     Hair,
     Eyes,
     ClothingTop,
@@ -287,6 +288,7 @@ impl HumanoidPartSlot {
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::BodyBase => "bodyBase",
+            Self::Head => "head",
             Self::Hair => "hair",
             Self::Eyes => "eyes",
             Self::ClothingTop => "clothingTop",
@@ -331,6 +333,12 @@ pub fn sample_humanoid_creator_definition() -> HumanoidCreatorDefinition {
             part(
                 HumanoidPartSlot::BodyBase,
                 "humanoid.body.average",
+                None,
+                &[HumanoidPaletteSlot::Skin],
+            ),
+            part(
+                HumanoidPartSlot::Head,
+                "humanoid.head.round",
                 None,
                 &[HumanoidPaletteSlot::Skin],
             ),
