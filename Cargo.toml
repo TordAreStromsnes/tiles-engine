@@ -6,6 +6,7 @@ members = [
   "crates/tiles-runtime",
   "apps/native-preview",
   "apps/game-runner",
+  "apps/export-package",
   "apps/desktop/src-tauri"
 ]
 
