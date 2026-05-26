@@ -61,6 +61,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Generic interaction runtime slice: [docs/generic-interaction-runtime-slice.md](docs/generic-interaction-runtime-slice.md)
 - Sprite image loading MVP: [docs/sprite-image-loading-mvp.md](docs/sprite-image-loading-mvp.md)
 - Texture atlas packing MVP: [docs/texture-atlas-packing-mvp.md](docs/texture-atlas-packing-mvp.md)
+- Multiple atlases per frame: [docs/multiple-atlases-per-frame.md](docs/multiple-atlases-per-frame.md)
 - Renderer sprite batch contract: [docs/renderer-sprite-batch-contract.md](docs/renderer-sprite-batch-contract.md)
 - Licensing: [docs/licensing.md](docs/licensing.md)
 - GitHub setup: [docs/github-setup.md](docs/github-setup.md)

@@ -56,6 +56,13 @@ pub struct SpriteBatch {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct SpriteAtlasBatchGroup {
+    pub atlas_id: String,
+    pub instances: Vec<SpriteInstance>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SpriteInstance {
     pub id: String,
     pub source: SpriteSourceRef,
@@ -206,6 +213,30 @@ impl SpriteBatch {
                 .then_with(|| a.id.cmp(&b.id))
         });
         instances
+    }
+
+    pub fn atlas_groups_in_draw_order(&self) -> Vec<SpriteAtlasBatchGroup> {
+        let mut groups = Vec::new();
+
+        for instance in self.sorted_instances() {
+            if groups.last().is_some_and(|group: &SpriteAtlasBatchGroup| {
+                group.atlas_id == instance.source.atlas_id
+            }) {
+                groups
+                    .last_mut()
+                    .expect("last group exists")
+                    .instances
+                    .push(instance.clone());
+                continue;
+            }
+
+            groups.push(SpriteAtlasBatchGroup {
+                atlas_id: instance.source.atlas_id.clone(),
+                instances: vec![instance.clone()],
+            });
+        }
+
+        groups
     }
 }
 
@@ -455,6 +486,29 @@ pub fn preview_texture_atlas() -> TextureAtlas {
     }
 }
 
+pub fn preview_overlay_texture_atlas() -> TextureAtlas {
+    TextureAtlas {
+        id: "preview.overlay".to_string(),
+        size: TextureSize {
+            width: 1,
+            height: 1,
+        },
+        sprites: vec![TextureAtlasSprite {
+            id: "overlay.selection".to_string(),
+            source_rect: TextureRect {
+                x: 0,
+                y: 0,
+                width: 1,
+                height: 1,
+            },
+        }],
+    }
+}
+
+pub fn preview_texture_atlases() -> Vec<TextureAtlas> {
+    vec![preview_texture_atlas(), preview_overlay_texture_atlas()]
+}
+
 pub fn preview_editor_overlay_batch(scene: &PreviewScene, elapsed_seconds: f32) -> SpriteBatch {
     let sprite_position = sprite_position(scene, elapsed_seconds);
     let sprite_size = scene.sprite.size;
@@ -626,10 +680,10 @@ pub fn preview_sprite_batch(scene: &PreviewScene, elapsed_seconds: f32) -> Sprit
 
 fn overlay_source_ref() -> SpriteSourceRef {
     SpriteSourceRef {
-        atlas_id: "preview.generated".to_string(),
+        atlas_id: "preview.overlay".to_string(),
         sprite_id: "overlay.selection".to_string(),
         source_rect: Some(TextureRect {
-            x: 3,
+            x: 0,
             y: 0,
             width: 1,
             height: 1,
@@ -787,6 +841,38 @@ mod tests {
             .instances
             .iter()
             .all(|instance| instance.source.sprite_id == "overlay.selection"));
+        assert!(batch
+            .instances
+            .iter()
+            .all(|instance| instance.source.atlas_id == "preview.overlay"));
+    }
+
+    #[test]
+    fn sprite_batch_groups_instances_by_atlas_in_draw_order() {
+        let mut batch = SpriteBatch {
+            schema_version: SPRITE_BATCH_SCHEMA_VERSION,
+            id: "batch.multi-atlas".to_string(),
+            instances: vec![
+                test_instance("a.low", "atlas.a", 0, 0.0),
+                test_instance("b.middle", "atlas.b", 1, 0.0),
+                test_instance("a.high", "atlas.a", 2, 0.0),
+            ],
+        };
+
+        let groups = batch.atlas_groups_in_draw_order();
+
+        assert_eq!(groups.len(), 3);
+        assert_eq!(groups[0].atlas_id, "atlas.a");
+        assert_eq!(groups[1].atlas_id, "atlas.b");
+        assert_eq!(groups[2].atlas_id, "atlas.a");
+        assert_eq!(groups[2].instances[0].id, "a.high");
+
+        batch.instances[2].layer = 0;
+        let grouped = batch.atlas_groups_in_draw_order();
+
+        assert_eq!(grouped.len(), 2);
+        assert_eq!(grouped[0].instances.len(), 2);
+        assert_eq!(grouped[0].atlas_id, "atlas.a");
     }
 
     #[test]
@@ -813,6 +899,18 @@ mod tests {
     }
 
     #[test]
+    fn preview_texture_atlases_include_scene_and_overlay_handles() {
+        let atlases = preview_texture_atlases();
+
+        assert_eq!(atlases.len(), 2);
+        assert!(atlases.iter().any(|atlas| atlas.id == "preview.generated"));
+        assert!(atlases.iter().any(|atlas| atlas.id == "preview.overlay"));
+        for atlas in atlases {
+            atlas.validate().expect("preview atlas should validate");
+        }
+    }
+
+    #[test]
     fn texture_atlas_serializes_for_asset_pipeline() {
         let json = serde_json::to_string(&preview_texture_atlas())
             .expect("texture atlas should serialize");
@@ -831,5 +929,28 @@ mod tests {
             atlas.validate(),
             Err(TextureAtlasValidationError::SpriteRectOutOfBounds { .. })
         ));
+    }
+
+    fn test_instance(id: &str, atlas_id: &str, layer: i32, depth: f32) -> SpriteInstance {
+        SpriteInstance {
+            id: id.to_string(),
+            source: SpriteSourceRef {
+                atlas_id: atlas_id.to_string(),
+                sprite_id: "sprite".to_string(),
+                source_rect: Some(TextureRect {
+                    x: 0,
+                    y: 0,
+                    width: 1,
+                    height: 1,
+                }),
+            },
+            position: [0.0, 0.0],
+            size: [1.0, 1.0],
+            layer,
+            depth,
+            tint: [1.0, 1.0, 1.0, 1.0],
+            flip_x: false,
+            flip_y: false,
+        }
     }
 }

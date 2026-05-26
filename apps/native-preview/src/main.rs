@@ -1,9 +1,9 @@
-use std::{borrow::Cow, env, error::Error, fmt, time::Instant};
+use std::{borrow::Cow, collections::HashMap, env, error::Error, fmt, time::Instant};
 
 use bytemuck::{Pod, Zeroable};
 use tiles_renderer::{
     default_preview_scene, preview_camera, preview_editor_overlay_batch, preview_sprite_batch,
-    preview_texture_atlas, Camera2d, PreviewScene, SpriteBatch, TextureAtlas, TextureRect,
+    preview_texture_atlases, Camera2d, PreviewScene, SpriteBatch, TextureAtlas, TextureRect,
 };
 use wgpu::util::DeviceExt;
 use winit::{
@@ -175,7 +175,8 @@ struct PreviewRenderer<'window> {
     size: PhysicalSize<u32>,
     camera: Camera2d,
     render_pipeline: wgpu::RenderPipeline,
-    atlas_bind_group: wgpu::BindGroup,
+    atlases: HashMap<String, TextureAtlas>,
+    atlas_bind_groups: HashMap<String, wgpu::BindGroup>,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     instance_buffer: wgpu::Buffer,
@@ -252,12 +253,25 @@ impl<'window> PreviewRenderer<'window> {
                     },
                 ],
             });
-        let atlas_bind_group = create_preview_atlas_bind_group(
-            &device,
-            &queue,
-            &atlas_bind_group_layout,
-            &preview_texture_atlas(),
-        );
+        let atlases = preview_texture_atlases();
+        let atlas_bind_groups = atlases
+            .iter()
+            .map(|atlas| {
+                (
+                    atlas.id.clone(),
+                    create_preview_atlas_bind_group(
+                        &device,
+                        &queue,
+                        &atlas_bind_group_layout,
+                        atlas,
+                    ),
+                )
+            })
+            .collect::<HashMap<_, _>>();
+        let atlases = atlases
+            .into_iter()
+            .map(|atlas| (atlas.id.clone(), atlas))
+            .collect::<HashMap<_, _>>();
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("tiles-preview-pipeline-layout"),
@@ -327,7 +341,8 @@ impl<'window> PreviewRenderer<'window> {
             size,
             camera,
             render_pipeline,
-            atlas_bind_group,
+            atlases,
+            atlas_bind_groups,
             vertex_buffer,
             index_buffer,
             instance_buffer,
@@ -353,14 +368,19 @@ impl<'window> PreviewRenderer<'window> {
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
-        let instances = build_instances(&self.scene, &self.camera, elapsed_seconds);
-        let overlay_instances = build_overlay_instances(&self.scene, &self.camera, elapsed_seconds);
-        self.queue
-            .write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&instances));
+        let scene_instances =
+            build_instances(&self.scene, &self.camera, elapsed_seconds, &self.atlases);
+        let overlay_instances =
+            build_overlay_instances(&self.scene, &self.camera, elapsed_seconds, &self.atlases);
+        self.queue.write_buffer(
+            &self.instance_buffer,
+            0,
+            bytemuck::cast_slice(&scene_instances.instances),
+        );
         self.queue.write_buffer(
             &self.overlay_instance_buffer,
             0,
-            bytemuck::cast_slice(&overlay_instances),
+            bytemuck::cast_slice(&overlay_instances.instances),
         );
 
         let mut encoder = self
@@ -390,11 +410,17 @@ impl<'window> PreviewRenderer<'window> {
                 timestamp_writes: None,
             });
             pass.set_pipeline(&self.render_pipeline);
-            pass.set_bind_group(0, &self.atlas_bind_group, &[]);
             pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            pass.draw_indexed(0..self.index_count, 0, 0..instances.len() as u32);
+            for group in &scene_instances.groups {
+                pass.set_bind_group(0, self.atlas_bind_group(&group.atlas_id), &[]);
+                pass.draw_indexed(
+                    0..self.index_count,
+                    0,
+                    group.start_instance..group.start_instance + group.instance_count,
+                );
+            }
         }
 
         {
@@ -413,16 +439,28 @@ impl<'window> PreviewRenderer<'window> {
                 timestamp_writes: None,
             });
             pass.set_pipeline(&self.render_pipeline);
-            pass.set_bind_group(0, &self.atlas_bind_group, &[]);
             pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             pass.set_vertex_buffer(1, self.overlay_instance_buffer.slice(..));
             pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            pass.draw_indexed(0..self.index_count, 0, 0..overlay_instances.len() as u32);
+            for group in &overlay_instances.groups {
+                pass.set_bind_group(0, self.atlas_bind_group(&group.atlas_id), &[]);
+                pass.draw_indexed(
+                    0..self.index_count,
+                    0,
+                    group.start_instance..group.start_instance + group.instance_count,
+                );
+            }
         }
 
         self.queue.submit(Some(encoder.finish()));
         output.present();
         Ok(())
+    }
+
+    fn atlas_bind_group(&self, atlas_id: &str) -> &wgpu::BindGroup {
+        self.atlas_bind_groups
+            .get(atlas_id)
+            .expect("preview atlas bind group should exist")
     }
 }
 
@@ -520,31 +558,58 @@ fn build_instances(
     scene: &PreviewScene,
     camera: &Camera2d,
     elapsed_seconds: f32,
-) -> Vec<InstanceRaw> {
-    build_batch_instances(&preview_sprite_batch(scene, elapsed_seconds), camera)
+    atlases: &HashMap<String, TextureAtlas>,
+) -> RenderInstanceGroups {
+    build_batch_instances(
+        &preview_sprite_batch(scene, elapsed_seconds),
+        camera,
+        atlases,
+    )
 }
 
 fn build_overlay_instances(
     scene: &PreviewScene,
     camera: &Camera2d,
     elapsed_seconds: f32,
-) -> Vec<InstanceRaw> {
+    atlases: &HashMap<String, TextureAtlas>,
+) -> RenderInstanceGroups {
     build_batch_instances(
         &preview_editor_overlay_batch(scene, elapsed_seconds),
         camera,
+        atlases,
     )
 }
 
-fn build_batch_instances(batch: &SpriteBatch, camera: &Camera2d) -> Vec<InstanceRaw> {
-    let atlas = preview_texture_atlas();
+struct RenderInstanceGroups {
+    instances: Vec<InstanceRaw>,
+    groups: Vec<RenderInstanceGroup>,
+}
 
-    batch
-        .sorted_instances()
-        .into_iter()
-        .map(|instance| {
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RenderInstanceGroup {
+    atlas_id: String,
+    start_instance: u32,
+    instance_count: u32,
+}
+
+fn build_batch_instances(
+    batch: &SpriteBatch,
+    camera: &Camera2d,
+    atlases: &HashMap<String, TextureAtlas>,
+) -> RenderInstanceGroups {
+    let mut instances = Vec::new();
+    let mut groups = Vec::new();
+
+    for group in batch.atlas_groups_in_draw_order() {
+        let atlas = atlases
+            .get(&group.atlas_id)
+            .expect("preview atlas metadata should exist");
+        let start_instance = instances.len() as u32;
+
+        for instance in group.instances {
             let clip_size = camera.world_size_to_clip(instance.size);
 
-            InstanceRaw {
+            instances.push(InstanceRaw {
                 offset: camera.world_to_clip(instance.position),
                 scale: [
                     if instance.flip_x {
@@ -561,9 +626,17 @@ fn build_batch_instances(batch: &SpriteBatch, camera: &Camera2d) -> Vec<Instance
                 color: instance.tint,
                 uv_origin: uv_origin(instance.source.source_rect, &atlas),
                 uv_size: uv_size(instance.source.source_rect, &atlas),
-            }
-        })
-        .collect()
+            });
+        }
+
+        groups.push(RenderInstanceGroup {
+            atlas_id: group.atlas_id,
+            start_instance,
+            instance_count: instances.len() as u32 - start_instance,
+        });
+    }
+
+    RenderInstanceGroups { instances, groups }
 }
 
 fn camera_for_surface(scene: &PreviewScene, size: PhysicalSize<u32>) -> Camera2d {

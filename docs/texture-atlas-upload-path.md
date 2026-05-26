@@ -9,6 +9,7 @@ contract to draw textured quads.
 - `TextureAtlas` metadata in `crates/tiles-renderer`.
 - Atlas sprite ids and source rectangles.
 - Generated preview atlas pixels in `apps/native-preview`.
+- A separate generated overlay atlas for editor overlay sprites.
 - A `wgpu` texture, sampler, and bind group for native preview rendering.
 - UV origin/size instance data derived from source rectangles.
 
@@ -21,12 +22,19 @@ The preview atlas is `preview.generated` and contains:
 - `sprite.hero.placeholder`
 - `overlay.selection`
 
+The overlay atlas is `preview.overlay` and contains:
+
+- `overlay.selection`
+
 These are generated colored pixels, not imported image files. Sprite image
 metadata loading now exists separately in
 [sprite-image-loading-mvp.md](sprite-image-loading-mvp.md), and metadata atlas
 packing now exists in [texture-atlas-packing-mvp.md](texture-atlas-packing-mvp.md).
 Imported pixels still need a later upload integration before they replace the
 generated preview atlas.
+
+The multi-atlas path is described in
+[multiple-atlases-per-frame.md](multiple-atlases-per-frame.md).
 
 ## Contract Assumptions
 
