@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 
 type EngineStatus = {
@@ -25,6 +25,31 @@ type PreviewLaunch = {
   snapshotPath: string;
   snapshotSchemaVersion: number;
   message: string;
+};
+
+type SaveSlotMetadata = {
+  slotId: string;
+  path: string;
+  exists: boolean;
+  snapshotId: string | null;
+  projectId: string | null;
+  sceneId: string | null;
+  activeMapId: string | null;
+  playerEntityId: string | null;
+  createdAtUtc: string | null;
+  elapsedSeconds: number | null;
+  invalidReason: string | null;
+};
+
+type SaveSlotList = {
+  storagePath: string;
+  slots: SaveSlotMetadata[];
+};
+
+type SaveSlotOperation = {
+  ok: boolean;
+  message: string;
+  slot: SaveSlotMetadata;
 };
 
 type FacingDirection = "north" | "south" | "east" | "west";
@@ -127,9 +152,10 @@ const fallbackStatus: EngineStatus = {
   nextSpike: "Project format V0",
 };
 
-const panels = ["Assets", "Animation", "Maps", "Scene", "Systems"] as const;
+const panels = ["Assets", "Animation", "Maps", "Scene", "Saves", "Systems"] as const;
 type ShellState = "checking" | "desktop" | "web" | "bridge-error";
 type PreviewLaunchState = "idle" | "launching" | "launched" | "error";
+type SaveWorkflowState = "idle" | "refreshing" | "saving" | "loading" | "saved" | "loaded" | "error";
 
 const fallbackScene: SceneDocument = {
   schemaVersion: 0,
@@ -237,6 +263,23 @@ const fallbackSceneValidation: SceneValidation = {
   mapCount: fallbackScene.mapIds.length,
 };
 
+const fallbackSaveSlots: SaveSlotList = {
+  storagePath: "",
+  slots: ["slot-1", "slot-2", "slot-3"].map((slotId) => ({
+    slotId,
+    path: "",
+    exists: false,
+    snapshotId: null,
+    projectId: null,
+    sceneId: null,
+    activeMapId: null,
+    playerEntityId: null,
+    createdAtUtc: null,
+    elapsedSeconds: null,
+    invalidReason: null,
+  })),
+};
+
 export function App() {
   const [status, setStatus] = useState<EngineStatus>(fallbackStatus);
   const [shellState, setShellState] = useState<ShellState>("checking");
@@ -248,6 +291,12 @@ export function App() {
   const [scene, setScene] = useState<SceneDocument>(fallbackScene);
   const [selectedEntityId, setSelectedEntityId] = useState(fallbackScene.entities[0].id);
   const [sceneValidation, setSceneValidation] = useState<SceneValidation>(fallbackSceneValidation);
+  const [saveSlots, setSaveSlots] = useState<SaveSlotList>(fallbackSaveSlots);
+  const [selectedSaveSlotId, setSelectedSaveSlotId] = useState(fallbackSaveSlots.slots[0].slotId);
+  const [saveWorkflowState, setSaveWorkflowState] = useState<SaveWorkflowState>("idle");
+  const [saveWorkflowMessage, setSaveWorkflowMessage] = useState(
+    "Desktop save storage connects when the Tauri shell is active.",
+  );
 
   useEffect(() => {
     if (!isTauri()) {
@@ -275,6 +324,34 @@ export function App() {
       })
       .catch(() => undefined);
   }, []);
+
+  const refreshSaveSlots = useCallback(() => {
+    if (shellState !== "desktop") {
+      setSaveWorkflowState("error");
+      setSaveWorkflowMessage("Open the Tauri desktop shell before inspecting save slots.");
+      return;
+    }
+
+    setSaveWorkflowState("refreshing");
+    setSaveWorkflowMessage("Refreshing runtime save slots...");
+
+    invoke<SaveSlotList>("list_runtime_save_slots")
+      .then((response) => {
+        setSaveSlots(response);
+        setSaveWorkflowState("idle");
+        setSaveWorkflowMessage("Runtime save slots refreshed.");
+      })
+      .catch((error) => {
+        setSaveWorkflowState("error");
+        setSaveWorkflowMessage(String(error));
+      });
+  }, [shellState]);
+
+  useEffect(() => {
+    if (shellState === "desktop") {
+      refreshSaveSlots();
+    }
+  }, [refreshSaveSlots, shellState]);
 
   useEffect(() => {
     if (!isTauri()) {
@@ -326,6 +403,67 @@ export function App() {
       .catch((error) => {
         setPreviewLaunchState("error");
         setPreviewLaunchMessage(String(error));
+      });
+  };
+
+  const selectedSaveSlot = useMemo(
+    () =>
+      saveSlots.slots.find((slot) => slot.slotId === selectedSaveSlotId) ?? saveSlots.slots[0],
+    [saveSlots.slots, selectedSaveSlotId],
+  );
+
+  const updateSaveSlot = (slot: SaveSlotMetadata) => {
+    setSaveSlots((currentSlots) => ({
+      ...currentSlots,
+      slots: currentSlots.slots.some((currentSlot) => currentSlot.slotId === slot.slotId)
+        ? currentSlots.slots.map((currentSlot) =>
+            currentSlot.slotId === slot.slotId ? slot : currentSlot,
+          )
+        : [...currentSlots.slots, slot],
+    }));
+  };
+
+  const saveSelectedSlot = () => {
+    if (shellState !== "desktop") {
+      setSaveWorkflowState("error");
+      setSaveWorkflowMessage("Open the Tauri desktop shell before saving.");
+      return;
+    }
+
+    setSaveWorkflowState("saving");
+    setSaveWorkflowMessage(`Saving runtime snapshot to ${selectedSaveSlotId}...`);
+
+    invoke<SaveSlotOperation>("save_runtime_snapshot", { slotId: selectedSaveSlotId })
+      .then((response) => {
+        updateSaveSlot(response.slot);
+        setSaveWorkflowState(response.ok ? "saved" : "error");
+        setSaveWorkflowMessage(response.message);
+      })
+      .catch((error) => {
+        setSaveWorkflowState("error");
+        setSaveWorkflowMessage(String(error));
+      });
+  };
+
+  const loadSelectedSlot = () => {
+    if (shellState !== "desktop") {
+      setSaveWorkflowState("error");
+      setSaveWorkflowMessage("Open the Tauri desktop shell before loading.");
+      return;
+    }
+
+    setSaveWorkflowState("loading");
+    setSaveWorkflowMessage(`Loading runtime snapshot from ${selectedSaveSlotId}...`);
+
+    invoke<SaveSlotOperation>("load_runtime_snapshot", { slotId: selectedSaveSlotId })
+      .then((response) => {
+        updateSaveSlot(response.slot);
+        setSaveWorkflowState(response.ok ? "loaded" : "error");
+        setSaveWorkflowMessage(response.message);
+      })
+      .catch((error) => {
+        setSaveWorkflowState("error");
+        setSaveWorkflowMessage(String(error));
       });
   };
 
@@ -405,7 +543,9 @@ export function App() {
         <section className="workbench">
           <div className="viewport" aria-label={`${activePanel} preview`}>
             <div className="tile-grid" />
-            {activePanel === "Scene" ? (
+            {activePanel === "Saves" ? (
+              <SaveSlotsViewport selectedSlotId={selectedSaveSlotId} slots={saveSlots.slots} />
+            ) : activePanel === "Scene" ? (
               <SceneComposerViewport
                 entities={scene.entities}
                 selectedEntityId={selectedEntity?.id}
@@ -423,7 +563,20 @@ export function App() {
           <aside className="inspector" aria-label="Inspector">
             <span className="eyebrow">Active Panel</span>
             <h2>{activePanel}</h2>
-            {activePanel === "Scene" && selectedEntity ? (
+            {activePanel === "Saves" ? (
+              <SaveLoadInspector
+                selectedSlot={selectedSaveSlot}
+                selectedSlotId={selectedSaveSlotId}
+                shellState={shellState}
+                slotList={saveSlots}
+                state={saveWorkflowState}
+                statusMessage={saveWorkflowMessage}
+                onLoad={loadSelectedSlot}
+                onRefresh={refreshSaveSlots}
+                onSave={saveSelectedSlot}
+                onSelectSlot={setSelectedSaveSlotId}
+              />
+            ) : activePanel === "Scene" && selectedEntity ? (
               <SceneComposerInspector
                 entity={selectedEntity}
                 scene={scene}
@@ -451,6 +604,29 @@ type SceneComposerViewportProps = {
   selectedEntityId?: string;
   onSelectEntity: (entityId: string) => void;
 };
+
+type SaveSlotsViewportProps = {
+  slots: SaveSlotMetadata[];
+  selectedSlotId: string;
+};
+
+function SaveSlotsViewport({ slots, selectedSlotId }: SaveSlotsViewportProps) {
+  return (
+    <div className="save-slots-canvas" aria-label="Runtime save slots preview">
+      {slots.map((slot, index) => (
+        <div
+          className={slot.slotId === selectedSlotId ? "save-slot-card save-slot-card-active" : "save-slot-card"}
+          key={slot.slotId}
+          style={{ top: `${22 + index * 124}px` }}
+        >
+          <span>{slot.slotId}</span>
+          <strong>{slot.exists ? slot.snapshotId ?? "Invalid snapshot" : "Empty"}</strong>
+          <small>{slot.exists ? slot.activeMapId ?? slot.invalidReason : "No save data"}</small>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function SceneComposerViewport({
   entities,
@@ -490,6 +666,108 @@ type SceneComposerInspectorProps = {
   onUpdateEntity: (changes: Partial<SceneEntity>) => void;
   onUpdatePosition: (axis: keyof ScenePosition, value: number) => void;
 };
+
+type SaveLoadInspectorProps = {
+  shellState: ShellState;
+  slotList: SaveSlotList;
+  selectedSlot?: SaveSlotMetadata;
+  selectedSlotId: string;
+  state: SaveWorkflowState;
+  statusMessage: string;
+  onSelectSlot: (slotId: string) => void;
+  onRefresh: () => void;
+  onSave: () => void;
+  onLoad: () => void;
+};
+
+function SaveLoadInspector({
+  shellState,
+  slotList,
+  selectedSlot,
+  selectedSlotId,
+  state,
+  statusMessage,
+  onSelectSlot,
+  onRefresh,
+  onSave,
+  onLoad,
+}: SaveLoadInspectorProps) {
+  const busy = state === "refreshing" || state === "saving" || state === "loading";
+  const canLoad = shellState === "desktop" && Boolean(selectedSlot?.exists) && !selectedSlot?.invalidReason;
+
+  return (
+    <div className="save-inspector">
+      <div className={`save-status save-status-${state}`}>
+        <strong>{saveStatusLabel(state)}</strong>
+        <span>{statusMessage}</span>
+      </div>
+
+      <label className="field">
+        <span>Save slot</span>
+        <select value={selectedSlotId} onChange={(event) => onSelectSlot(event.target.value)}>
+          {slotList.slots.map((slot) => (
+            <option key={slot.slotId} value={slot.slotId}>
+              {slot.slotId}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className="save-actions">
+        <button disabled={shellState !== "desktop" || busy} onClick={onSave} type="button">
+          {state === "saving" ? "Saving..." : "Save"}
+        </button>
+        <button disabled={!canLoad || busy} onClick={onLoad} type="button">
+          {state === "loading" ? "Loading..." : "Load"}
+        </button>
+        <button disabled={shellState !== "desktop" || busy} onClick={onRefresh} type="button">
+          Refresh
+        </button>
+      </div>
+
+      <dl className="save-details">
+        <div>
+          <dt>Storage</dt>
+          <dd>{slotList.storagePath || "Desktop storage unavailable"}</dd>
+        </div>
+        <div>
+          <dt>Snapshot</dt>
+          <dd>{selectedSlot?.snapshotId ?? (selectedSlot?.exists ? "Unreadable snapshot" : "Empty slot")}</dd>
+        </div>
+        <div>
+          <dt>Project</dt>
+          <dd>{selectedSlot?.projectId ?? "-"}</dd>
+        </div>
+        <div>
+          <dt>Scene</dt>
+          <dd>{selectedSlot?.sceneId ?? "-"}</dd>
+        </div>
+        <div>
+          <dt>Active map</dt>
+          <dd>{selectedSlot?.activeMapId ?? "-"}</dd>
+        </div>
+        <div>
+          <dt>Player</dt>
+          <dd>{selectedSlot?.playerEntityId ?? "-"}</dd>
+        </div>
+        <div>
+          <dt>Elapsed</dt>
+          <dd>{selectedSlot?.elapsedSeconds == null ? "-" : `${selectedSlot.elapsedSeconds}s`}</dd>
+        </div>
+        <div>
+          <dt>Created</dt>
+          <dd>{selectedSlot?.createdAtUtc ?? "-"}</dd>
+        </div>
+        {selectedSlot?.invalidReason ? (
+          <div>
+            <dt>Invalid reason</dt>
+            <dd>{selectedSlot.invalidReason}</dd>
+          </div>
+        ) : null}
+      </dl>
+    </div>
+  );
+}
 
 function SceneComposerInspector({
   scene,
@@ -658,6 +936,25 @@ function SystemInspector({
       </div>
     </dl>
   );
+}
+
+function saveStatusLabel(state: SaveWorkflowState) {
+  switch (state) {
+    case "refreshing":
+      return "Refreshing";
+    case "saving":
+      return "Saving";
+    case "loading":
+      return "Loading";
+    case "saved":
+      return "Saved";
+    case "loaded":
+      return "Loaded";
+    case "error":
+      return "Save workflow error";
+    case "idle":
+      return "Save workflow";
+  }
 }
 
 function entityGlyph(entity: SceneEntity) {
