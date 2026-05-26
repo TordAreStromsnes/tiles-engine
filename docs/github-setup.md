@@ -47,6 +47,14 @@ project write automation.
 - #34: Build Interaction Trigger Schema V0
 - #35: Design Menus And Save Load After Runtime Preview
 
+## Created Generic Interaction Follow-Up Issues
+
+- #37: Build Material Tag And Runtime State Schema V0
+- #38: Build Attached Light Source Component Schema V0
+- #39: Build Fire Water Reaction Rule Schema V0
+- #40: Build Particle Emitter Preset Schema V0
+- #41: Prototype Generic Interaction Runtime Slice
+
 ## CLI Setup
 
 GitHub CLI needs repo and project access:
