@@ -5,7 +5,7 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-use tiles_renderer::{TextureAtlas, TextureAtlasSprite, TextureRect, TextureSize};
+use tiles_renderer::{TextureAtlas, TextureAtlasSprite, TextureRect, TextureSampling, TextureSize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -182,6 +182,7 @@ impl SpriteImageMetadata {
         TextureAtlas {
             id: atlas_id.into(),
             size: self.size,
+            sampling: TextureSampling::nearest(),
             sprites: vec![self.atlas_sprite()],
         }
     }
@@ -262,6 +263,7 @@ pub fn pack_sprite_images_into_atlas(
             width: used_width,
             height: cursor_y + row_height,
         },
+        sampling: TextureSampling::nearest(),
         sprites,
     };
 
