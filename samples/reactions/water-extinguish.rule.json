@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 0,
+  "id": "rule.water.extinguish-fire",
+  "name": "Water Extinguishes Burning Target",
+  "description": "Water sources remove burning state and add wet state, then trigger smoke.",
+  "sourceTags": [
+    {
+      "namespace": "source",
+      "tag": "water"
+    }
+  ],
+  "requiredTargetTags": [
+    {
+      "namespace": "state",
+      "tag": "burning"
+    }
+  ],
+  "blockedTargetTags": [],
+  "addStateTags": [
+    {
+      "namespace": "state",
+      "tag": "wet"
+    }
+  ],
+  "removeStateTags": [
+    {
+      "namespace": "state",
+      "tag": "burning"
+    }
+  ],
+  "assetVariantSwitch": null,
+  "timing": {
+    "delaySeconds": 0.0,
+    "durationSeconds": 1.0,
+    "tickIntervalSeconds": null
+  },
+  "triggeredEffects": [
+    {
+      "effectId": "effect.smoke.puff",
+      "when": "onStart"
+    }
+  ],
+  "tags": ["water", "state-change"]
+}

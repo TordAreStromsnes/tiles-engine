@@ -56,6 +56,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Generic interaction systems: [docs/generic-interaction-systems.md](docs/generic-interaction-systems.md)
 - Material tag and runtime state schema V0: [docs/material-runtime-state-schema-v0.md](docs/material-runtime-state-schema-v0.md)
 - Attached light source component schema V0: [docs/attached-light-source-schema-v0.md](docs/attached-light-source-schema-v0.md)
+- Fire and water reaction rule schema V0: [docs/reaction-rule-schema-v0.md](docs/reaction-rule-schema-v0.md)
 - Renderer sprite batch contract: [docs/renderer-sprite-batch-contract.md](docs/renderer-sprite-batch-contract.md)
 - Licensing: [docs/licensing.md](docs/licensing.md)
 - GitHub setup: [docs/github-setup.md](docs/github-setup.md)

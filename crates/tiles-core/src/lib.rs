@@ -7,6 +7,7 @@ pub mod lighting;
 pub mod maps;
 pub mod material;
 pub mod project;
+pub mod reactions;
 pub mod scene;
 pub use animation::*;
 pub use assets::*;
@@ -15,6 +16,7 @@ pub use lighting::*;
 pub use maps::*;
 pub use material::*;
 pub use project::*;
+pub use reactions::*;
 pub use scene::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

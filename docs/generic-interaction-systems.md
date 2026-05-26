@@ -67,6 +67,8 @@ spells with one model.
 
 ## Fire And Water Rules
 
+Implemented baseline: [fire and water reaction rule schema V0](reaction-rule-schema-v0.md).
+
 Fire and water are reaction rules, not special-case object behavior.
 
 Example:
@@ -74,12 +76,15 @@ Example:
 ```json
 {
   "id": "rule.fire.ignite-flammable",
-  "sourceTags": ["source.fire"],
-  "requiredTargetTags": ["material.flammable"],
-  "blockedTargetTags": ["state.wet", "state.burning"],
-  "addStateTags": ["state.burning"],
+  "sourceTags": [{ "namespace": "source", "tag": "fire" }],
+  "requiredTargetTags": [{ "namespace": "material", "tag": "flammable" }],
+  "blockedTargetTags": [
+    { "namespace": "state", "tag": "wet" },
+    { "namespace": "state", "tag": "burning" }
+  ],
+  "addStateTags": [{ "namespace": "state", "tag": "burning" }],
   "removeStateTags": [],
-  "triggerEffects": ["effect.fire.flame"]
+  "triggeredEffects": [{ "effectId": "effect.fire.flame", "when": "onStart" }]
 }
 ```
 
@@ -88,12 +93,12 @@ Water can extinguish burning targets:
 ```json
 {
   "id": "rule.water.extinguish-fire",
-  "sourceTags": ["source.water"],
-  "requiredTargetTags": ["state.burning"],
+  "sourceTags": [{ "namespace": "source", "tag": "water" }],
+  "requiredTargetTags": [{ "namespace": "state", "tag": "burning" }],
   "blockedTargetTags": [],
-  "addStateTags": ["state.wet", "state.smoking"],
-  "removeStateTags": ["state.burning"],
-  "triggerEffects": ["effect.smoke.puff"]
+  "addStateTags": [{ "namespace": "state", "tag": "wet" }],
+  "removeStateTags": [{ "namespace": "state", "tag": "burning" }],
+  "triggeredEffects": [{ "effectId": "effect.smoke.puff", "when": "onStart" }]
 }
 ```
 
