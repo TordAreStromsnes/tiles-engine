@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 0,
+  "id": "part-pack.starter-humanoid",
+  "name": "Starter Humanoid Part Pack",
+  "bodyPlanId": "humanoid",
+  "tags": ["starter", "humanoid", "five-view"],
+  "canvas": {
+    "width": 32,
+    "height": 48,
+    "pivot": {
+      "x": 16.0,
+      "y": 40.0
+    }
+  },
+  "paletteChannels": [
+    {
+      "slot": "skin",
+      "channelId": "skin",
+      "name": "skin"
+    },
+    {
+      "slot": "hair",
+      "channelId": "hair",
+      "name": "hair"
+    },
+    {
+      "slot": "eye",
+      "channelId": "eye",
+      "name": "eye"
+    },
+    {
+      "slot": "clothingPrimary",
+      "channelId": "clothingPrimary",
+      "name": "clothingPrimary"
+    },
+    {
+      "slot": "clothingSecondary",
+      "channelId": "clothingSecondary",
+      "name": "clothingSecondary"
+    },
+    {
+      "slot": "accessory",
+      "channelId": "accessory",
+      "name": "accessory"
+    },
+    {
+      "slot": "outline",
+      "channelId": "outline",
+      "name": "outline"
+    }
+  ],
+  "parts": [
+    {
+      "slot": "bodyBase",
+      "partId": "humanoid.body.average",
+      "name": "Average Body",
+      "required": true,
+      "variants": [
+        {
+          "variantId": "default",
+          "name": "Average Body",
+          "paletteSlots": ["skin", "outline"],
+          "views": [
+            { "view": "front", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 0, "y": 0, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 0 },
+            { "view": "back", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 32, "y": 0, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 0 },
+            { "view": "left", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 64, "y": 0, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 0 },
+            { "view": "right", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 96, "y": 0, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 0 },
+            { "view": "topDown", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 128, "y": 0, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 0 }
+          ],
+          "attachmentHints": [
+            { "pointId": "feet.ground", "view": "front", "position": { "x": 16.0, "y": 44.0 }, "tags": ["grounding"] },
+            { "pointId": "feet.ground", "view": "back", "position": { "x": 16.0, "y": 44.0 }, "tags": ["grounding"] },
+            { "pointId": "feet.ground", "view": "left", "position": { "x": 16.0, "y": 44.0 }, "tags": ["grounding"] },
+            { "pointId": "feet.ground", "view": "right", "position": { "x": 16.0, "y": 44.0 }, "tags": ["grounding"] },
+            { "pointId": "feet.ground", "view": "topDown", "position": { "x": 16.0, "y": 32.0 }, "tags": ["grounding"] }
+          ],
+          "tags": []
+        }
+      ]
+    },
+    {
+      "slot": "head",
+      "partId": "humanoid.head.round",
+      "name": "Round Head",
+      "required": true,
+      "variants": [
+        {
+          "variantId": "default",
+          "name": "Round Head",
+          "paletteSlots": ["skin", "outline"],
+          "views": [
+            { "view": "front", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 0, "y": 48, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 1 },
+            { "view": "back", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 32, "y": 48, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 1 },
+            { "view": "left", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 64, "y": 48, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 1 },
+            { "view": "right", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 96, "y": 48, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 1 },
+            { "view": "topDown", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 128, "y": 48, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 1 }
+          ],
+          "attachmentHints": [
+            { "pointId": "head.top", "view": "front", "position": { "x": 16.0, "y": 6.0 }, "tags": ["headgear"] },
+            { "pointId": "head.top", "view": "back", "position": { "x": 16.0, "y": 6.0 }, "tags": ["headgear"] },
+            { "pointId": "head.top", "view": "left", "position": { "x": 16.0, "y": 6.0 }, "tags": ["headgear"] },
+            { "pointId": "head.top", "view": "right", "position": { "x": 16.0, "y": 6.0 }, "tags": ["headgear"] },
+            { "pointId": "head.top", "view": "topDown", "position": { "x": 16.0, "y": 8.0 }, "tags": ["headgear"] }
+          ],
+          "tags": []
+        }
+      ]
+    },
+    {
+      "slot": "hair",
+      "partId": "humanoid.hair.short",
+      "name": "Short Hair",
+      "required": true,
+      "variants": [
+        {
+          "variantId": "side-part",
+          "name": "Short Hair",
+          "paletteSlots": ["hair", "outline"],
+          "views": [
+            { "view": "front", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 0, "y": 96, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 6 },
+            { "view": "back", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 32, "y": 96, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 6 },
+            { "view": "left", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 64, "y": 96, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 6 },
+            { "view": "right", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 96, "y": 96, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 6 },
+            { "view": "topDown", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 128, "y": 96, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 6 }
+          ],
+          "attachmentHints": [],
+          "tags": []
+        }
+      ]
+    },
+    {
+      "slot": "eyes",
+      "partId": "humanoid.eyes.round",
+      "name": "Round Eyes",
+      "required": true,
+      "variants": [
+        {
+          "variantId": "default",
+          "name": "Round Eyes",
+          "paletteSlots": ["eye"],
+          "views": [
+            { "view": "front", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 0, "y": 144, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 2 },
+            { "view": "back", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 32, "y": 144, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 2 },
+            { "view": "left", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 64, "y": 144, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 2 },
+            { "view": "right", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 96, "y": 144, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 2 },
+            { "view": "topDown", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 128, "y": 144, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 2 }
+          ],
+          "attachmentHints": [],
+          "tags": []
+        }
+      ]
+    },
+    {
+      "slot": "clothingTop",
+      "partId": "humanoid.clothing.tunic",
+      "name": "Simple Tunic",
+      "required": true,
+      "variants": [
+        {
+          "variantId": "short-sleeve",
+          "name": "Simple Tunic",
+          "paletteSlots": ["clothingPrimary", "clothingSecondary", "outline"],
+          "views": [
+            { "view": "front", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 0, "y": 192, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 4 },
+            { "view": "back", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 32, "y": 192, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 4 },
+            { "view": "left", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 64, "y": 192, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 4 },
+            { "view": "right", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 96, "y": 192, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 4 },
+            { "view": "topDown", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 128, "y": 192, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 4 }
+          ],
+          "attachmentHints": [],
+          "tags": []
+        }
+      ]
+    },
+    {
+      "slot": "clothingBottom",
+      "partId": "humanoid.clothing.trousers",
+      "name": "Simple Trousers",
+      "required": true,
+      "variants": [
+        {
+          "variantId": "default",
+          "name": "Simple Trousers",
+          "paletteSlots": ["clothingPrimary", "outline"],
+          "views": [
+            { "view": "front", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 0, "y": 240, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 3 },
+            { "view": "back", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 32, "y": 240, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 3 },
+            { "view": "left", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 64, "y": 240, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 3 },
+            { "view": "right", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 96, "y": 240, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 3 },
+            { "view": "topDown", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 128, "y": 240, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 3 }
+          ],
+          "attachmentHints": [],
+          "tags": []
+        }
+      ]
+    },
+    {
+      "slot": "shoesFeet",
+      "partId": "humanoid.shoes.simple",
+      "name": "Simple Shoes",
+      "required": true,
+      "variants": [
+        {
+          "variantId": "default",
+          "name": "Simple Shoes",
+          "paletteSlots": ["accessory", "outline"],
+          "views": [
+            { "view": "front", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 0, "y": 288, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 5 },
+            { "view": "back", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 32, "y": 288, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 5 },
+            { "view": "left", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 64, "y": 288, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 5 },
+            { "view": "right", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 96, "y": 288, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 5 },
+            { "view": "topDown", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 128, "y": 288, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 5 }
+          ],
+          "attachmentHints": [],
+          "tags": []
+        }
+      ]
+    },
+    {
+      "slot": "accessory",
+      "partId": "humanoid.accessory.none",
+      "name": "No Accessory Placeholder",
+      "required": true,
+      "variants": [
+        {
+          "variantId": "default",
+          "name": "No Accessory Placeholder",
+          "paletteSlots": ["accessory"],
+          "views": [
+            { "view": "front", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 0, "y": 336, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 7 },
+            { "view": "back", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 32, "y": 336, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 7 },
+            { "view": "left", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 64, "y": 336, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 7 },
+            { "view": "right", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 96, "y": 336, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 7 },
+            { "view": "topDown", "source": { "path": "assets/parts/starter-humanoid.png", "frame": { "x": 128, "y": 336, "width": 32, "height": 48 } }, "anchor": { "x": 16.0, "y": 40.0 }, "zIndexHint": 7 }
+          ],
+          "attachmentHints": [],
+          "tags": []
+        }
+      ]
+    }
+  ]
+}

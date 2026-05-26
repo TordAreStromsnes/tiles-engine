@@ -1,0 +1,307 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-humanoid-part-pack.schema.json",
+  "title": "Tiles Engine Humanoid Part Pack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "bodyPlanId",
+    "tags",
+    "canvas",
+    "paletteChannels",
+    "parts"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bodyPlanId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    },
+    "canvas": {
+      "$ref": "#/$defs/canvas"
+    },
+    "paletteChannels": {
+      "type": "array",
+      "minItems": 7,
+      "items": {
+        "$ref": "#/$defs/paletteChannel"
+      },
+      "uniqueItems": true
+    },
+    "parts": {
+      "type": "array",
+      "minItems": 8,
+      "items": {
+        "$ref": "#/$defs/part"
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "canvas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height", "pivot"],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pivot": {
+          "$ref": "#/$defs/point2"
+        }
+      }
+    },
+    "paletteChannel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slot", "channelId", "name"],
+      "properties": {
+        "slot": {
+          "$ref": "#/$defs/paletteSlot"
+        },
+        "channelId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "part": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slot", "partId", "name", "required", "variants"],
+      "properties": {
+        "slot": {
+          "$ref": "#/$defs/partSlot"
+        },
+        "partId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "variants": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/variant"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "variant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "variantId",
+        "name",
+        "paletteSlots",
+        "views",
+        "attachmentHints",
+        "tags"
+      ],
+      "properties": {
+        "variantId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "paletteSlots": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/paletteSlot"
+          },
+          "uniqueItems": true
+        },
+        "views": {
+          "type": "array",
+          "minItems": 5,
+          "items": {
+            "$ref": "#/$defs/view"
+          },
+          "uniqueItems": true
+        },
+        "attachmentHints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attachmentHint"
+          },
+          "uniqueItems": true
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "view": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["view", "source", "anchor", "zIndexHint"],
+      "properties": {
+        "view": {
+          "$ref": "#/$defs/viewId"
+        },
+        "source": {
+          "$ref": "#/$defs/imageSource"
+        },
+        "anchor": {
+          "$ref": "#/$defs/point2"
+        },
+        "zIndexHint": {
+          "type": "integer"
+        }
+      }
+    },
+    "attachmentHint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pointId", "view", "position", "tags"],
+      "properties": {
+        "pointId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "view": {
+          "$ref": "#/$defs/viewId"
+        },
+        "position": {
+          "$ref": "#/$defs/point2"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "imageSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "frame"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "frame": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/pixelRect"
+            }
+          ]
+        }
+      }
+    },
+    "pixelRect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "width", "height"],
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "point2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      }
+    },
+    "paletteSlot": {
+      "type": "string",
+      "enum": [
+        "skin",
+        "hair",
+        "eye",
+        "clothingPrimary",
+        "clothingSecondary",
+        "accessory",
+        "outline"
+      ]
+    },
+    "partSlot": {
+      "type": "string",
+      "enum": [
+        "bodyBase",
+        "head",
+        "hair",
+        "eyes",
+        "clothingTop",
+        "clothingBottom",
+        "shoesFeet",
+        "accessory",
+        "equipment"
+      ]
+    },
+    "viewId": {
+      "type": "string",
+      "enum": ["front", "back", "left", "right", "topDown"]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}
