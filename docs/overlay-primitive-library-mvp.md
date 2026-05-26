@@ -64,3 +64,5 @@ The current native preview selection outline and origin marker now use:
 - #51: Prototype transform gizmo overlay.
 - #80: Prototype selection hit testing MVP.
 - #82: Design overlay text and vector primitives.
+- #84: Prototype rotate and scale gizmo handles.
+- #85: Polish transform gizmo UX.
