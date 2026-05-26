@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 0,
+  "id": "light.player-torch",
+  "name": "Player Torch Light",
+  "target": {
+    "kind": "attachmentPoint",
+    "data": {
+      "entityId": "entity.player",
+      "attachmentPointId": "hand.right"
+    }
+  },
+  "color": {
+    "red": 1.0,
+    "green": 0.48,
+    "blue": 0.22
+  },
+  "intensity": 1.8,
+  "radius": 4.5,
+  "falloff": "inverseSquared",
+  "direction": {
+    "kind": "cone",
+    "data": {
+      "coneAngleDegrees": 70.0,
+      "facingOffsetDegrees": 0.0
+    }
+  },
+  "followPosition": true,
+  "followFacing": true,
+  "enabled": true,
+  "tags": ["material.lightEmitter", "source.fire"]
+}

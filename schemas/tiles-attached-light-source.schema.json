@@ -1,0 +1,273 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-attached-light-source.schema.json",
+  "title": "Tiles Engine Attached Light Source",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "target",
+    "color",
+    "intensity",
+    "radius",
+    "falloff",
+    "direction",
+    "followPosition",
+    "followFacing",
+    "enabled",
+    "tags"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target": {
+      "$ref": "#/$defs/target"
+    },
+    "color": {
+      "$ref": "#/$defs/color"
+    },
+    "intensity": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "radius": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "falloff": {
+      "enum": ["linear", "smooth", "inverseSquared"]
+    },
+    "direction": {
+      "$ref": "#/$defs/direction"
+    },
+    "followPosition": {
+      "type": "boolean"
+    },
+    "followFacing": {
+      "type": "boolean"
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    }
+  },
+  "$defs": {
+    "target": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/entityTarget"
+        },
+        {
+          "$ref": "#/$defs/attachmentPointTarget"
+        },
+        {
+          "$ref": "#/$defs/mapPositionTarget"
+        },
+        {
+          "$ref": "#/$defs/mapRegionTarget"
+        }
+      ]
+    },
+    "entityTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "entity"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entityId"],
+          "properties": {
+            "entityId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "attachmentPointTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "attachmentPoint"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entityId", "attachmentPointId"],
+          "properties": {
+            "entityId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "attachmentPointId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "mapPositionTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "mapPosition"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mapId", "position"],
+          "properties": {
+            "mapId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "position": {
+              "$ref": "#/$defs/position"
+            }
+          }
+        }
+      }
+    },
+    "mapRegionTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "mapRegion"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mapId", "regionId"],
+          "properties": {
+            "mapId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "regionId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "color": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["red", "green", "blue"],
+      "properties": {
+        "red": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "green": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "blue": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "direction": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/omnidirectional"
+        },
+        {
+          "$ref": "#/$defs/cone"
+        }
+      ]
+    },
+    "omnidirectional": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "const": "omnidirectional"
+        }
+      }
+    },
+    "cone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "cone"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["coneAngleDegrees", "facingOffsetDegrees"],
+          "properties": {
+            "coneAngleDegrees": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 360
+            },
+            "facingOffsetDegrees": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}

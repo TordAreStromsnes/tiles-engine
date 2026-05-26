@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 0,
+  "id": "effect.smoke.puff",
+  "name": "Smoke Puff",
+  "description": "Soft smoke emitted when fire is extinguished or burn completes.",
+  "spawn": {
+    "ratePerSecond": 8.0,
+    "maxParticles": 72
+  },
+  "lifetimeSeconds": {
+    "min": 1.2,
+    "max": 2.0
+  },
+  "velocity": {
+    "x": {
+      "min": -0.25,
+      "max": 0.25
+    },
+    "y": {
+      "min": -0.7,
+      "max": -0.2
+    },
+    "z": {
+      "min": 0.0,
+      "max": 0.0
+    }
+  },
+  "colorOverLifetime": [
+    {
+      "time": 0.0,
+      "color": {
+        "red": 0.38,
+        "green": 0.38,
+        "blue": 0.36,
+        "alpha": 0.65
+      }
+    },
+    {
+      "time": 1.0,
+      "color": {
+        "red": 0.16,
+        "green": 0.16,
+        "blue": 0.16,
+        "alpha": 0.0
+      }
+    }
+  ],
+  "sizeOverLifetime": [
+    {
+      "time": 0.0,
+      "size": 0.25
+    },
+    {
+      "time": 1.0,
+      "size": 1.2
+    }
+  ],
+  "acceleration": {
+    "gravity": {
+      "x": 0.0,
+      "y": -0.05,
+      "z": 0.0
+    },
+    "drift": {
+      "x": 0.08,
+      "y": 0.0,
+      "z": 0.0
+    }
+  },
+  "blendMode": "alpha",
+  "emissionMode": {
+    "kind": "burst",
+    "data": {
+      "count": 24
+    }
+  },
+  "attachment": {
+    "kind": "entity",
+    "data": {
+      "entityId": "entity.sign.welcome"
+    }
+  },
+  "tags": ["smoke", "burst"]
+}
