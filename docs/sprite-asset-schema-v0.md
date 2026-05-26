@@ -23,7 +23,8 @@ Sample: [../samples/assets/hero.sprite.json](../samples/assets/hero.sprite.json)
   "tags": ["character", "humanoid", "playable"],
   "stateVariants": [],
   "layers": [],
-  "attachmentPoints": []
+  "attachmentPoints": [],
+  "viewSet": null
 }
 ```
 
@@ -87,10 +88,36 @@ Examples:
 Attachment points are deliberately generic so animation, particles, equipment,
 lighting, and interaction systems can reuse them.
 
+## View Sets
+
+`viewSet` is optional so props, terrain, and simple objects can stay single-view.
+When present, it describes coordinated named views for creator output and
+animation tooling:
+
+- `front`
+- `back`
+- `left`
+- `right`
+- `topDown`
+
+Each view can override layer sources, anchors, opacity, z index, and visibility
+without duplicating the base layer catalog. Attachment point positions can also
+vary per view, which lets a held item, ground contact, light origin, or equipment
+slot move correctly as the character turns.
+
+Left/right mirroring is represented with `mirror`. A view may mirror another view
+on the horizontal or vertical axis, while still carrying explicit layer or
+attachment overrides for asymmetrical hair, clothing, weapons, or poses.
+
+The V0 validator requires all five named views when `viewSet` is present. This
+keeps humanoid creator output complete while allowing future non-human body
+plans to define their own companion creator schemas instead of being forced into
+the base sprite asset.
+
 ## V0 Limits
 
 - No animation timeline data yet.
-- No rig or body-plan schema yet.
+- No rig or body-plan schema yet beyond optional five-view sprite output.
 - No texture atlas packing yet.
 - No editor drawing or pixel editing data yet.
 - No material interaction rules yet.

@@ -8,7 +8,7 @@ from one shared character definition.
 The MVP should save:
 
 - Character definition metadata.
-- Sprite asset metadata.
+- Sprite asset metadata with optional `viewSet` output.
 - Five-view layer mapping: `front`, `back`, `left`, `right`, `topDown`.
 - Palette selections.
 - Proportion controls.
@@ -36,6 +36,10 @@ front, back, side, and top-down shapes while still sharing one color palette.
 
 Left/right views may mirror if the part is symmetric. The part data must support
 explicit overrides so creators can make asymmetric characters.
+
+The base sprite asset schema now keeps five-view output in `viewSet`. That lets
+the asset remain generic for props and creatures, while humanoid creator output
+can still require complete coordinated views.
 
 ## MVP Controls
 
