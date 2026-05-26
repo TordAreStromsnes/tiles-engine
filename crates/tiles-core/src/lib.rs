@@ -39,7 +39,6 @@ pub struct NativeBoundaryStatus {
 }
 
 pub fn engine_status() -> EngineStatus {
-    let runtime = tiles_runtime::native_runtime_boundary();
     let renderer = tiles_renderer::native_renderer_plan();
 
     EngineStatus {
@@ -50,7 +49,7 @@ pub fn engine_status() -> EngineStatus {
             editor_ui: "React editor surface".to_string(),
         },
         native_boundary: NativeBoundaryStatus {
-            runtime: runtime.game_loop_owner,
+            runtime: "Rust owns the native game loop".to_string(),
             renderer: renderer.backend_summary(),
             editor: "React owns editor panels only".to_string(),
             preview: renderer.preview_strategy,

@@ -48,6 +48,8 @@ Component data should remain serializable and editor-friendly.
 
 The editor should prepare preview data and launch a Rust-owned local preview.
 Rust owns the game loop, simulation, movement, interactions, and map transitions.
+The first runtime implementation slice is documented in
+[runtime-preview-loop-slice.md](runtime-preview-loop-slice.md).
 
 ```mermaid
 flowchart LR
