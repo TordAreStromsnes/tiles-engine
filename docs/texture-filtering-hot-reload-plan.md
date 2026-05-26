@@ -60,12 +60,18 @@ Recommended flow:
    a refreshed scene snapshot when atlas ids, sprite rects, or dimensions change.
 5. Renderer replaces GPU texture and sampler resources at frame boundaries.
 
+The first prototype is documented in
+[texture-asset-hot-reload-prototype.md](texture-asset-hot-reload-prototype.md).
+It adds watch-state comparison and reload action planning for same-size texture
+replacement versus atlas snapshot refresh.
+
 ## Current Blockers
 
 - Imported PNG pixel decoding is not connected to native preview upload yet.
 - Atlas packing records rectangles but does not copy pixels into atlas images.
 - Live scene streaming to the native preview is still a separate prototype.
-- File watching has not been added to the desktop asset pipeline.
+- File watching has a tested watch-state comparison model, but not an OS watcher
+  loop in the desktop shell.
 - Packed preview/package asset paths are still undecided.
 
 ## User-Visible Limits
