@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-export-manifest.schema.json",
+  "title": "Tiles Engine Export Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "engineVersion",
+    "buildProfile",
+    "project",
+    "entry",
+    "contentRoot",
+    "assetBundles",
+    "saveNamespace",
+    "featureFlags"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "engineVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "buildProfile": {
+      "type": "string",
+      "enum": ["development", "release"]
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "gameTypeTargets"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9._-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gameTypeTargets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "topDown",
+              "sideScroller",
+              "isometricPlanned",
+              "twoPointFiveDPlanned"
+            ]
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sceneId", "mapId"],
+      "properties": {
+        "sceneId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mapId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "contentRoot": {
+      "$ref": "#/$defs/relativePath"
+    },
+    "assetBundles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "path"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9._-]+$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "assetRegistry",
+              "scene",
+              "map",
+              "spriteAssets",
+              "animationClips",
+              "textureAtlas",
+              "rendererMetadata",
+              "rules",
+              "menus",
+              "materials",
+              "lights",
+              "particles"
+            ]
+          },
+          "path": {
+            "$ref": "#/$defs/relativePath"
+          }
+        }
+      }
+    },
+    "saveNamespace": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "featureFlags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["menus", "saves", "lighting", "particles", "onlineServices"],
+      "properties": {
+        "menus": {
+          "type": "boolean"
+        },
+        "saves": {
+          "type": "boolean"
+        },
+        "lighting": {
+          "type": "boolean"
+        },
+        "particles": {
+          "type": "boolean"
+        },
+        "onlineServices": {
+          "type": "boolean"
+        }
+      }
+    },
+    "contentHashes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "algorithm", "value"],
+        "properties": {
+          "path": {
+            "$ref": "#/$defs/relativePath"
+          },
+          "algorithm": {
+            "type": "string",
+            "enum": ["sha256"]
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?![A-Za-z]:)(?!/)(?!\\\\)(?!.*(^|[\\\\/])\\.\\.([\\\\/]|$)).*[^\\\\/]$"
+    }
+  }
+}

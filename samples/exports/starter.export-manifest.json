@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 0,
+  "engineVersion": "0.1.0",
+  "buildProfile": "development",
+  "project": {
+    "id": "starter-village",
+    "name": "Starter Village",
+    "gameTypeTargets": ["topDown", "sideScroller"]
+  },
+  "entry": {
+    "sceneId": "scene.village-preview",
+    "mapId": "map.village"
+  },
+  "contentRoot": "content",
+  "assetBundles": [
+    {
+      "id": "asset-registry",
+      "kind": "assetRegistry",
+      "path": "asset-registry.json"
+    },
+    {
+      "id": "entry-scene",
+      "kind": "scene",
+      "path": "scenes/village.scene.json"
+    },
+    {
+      "id": "entry-map",
+      "kind": "map",
+      "path": "maps/village.map.json"
+    },
+    {
+      "id": "starter-atlas",
+      "kind": "textureAtlas",
+      "path": "generated/atlases/starter-atlas.json"
+    }
+  ],
+  "saveNamespace": "starter-village",
+  "featureFlags": {
+    "menus": true,
+    "saves": true,
+    "lighting": true,
+    "particles": true,
+    "onlineServices": false
+  },
+  "contentHashes": [
+    {
+      "path": "asset-registry.json",
+      "algorithm": "sha256",
+      "value": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

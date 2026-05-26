@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod animation;
 pub mod assets;
+pub mod export_manifest;
 pub mod humanoid;
 pub mod humanoid_assembly;
 pub mod humanoid_part_pack;
@@ -19,6 +20,7 @@ pub mod selection;
 pub mod sprite_images;
 pub use animation::*;
 pub use assets::*;
+pub use export_manifest::*;
 pub use humanoid::*;
 pub use humanoid_assembly::*;
 pub use humanoid_part_pack::*;
