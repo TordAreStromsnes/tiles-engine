@@ -71,6 +71,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Overlay primitive library MVP: [docs/overlay-primitive-library-mvp.md](docs/overlay-primitive-library-mvp.md)
 - Transform gizmo overlay prototype: [docs/transform-gizmo-overlay-prototype.md](docs/transform-gizmo-overlay-prototype.md)
 - Packaged preview binary lookup: [docs/packaged-preview-binary-lookup.md](docs/packaged-preview-binary-lookup.md)
+- Exported game launch path: [docs/exported-game-launch-path.md](docs/exported-game-launch-path.md)
 - Renderer sprite batch contract: [docs/renderer-sprite-batch-contract.md](docs/renderer-sprite-batch-contract.md)
 - Licensing: [docs/licensing.md](docs/licensing.md)
 - GitHub setup: [docs/github-setup.md](docs/github-setup.md)
