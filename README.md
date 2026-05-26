@@ -56,6 +56,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Live scene streaming native preview: [docs/live-scene-streaming-native-preview.md](docs/live-scene-streaming-native-preview.md)
 - Scene composer placement prototype: [docs/scene-composer-placement-prototype.md](docs/scene-composer-placement-prototype.md)
 - Interaction trigger schema V0: [docs/interaction-trigger-schema-v0.md](docs/interaction-trigger-schema-v0.md)
+- Menu and settings schema V0: [docs/menu-settings-schema-v0.md](docs/menu-settings-schema-v0.md)
 - Menus and save/load after runtime preview: [docs/menus-save-load-after-runtime-preview.md](docs/menus-save-load-after-runtime-preview.md)
 - Generic interaction systems: [docs/generic-interaction-systems.md](docs/generic-interaction-systems.md)
 - Material tag and runtime state schema V0: [docs/material-runtime-state-schema-v0.md](docs/material-runtime-state-schema-v0.md)
