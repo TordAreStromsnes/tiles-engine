@@ -9,7 +9,9 @@ contract to draw textured quads.
 - `TextureAtlas` metadata in `crates/tiles-renderer`.
 - Atlas sprite ids and source rectangles.
 - Generated preview atlas pixels in `apps/native-preview`.
+- A separate generated overlay atlas for editor overlay sprites.
 - A `wgpu` texture, sampler, and bind group for native preview rendering.
+- Texture sampling metadata with nearest filtering as the default.
 - UV origin/size instance data derived from source rectangles.
 
 ## Current Preview Atlas
@@ -21,10 +23,21 @@ The preview atlas is `preview.generated` and contains:
 - `sprite.hero.placeholder`
 - `overlay.selection`
 
+The overlay atlas is `preview.overlay` and contains:
+
+- `overlay.selection`
+
 These are generated colored pixels, not imported image files. Sprite image
 metadata loading now exists separately in
-[sprite-image-loading-mvp.md](sprite-image-loading-mvp.md), and atlas packing is
-the next step before imported pixels replace the generated preview atlas.
+[sprite-image-loading-mvp.md](sprite-image-loading-mvp.md), and metadata atlas
+packing now exists in [texture-atlas-packing-mvp.md](texture-atlas-packing-mvp.md).
+Imported pixels still need a later upload integration before they replace the
+generated preview atlas.
+
+The multi-atlas path is described in
+[multiple-atlases-per-frame.md](multiple-atlases-per-frame.md).
+Filtering defaults and hot reload boundaries are described in
+[texture-filtering-hot-reload-plan.md](texture-filtering-hot-reload-plan.md).
 
 ## Contract Assumptions
 
@@ -37,10 +50,12 @@ Renderer-facing sprite data should reference:
 Future asset systems can either reference an already-packed atlas entry or ask
 the renderer/asset pipeline to pack source images into an atlas.
 
+Texture metadata can express `nearest` or `linear` sampling intent per atlas.
+The native preview keeps nearest as the default and builds each `wgpu` sampler
+from the atlas metadata.
+
 ## Deferred Work
 
-- Atlas packing: #45.
-- Multiple atlases per frame: #46.
-- Texture filtering controls and asset hot reload: #47.
+- Texture asset hot reload prototype: #78.
 - Sprite import UI.
 - Runtime package format for textures.
