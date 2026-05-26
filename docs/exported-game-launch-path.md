@@ -102,6 +102,22 @@ Manual verification for #91: the command above loaded
 Deferred runtime UX remains tracked by #94 for menu rendering and #99 for
 exported-game save storage.
 
+Issue #92 adds the first development export command:
+
+```powershell
+cargo run -p tiles-export-package -- --project-root <project.tilesproj>
+```
+
+The command writes `exports/dev/<game-id>/export-manifest.json`, copies
+runtime-facing project files into `content/`, and creates empty generated atlas
+and renderer-metadata folders for later asset pipeline outputs. It overwrites
+the files it owns in that development package, but it does not mutate source
+project files.
+
+Manual verification for #92: a temporary starter project under
+`target/manual-export/` exported successfully with 4 copied runtime files, and
+the generated manifest then launched through `tiles-game-runner --smoke-test`.
+
 ## Export Manifest V0 Requirements
 
 The first manifest should include:

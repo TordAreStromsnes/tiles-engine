@@ -53,6 +53,7 @@ pub struct ExportAssetBundleRef {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ExportAssetBundleKind {
+    ProjectManifest,
     AssetRegistry,
     Scene,
     Map,
@@ -211,6 +212,11 @@ pub fn sample_export_manifest() -> ExportManifest {
         },
         content_root: "content".to_string(),
         asset_bundles: vec![
+            ExportAssetBundleRef {
+                id: "project-manifest".to_string(),
+                kind: ExportAssetBundleKind::ProjectManifest,
+                path: "manifest.json".to_string(),
+            },
             ExportAssetBundleRef {
                 id: "asset-registry".to_string(),
                 kind: ExportAssetBundleKind::AssetRegistry,
@@ -406,7 +412,7 @@ mod tests {
         assert!(matches!(
             manifest.validate(),
             Err(ExportManifestValidationError::DuplicateAssetBundleId { id })
-                if id == "asset-registry"
+                if id == "project-manifest"
         ));
     }
 
