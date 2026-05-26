@@ -5,10 +5,43 @@ use std::{
 };
 
 use serde::Serialize;
+use tiles_core::SceneDocument;
 
 #[tauri::command]
 fn engine_status() -> tiles_core::EngineStatus {
     tiles_core::engine_status()
+}
+
+#[tauri::command]
+fn sample_scene() -> SceneDocument {
+    tiles_core::sample_village_scene()
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SceneValidation {
+    valid: bool,
+    message: String,
+    entity_count: usize,
+    map_count: usize,
+}
+
+#[tauri::command]
+fn validate_scene(scene: SceneDocument) -> SceneValidation {
+    match scene.validate() {
+        Ok(()) => SceneValidation {
+            valid: true,
+            message: "Scene data is valid.".to_string(),
+            entity_count: scene.entities.len(),
+            map_count: scene.map_ids.len(),
+        },
+        Err(error) => SceneValidation {
+            valid: false,
+            message: error.to_string(),
+            entity_count: scene.entities.len(),
+            map_count: scene.map_ids.len(),
+        },
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -100,6 +133,8 @@ fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             engine_status,
+            sample_scene,
+            validate_scene,
             launch_native_preview
         ])
         .run(tauri::generate_context!())
