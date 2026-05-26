@@ -356,14 +356,18 @@ pub fn sample_water_extinguish_rule() -> ReactionRuleDefinition {
         schema_version: REACTION_RULE_SCHEMA_VERSION,
         id: "rule.water.extinguish-fire".to_string(),
         name: "Water Extinguishes Burning Target".to_string(),
-        description: "Water sources remove burning state and add wet state, then trigger smoke."
-            .to_string(),
+        description:
+            "Water sources remove burning state, add wet/smoking state, then trigger smoke."
+                .to_string(),
         source_tags: vec![qtag("source", "water")],
         required_target_tags: vec![qtag("state", "burning")],
         blocked_target_tags: Vec::new(),
-        add_state_tags: vec![qtag("state", "wet")],
+        add_state_tags: vec![qtag("state", "wet"), qtag("state", "smoking")],
         remove_state_tags: vec![qtag("state", "burning")],
-        asset_variant_switch: None,
+        asset_variant_switch: Some(AssetVariantSwitch {
+            state_variant_id: "wet".to_string(),
+            when: ReactionOutputTiming::OnStart,
+        }),
         timing: ReactionTiming {
             delay_seconds: 0.0,
             duration_seconds: Some(1.0),

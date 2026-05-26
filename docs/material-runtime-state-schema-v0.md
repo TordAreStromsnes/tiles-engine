@@ -31,7 +31,7 @@ V0 includes two material-side namespaces:
 
 V0 includes one runtime-state namespace:
 
-- `state`: `burning`, `burned`, `wet`, `lit`
+- `state`: `burning`, `burned`, `wet`, `smoking`, `lit`
 
 These are intentionally small so later schemas can prove the interaction model
 without locking Tiles Engine into a giant hard-coded taxonomy.
