@@ -107,6 +107,8 @@ damaged, lit, and hidden.
 
 ## Particle Composer MVP
 
+Implemented baseline: [particle emitter preset schema V0](particle-emitter-preset-schema-v0.md).
+
 The first particle composer should edit emitter presets:
 
 - Fire flame.

@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 0,
+  "id": "effect.dust.puff",
+  "name": "Dust Puff",
+  "description": "Small dust burst for footsteps or impact.",
+  "spawn": {
+    "ratePerSecond": 0.0,
+    "maxParticles": 36
+  },
+  "lifetimeSeconds": {
+    "min": 0.4,
+    "max": 0.9
+  },
+  "velocity": {
+    "x": {
+      "min": -0.45,
+      "max": 0.45
+    },
+    "y": {
+      "min": -0.25,
+      "max": 0.15
+    },
+    "z": {
+      "min": 0.0,
+      "max": 0.0
+    }
+  },
+  "colorOverLifetime": [
+    {
+      "time": 0.0,
+      "color": {
+        "red": 0.58,
+        "green": 0.5,
+        "blue": 0.38,
+        "alpha": 0.55
+      }
+    },
+    {
+      "time": 1.0,
+      "color": {
+        "red": 0.45,
+        "green": 0.39,
+        "blue": 0.29,
+        "alpha": 0.0
+      }
+    }
+  ],
+  "sizeOverLifetime": [
+    {
+      "time": 0.0,
+      "size": 0.12
+    },
+    {
+      "time": 1.0,
+      "size": 0.55
+    }
+  ],
+  "acceleration": {
+    "gravity": {
+      "x": 0.0,
+      "y": 0.15,
+      "z": 0.0
+    },
+    "drift": {
+      "x": 0.05,
+      "y": 0.0,
+      "z": 0.0
+    }
+  },
+  "blendMode": "alpha",
+  "emissionMode": {
+    "kind": "burst",
+    "data": {
+      "count": 12
+    }
+  },
+  "attachment": {
+    "kind": "world"
+  },
+  "tags": ["dust", "burst"]
+}
