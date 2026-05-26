@@ -39,6 +39,13 @@ project write automation.
 - #12: Design Generic Interaction Systems
 - #13: Build Native Renderer Spike
 
+## Created Humanoid Creator Follow-Up Issues
+
+- #23: Build Multi-View Sprite Asset Extension
+- #24: Build Humanoid Creator Definition Schema
+- #25: Create Starter Humanoid Part Pack Spec
+- #26: Prototype Five-View Humanoid Assembly
+
 ## CLI Setup
 
 GitHub CLI needs repo and project access:

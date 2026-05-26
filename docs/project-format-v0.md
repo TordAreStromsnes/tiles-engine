@@ -54,6 +54,8 @@ Example:
 
 `asset-registry.json` lists reusable project assets. It does not define every
 asset schema; it points to typed asset files that later issues will define.
+Sprite assets are defined by
+[sprite-asset-schema-v0.md](sprite-asset-schema-v0.md).
 
 Schema: [../schemas/tiles-asset-registry.schema.json](../schemas/tiles-asset-registry.schema.json)
 

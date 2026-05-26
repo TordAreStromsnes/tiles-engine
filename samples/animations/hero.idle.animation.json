@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 0,
+  "id": "animation.hero.idle",
+  "name": "Hero Idle",
+  "target": {
+    "assetId": "sprite.hero",
+    "bodyPlanId": "humanoid"
+  },
+  "frameRate": 8,
+  "loopMode": "loop",
+  "tags": ["humanoid", "idle"],
+  "viewTracks": [
+    {
+      "view": "front",
+      "frames": [
+        {
+          "durationTicks": 6,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": 0.0 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [
+            {
+              "attachmentPointId": "feet.ground",
+              "translation": { "x": 0.0, "y": 0.0 },
+              "rotationDegrees": 0.0
+            }
+          ],
+          "eventIds": []
+        },
+        {
+          "durationTicks": 6,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.25 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [
+            {
+              "attachmentPointId": "feet.ground",
+              "translation": { "x": 0.0, "y": -0.25 },
+              "rotationDegrees": 0.0
+            }
+          ],
+          "eventIds": []
+        }
+      ]
+    },
+    {
+      "view": "back",
+      "frames": [
+        {
+          "durationTicks": 6,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": 0.0 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        },
+        {
+          "durationTicks": 6,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.25 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        }
+      ]
+    },
+    {
+      "view": "left",
+      "frames": [
+        {
+          "durationTicks": 6,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": 0.0 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        },
+        {
+          "durationTicks": 6,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.25 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        }
+      ]
+    },
+    {
+      "view": "right",
+      "frames": [
+        {
+          "durationTicks": 6,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": 0.0 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        },
+        {
+          "durationTicks": 6,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.25 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        }
+      ]
+    },
+    {
+      "view": "topDown",
+      "frames": [
+        {
+          "durationTicks": 12,
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": 0.0 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventIds": []
+        }
+      ]
+    }
+  ]
+}
