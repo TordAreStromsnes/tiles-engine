@@ -52,7 +52,8 @@ radius. The runtime loop will own movement and collision behavior.
 positive radius and can include a home position.
 
 `interactionTrigger` can point at a prompt id, event id, target entity id, or a
-combination of those.
+combination of those. It reuses the activation shape model from
+[interaction-trigger-schema-v0.md](interaction-trigger-schema-v0.md).
 
 `portalLink` references an existing map portal id and the target map/spawn data
 needed for a small map transition.

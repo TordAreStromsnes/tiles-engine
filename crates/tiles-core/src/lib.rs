@@ -2,11 +2,13 @@ use serde::{Deserialize, Serialize};
 
 pub mod animation;
 pub mod assets;
+pub mod interaction;
 pub mod maps;
 pub mod project;
 pub mod scene;
 pub use animation::*;
 pub use assets::*;
+pub use interaction::*;
 pub use maps::*;
 pub use project::*;
 pub use scene::*;

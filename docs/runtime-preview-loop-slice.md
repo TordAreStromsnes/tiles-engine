@@ -29,7 +29,8 @@ the village map, and the house interior map.
 - Cardinal movement updates player position.
 - Blocking collision rectangles stop movement.
 - Bounded-wander NPCs update deterministically.
-- Nearby interaction triggers emit prompt/event/target metadata.
+- Nearby interaction triggers use the V0 circle/rect activation shape and emit
+  prompt/event/target metadata.
 - Portal links switch the active map and move the player to the target spawn.
 
 ## Current Limits
