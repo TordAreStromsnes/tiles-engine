@@ -2,7 +2,8 @@
 
 Issue #17 connects the Tauri desktop shell to the sibling native preview window.
 This is a development-mode bridge only. Packaged installer behavior and embedded
-native viewport work are intentionally deferred.
+native viewport work are intentionally deferred. The packaged lookup decision is
+documented in [packaged-preview-binary-lookup.md](packaged-preview-binary-lookup.md).
 
 ## Command
 
@@ -37,7 +38,7 @@ launch result or the error returned from Rust.
 
 ## Deferred Work
 
-- Packaged installer/runtime lookup for the preview binary: #53.
+- Packaged sidecar implementation for the preview binary: #87.
 - Live scene streaming from editor to preview: #54.
 - Embedded native viewport feasibility: #18.
 - Exported game build launch behavior: #55.
