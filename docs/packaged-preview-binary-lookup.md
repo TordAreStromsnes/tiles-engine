@@ -92,6 +92,36 @@ Decision: avoid for MVP unless sidecar constraints block us.
    - In packaged builds, call `app.shell().sidecar("tiles-native-preview")`.
 6. Return the same `PreviewLaunch` response shape to React.
 
+## Implementation Status
+
+Issue #87 implements the sidecar launch path.
+
+- `apps/desktop/src-tauri/tauri.conf.json` now declares
+  `bundle.externalBin: ["binaries/tiles-native-preview"]`.
+- `apps/desktop/scripts/prepare-native-preview-sidecar.mjs` builds
+  `tiles-native-preview`, detects or accepts a Rust target triple, and copies
+  the binary to `apps/desktop/src-tauri/binaries/` with the required suffix.
+- `npm run sidecar:prepare -- --release` prepares the host release sidecar.
+- `npm run sidecar:prepare -- --release --target <triple>` prepares a specific
+  cross-target sidecar when that Rust target is installed.
+- `npm run sidecar:prepare -- --dry-run` prints the source and destination paths
+  without building or copying, which is useful for CI and local packaging checks.
+- `tauri.conf.json` runs `npm run sidecar:prepare -- --release` before packaged
+  desktop builds, then runs the React build.
+
+The desktop command keeps the development lookup against
+`target/debug/tiles-native-preview` for debug builds. Release builds use
+`app.shell().sidecar("tiles-native-preview")`, which lets Tauri resolve the
+bundled sidecar path inside the installed app.
+
+Expected sidecar filenames:
+
+| Target | Sidecar filename |
+| --- | --- |
+| Windows MSVC x64 | `tiles-native-preview-x86_64-pc-windows-msvc.exe` |
+| macOS Apple Silicon | `tiles-native-preview-aarch64-apple-darwin` |
+| Linux x64 GNU | `tiles-native-preview-x86_64-unknown-linux-gnu` |
+
 ## Platform Caveats
 
 Windows:
@@ -114,11 +144,13 @@ Linux:
 
 ## Current Limits
 
-- No sidecar config is implemented yet.
-- No cross-target copy/rename script exists yet.
 - No packaged installer verification exists yet.
 - Live scene streaming to the preview remains separate from launch lookup.
 - Exported game launch remains separate from editor preview launch.
+- Cross-target packaging still requires the Rust target and platform toolchain
+  to be installed before running the sidecar prepare script.
+- macOS signing/notarization, Linux executable permissions inside final bundles,
+  and Windows installer smoke tests still need release-pipeline verification.
 
 ## Follow-Ups
 
