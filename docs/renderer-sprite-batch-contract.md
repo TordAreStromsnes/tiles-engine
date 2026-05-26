@@ -56,6 +56,7 @@ Texture atlas upload is represented by `TextureAtlas` metadata:
 
 - Atlas id.
 - Atlas pixel size.
+- Sampling metadata for magnify, minify, and mipmap filters.
 - Sprite ids.
 - Source rectangles.
 
@@ -73,6 +74,11 @@ metadata packing is documented in
 imported images is still future work. The native preview also uses a second
 `preview.overlay` atlas handle for editor overlays.
 
+Texture sampling defaults to nearest filtering for crisp pixel-art previews.
+Linear filtering can be represented in metadata, but packed atlas pixel
+extrusion is still future work. See
+[texture-filtering-hot-reload-plan.md](texture-filtering-hot-reload-plan.md).
+
 ## Native Preview Use
 
 The native preview now builds a `SpriteBatch` from the preview scene and converts
@@ -87,5 +93,6 @@ sprite and an origin marker, both projected through the same `Camera2d`.
 
 - No optimization for repeated atlas groups split by cross-atlas ordering yet.
 - No imported-pixel upload yet.
+- No packed-atlas edge extrusion for linear filtering yet.
 - No clipping, blend modes, or material flags yet.
 - No full selection UI, gizmo editing, or overlay primitive library yet.

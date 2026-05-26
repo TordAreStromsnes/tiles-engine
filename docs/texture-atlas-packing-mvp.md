@@ -45,10 +45,9 @@ The packer rejects:
 - No rotation.
 - No pixel copy or upload.
 - No padding extrusion.
-- No texture filtering metadata.
+- No padding/edge extrusion for linear filtering.
 - No runtime repacking.
 
 ## Follow-Ups
 
-- #46: Support multiple atlases per frame.
-- #47: Add texture filtering and hot reload plan.
+- #78: Prototype texture asset hot reload.

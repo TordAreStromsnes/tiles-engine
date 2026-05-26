@@ -11,6 +11,7 @@ contract to draw textured quads.
 - Generated preview atlas pixels in `apps/native-preview`.
 - A separate generated overlay atlas for editor overlay sprites.
 - A `wgpu` texture, sampler, and bind group for native preview rendering.
+- Texture sampling metadata with nearest filtering as the default.
 - UV origin/size instance data derived from source rectangles.
 
 ## Current Preview Atlas
@@ -35,6 +36,8 @@ generated preview atlas.
 
 The multi-atlas path is described in
 [multiple-atlases-per-frame.md](multiple-atlases-per-frame.md).
+Filtering defaults and hot reload boundaries are described in
+[texture-filtering-hot-reload-plan.md](texture-filtering-hot-reload-plan.md).
 
 ## Contract Assumptions
 
@@ -47,9 +50,12 @@ Renderer-facing sprite data should reference:
 Future asset systems can either reference an already-packed atlas entry or ask
 the renderer/asset pipeline to pack source images into an atlas.
 
+Texture metadata can express `nearest` or `linear` sampling intent per atlas.
+The native preview keeps nearest as the default and builds each `wgpu` sampler
+from the atlas metadata.
+
 ## Deferred Work
 
-- Multiple atlases per frame: #46.
-- Texture filtering controls and asset hot reload: #47.
+- Texture asset hot reload prototype: #78.
 - Sprite import UI.
 - Runtime package format for textures.

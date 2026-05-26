@@ -62,6 +62,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Sprite image loading MVP: [docs/sprite-image-loading-mvp.md](docs/sprite-image-loading-mvp.md)
 - Texture atlas packing MVP: [docs/texture-atlas-packing-mvp.md](docs/texture-atlas-packing-mvp.md)
 - Multiple atlases per frame: [docs/multiple-atlases-per-frame.md](docs/multiple-atlases-per-frame.md)
+- Texture filtering and hot reload plan: [docs/texture-filtering-hot-reload-plan.md](docs/texture-filtering-hot-reload-plan.md)
 - Renderer sprite batch contract: [docs/renderer-sprite-batch-contract.md](docs/renderer-sprite-batch-contract.md)
 - Licensing: [docs/licensing.md](docs/licensing.md)
 - GitHub setup: [docs/github-setup.md](docs/github-setup.md)

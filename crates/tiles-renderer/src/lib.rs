@@ -88,7 +88,48 @@ pub struct SpriteSourceRef {
 pub struct TextureAtlas {
     pub id: String,
     pub size: TextureSize,
+    #[serde(default)]
+    pub sampling: TextureSampling,
     pub sprites: Vec<TextureAtlasSprite>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextureSampling {
+    pub magnify_filter: TextureFilterMode,
+    pub minify_filter: TextureFilterMode,
+    pub mipmap_filter: TextureFilterMode,
+}
+
+impl TextureSampling {
+    pub const fn nearest() -> Self {
+        Self {
+            magnify_filter: TextureFilterMode::Nearest,
+            minify_filter: TextureFilterMode::Nearest,
+            mipmap_filter: TextureFilterMode::Nearest,
+        }
+    }
+
+    pub const fn linear() -> Self {
+        Self {
+            magnify_filter: TextureFilterMode::Linear,
+            minify_filter: TextureFilterMode::Linear,
+            mipmap_filter: TextureFilterMode::Linear,
+        }
+    }
+}
+
+impl Default for TextureSampling {
+    fn default() -> Self {
+        Self::nearest()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TextureFilterMode {
+    Nearest,
+    Linear,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -445,6 +486,7 @@ pub fn preview_texture_atlas() -> TextureAtlas {
             width: 4,
             height: 1,
         },
+        sampling: TextureSampling::nearest(),
         sprites: vec![
             TextureAtlasSprite {
                 id: "tile.checker.a".to_string(),
@@ -493,6 +535,7 @@ pub fn preview_overlay_texture_atlas() -> TextureAtlas {
             width: 1,
             height: 1,
         },
+        sampling: TextureSampling::nearest(),
         sprites: vec![TextureAtlasSprite {
             id: "overlay.selection".to_string(),
             source_rect: TextureRect {
@@ -892,6 +935,7 @@ mod tests {
 
         atlas.validate().expect("preview atlas should validate");
         assert_eq!(atlas.size.width, 4);
+        assert_eq!(atlas.sampling, TextureSampling::nearest());
         assert!(atlas
             .sprites
             .iter()
@@ -916,8 +960,39 @@ mod tests {
             .expect("texture atlas should serialize");
 
         assert!(json.contains("preview.generated"));
+        assert!(json.contains("sampling"));
+        assert!(json.contains("nearest"));
         assert!(json.contains("sourceRect"));
         assert!(json.contains("sprite.hero.placeholder"));
+    }
+
+    #[test]
+    fn texture_sampling_defaults_to_nearest_for_older_metadata() {
+        let json = r#"{
+            "id": "atlas.legacy",
+            "size": { "width": 1, "height": 1 },
+            "sprites": [
+                {
+                    "id": "sprite.legacy",
+                    "sourceRect": { "x": 0, "y": 0, "width": 1, "height": 1 }
+                }
+            ]
+        }"#;
+
+        let atlas: TextureAtlas =
+            serde_json::from_str(json).expect("legacy atlas should deserialize");
+
+        assert_eq!(atlas.sampling, TextureSampling::nearest());
+        atlas.validate().expect("legacy atlas should validate");
+    }
+
+    #[test]
+    fn texture_sampling_can_express_linear_filtering() {
+        let sampling = TextureSampling::linear();
+
+        assert_eq!(sampling.magnify_filter, TextureFilterMode::Linear);
+        assert_eq!(sampling.minify_filter, TextureFilterMode::Linear);
+        assert_eq!(sampling.mipmap_filter, TextureFilterMode::Linear);
     }
 
     #[test]

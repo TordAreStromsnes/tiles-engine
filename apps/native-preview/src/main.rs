@@ -3,7 +3,8 @@ use std::{borrow::Cow, collections::HashMap, env, error::Error, fmt, time::Insta
 use bytemuck::{Pod, Zeroable};
 use tiles_renderer::{
     default_preview_scene, preview_camera, preview_editor_overlay_batch, preview_sprite_batch,
-    preview_texture_atlases, Camera2d, PreviewScene, SpriteBatch, TextureAtlas, TextureRect,
+    preview_texture_atlases, Camera2d, PreviewScene, SpriteBatch, TextureAtlas, TextureFilterMode,
+    TextureRect,
 };
 use wgpu::util::DeviceExt;
 use winit::{
@@ -691,9 +692,9 @@ fn create_preview_atlas_bind_group(
         address_mode_u: wgpu::AddressMode::ClampToEdge,
         address_mode_v: wgpu::AddressMode::ClampToEdge,
         address_mode_w: wgpu::AddressMode::ClampToEdge,
-        mag_filter: wgpu::FilterMode::Nearest,
-        min_filter: wgpu::FilterMode::Nearest,
-        mipmap_filter: wgpu::FilterMode::Nearest,
+        mag_filter: wgpu_filter_mode(atlas.sampling.magnify_filter),
+        min_filter: wgpu_filter_mode(atlas.sampling.minify_filter),
+        mipmap_filter: wgpu_filter_mode(atlas.sampling.mipmap_filter),
         ..Default::default()
     });
 
@@ -711,6 +712,13 @@ fn create_preview_atlas_bind_group(
             },
         ],
     })
+}
+
+fn wgpu_filter_mode(filter: TextureFilterMode) -> wgpu::FilterMode {
+    match filter {
+        TextureFilterMode::Nearest => wgpu::FilterMode::Nearest,
+        TextureFilterMode::Linear => wgpu::FilterMode::Linear,
+    }
 }
 
 fn preview_atlas_pixels(atlas: &TextureAtlas) -> Vec<u8> {
