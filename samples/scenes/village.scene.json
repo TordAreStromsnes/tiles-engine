@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 0,
+  "id": "scene.village-preview",
+  "name": "Village Preview Scene",
+  "mapIds": ["map.village", "map.house-interior"],
+  "tags": ["preview", "top-down"],
+  "entities": [
+    {
+      "id": "entity.player.spawn",
+      "name": "Player Spawn",
+      "assetId": null,
+      "mapId": "map.village",
+      "position": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": 0.0
+      },
+      "facing": "south",
+      "tags": ["player", "spawn"],
+      "components": [
+        {
+          "kind": "playerSpawn",
+          "data": {
+            "spawnId": "spawn.village.start"
+          }
+        }
+      ]
+    },
+    {
+      "id": "entity.player",
+      "name": "Player",
+      "assetId": "sprite.hero",
+      "mapId": "map.village",
+      "position": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": 1.0
+      },
+      "facing": "south",
+      "tags": ["player", "controllable"],
+      "components": [
+        {
+          "kind": "playerController",
+          "data": {
+            "movement": "gridFourWay",
+            "speedUnitsPerSecond": 4.0,
+            "interactionRadius": 1.5
+          }
+        }
+      ]
+    },
+    {
+      "id": "entity.npc.guide",
+      "name": "Village Guide",
+      "assetId": "sprite.hero",
+      "mapId": "map.village",
+      "position": {
+        "x": 8.0,
+        "y": 6.0,
+        "z": 1.0
+      },
+      "facing": "west",
+      "tags": ["npc"],
+      "components": [
+        {
+          "kind": "npcBehavior",
+          "data": {
+            "behavior": "boundedWander",
+            "homePosition": {
+              "x": 8.0,
+              "y": 6.0,
+              "z": 1.0
+            },
+            "wanderRadius": 3.0
+          }
+        }
+      ]
+    },
+    {
+      "id": "entity.sign.welcome",
+      "name": "Welcome Sign",
+      "assetId": null,
+      "mapId": "map.village",
+      "position": {
+        "x": 6.0,
+        "y": 4.0,
+        "z": 0.0
+      },
+      "facing": "south",
+      "tags": ["interaction"],
+      "components": [
+        {
+          "kind": "interactionTrigger",
+          "data": {
+            "triggerId": "trigger.welcome-sign",
+            "promptId": "prompt.welcome",
+            "eventId": "event.sign.read",
+            "targetEntityId": "entity.player",
+            "radius": 1.0,
+            "repeatable": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "entity.portal.house-door",
+      "name": "House Door Portal",
+      "assetId": null,
+      "mapId": "map.village",
+      "position": {
+        "x": 12.0,
+        "y": 5.0,
+        "z": 0.0
+      },
+      "facing": "north",
+      "tags": ["portal"],
+      "components": [
+        {
+          "kind": "portalLink",
+          "data": {
+            "portalId": "portal.house.front-door",
+            "targetMapId": "map.house-interior",
+            "targetPortalId": "portal.house.exit",
+            "spawn": {
+              "column": 3,
+              "row": 5
+            },
+            "facing": "south"
+          }
+        }
+      ]
+    }
+  ]
+}

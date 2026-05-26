@@ -21,6 +21,8 @@ explicitly deferred.
 ## Scene Data
 
 Scene data should reference project assets and maps instead of duplicating them.
+The first machine-readable scene format is documented in
+[scene-entity-schema-v0.md](scene-entity-schema-v0.md).
 
 Initial entity fields:
 

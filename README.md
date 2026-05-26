@@ -48,6 +48,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Tile map and portal schema V0: [docs/tile-map-portal-schema-v0.md](docs/tile-map-portal-schema-v0.md)
 - Procedural generation inputs: [docs/procedural-world-generation-inputs.md](docs/procedural-world-generation-inputs.md)
 - Scene composer/runtime preview MVP: [docs/scene-composer-runtime-preview-mvp.md](docs/scene-composer-runtime-preview-mvp.md)
+- Scene entity schema V0: [docs/scene-entity-schema-v0.md](docs/scene-entity-schema-v0.md)
 - Generic interaction systems: [docs/generic-interaction-systems.md](docs/generic-interaction-systems.md)
 - Renderer sprite batch contract: [docs/renderer-sprite-batch-contract.md](docs/renderer-sprite-batch-contract.md)
 - Licensing: [docs/licensing.md](docs/licensing.md)

@@ -4,10 +4,12 @@ pub mod animation;
 pub mod assets;
 pub mod maps;
 pub mod project;
+pub mod scene;
 pub use animation::*;
 pub use assets::*;
 pub use maps::*;
 pub use project::*;
+pub use scene::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
