@@ -21,9 +21,10 @@ The preview atlas is `preview.generated` and contains:
 - `sprite.hero.placeholder`
 - `overlay.selection`
 
-These are generated colored pixels, not imported image files. That is enough to
-prove the renderer can upload texture data and sample it through the native GPU
-pipeline.
+These are generated colored pixels, not imported image files. Sprite image
+metadata loading now exists separately in
+[sprite-image-loading-mvp.md](sprite-image-loading-mvp.md), and atlas packing is
+the next step before imported pixels replace the generated preview atlas.
 
 ## Contract Assumptions
 
@@ -38,7 +39,6 @@ the renderer/asset pipeline to pack source images into an atlas.
 
 ## Deferred Work
 
-- Image file loading: #44.
 - Atlas packing: #45.
 - Multiple atlases per frame: #46.
 - Texture filtering controls and asset hot reload: #47.

@@ -10,6 +10,7 @@ pub mod particles;
 pub mod project;
 pub mod reactions;
 pub mod scene;
+pub mod sprite_images;
 pub use animation::*;
 pub use assets::*;
 pub use interaction::*;
@@ -20,6 +21,7 @@ pub use particles::*;
 pub use project::*;
 pub use reactions::*;
 pub use scene::*;
+pub use sprite_images::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
