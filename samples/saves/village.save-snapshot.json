@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 0,
+  "id": "save.village.slot-1",
+  "projectId": "my-game",
+  "sceneId": "scene.village-preview",
+  "engineVersion": "0.1.0",
+  "runtimeVersion": "0.1.0",
+  "createdAtUtc": "2026-05-26T18:30:00Z",
+  "elapsedSeconds": 128.5,
+  "activeMapId": "map.village",
+  "player": {
+    "entityId": "entity.player",
+    "spawnId": "spawn.village.start",
+    "position": {
+      "x": 6.0,
+      "y": 4.0,
+      "z": 1.0
+    },
+    "facing": "south"
+  },
+  "entityOverrides": [
+    {
+      "entityId": "entity.npc.guide",
+      "mapId": "map.village",
+      "position": {
+        "x": 8.75,
+        "y": 6.0,
+        "z": 1.0
+      },
+      "facing": "west",
+      "stateTags": ["talked"],
+      "visible": true
+    },
+    {
+      "entityId": "entity.sign.welcome",
+      "mapId": null,
+      "position": null,
+      "facing": null,
+      "stateTags": ["read"],
+      "visible": null
+    }
+  ],
+  "interactionFlags": [
+    {
+      "triggerId": "trigger.welcome-sign",
+      "entityId": "entity.sign.welcome",
+      "activated": true,
+      "activationCount": 1
+    }
+  ],
+  "tags": ["sample", "runtime"]
+}

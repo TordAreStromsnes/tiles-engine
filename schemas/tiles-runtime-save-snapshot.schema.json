@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-runtime-save-snapshot.schema.json",
+  "title": "Tiles Runtime Save Snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "projectId",
+    "sceneId",
+    "engineVersion",
+    "runtimeVersion",
+    "createdAtUtc",
+    "elapsedSeconds",
+    "activeMapId",
+    "player",
+    "entityOverrides",
+    "interactionFlags",
+    "tags"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "projectId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sceneId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "engineVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runtimeVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "createdAtUtc": {
+      "type": "string",
+      "minLength": 1
+    },
+    "elapsedSeconds": {
+      "type": "number",
+      "minimum": 0
+    },
+    "activeMapId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "player": {
+      "$ref": "#/$defs/player"
+    },
+    "entityOverrides": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entityOverride"
+      }
+    },
+    "interactionFlags": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/interactionFlag"
+      }
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    }
+  },
+  "$defs": {
+    "player": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entityId", "spawnId", "position", "facing"],
+      "properties": {
+        "entityId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "spawnId": {
+          "$ref": "#/$defs/optionalString"
+        },
+        "position": {
+          "$ref": "#/$defs/position"
+        },
+        "facing": {
+          "$ref": "#/$defs/facing"
+        }
+      }
+    },
+    "entityOverride": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entityId", "mapId", "position", "facing", "stateTags", "visible"],
+      "properties": {
+        "entityId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mapId": {
+          "$ref": "#/$defs/optionalString"
+        },
+        "position": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/position"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "facing": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/facing"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "stateTags": {
+          "$ref": "#/$defs/tags"
+        },
+        "visible": {
+          "type": ["boolean", "null"]
+        }
+      }
+    },
+    "interactionFlag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["triggerId", "entityId", "activated", "activationCount"],
+      "properties": {
+        "triggerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "entityId": {
+          "$ref": "#/$defs/optionalString"
+        },
+        "activated": {
+          "type": "boolean"
+        },
+        "activationCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      }
+    },
+    "facing": {
+      "type": "string",
+      "enum": ["north", "south", "east", "west"]
+    },
+    "optionalString": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}
