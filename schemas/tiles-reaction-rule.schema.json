@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-reaction-rule.schema.json",
+  "title": "Tiles Engine Reaction Rule",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "description",
+    "sourceTags",
+    "requiredTargetTags",
+    "blockedTargetTags",
+    "addStateTags",
+    "removeStateTags",
+    "assetVariantSwitch",
+    "timing",
+    "triggeredEffects",
+    "tags"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "sourceTags": {
+      "$ref": "#/$defs/requiredQualifiedTags"
+    },
+    "requiredTargetTags": {
+      "$ref": "#/$defs/qualifiedTags"
+    },
+    "blockedTargetTags": {
+      "$ref": "#/$defs/qualifiedTags"
+    },
+    "addStateTags": {
+      "$ref": "#/$defs/qualifiedTags"
+    },
+    "removeStateTags": {
+      "$ref": "#/$defs/qualifiedTags"
+    },
+    "assetVariantSwitch": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/assetVariantSwitch"
+        }
+      ]
+    },
+    "timing": {
+      "$ref": "#/$defs/timing"
+    },
+    "triggeredEffects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/triggeredEffect"
+      },
+      "uniqueItems": true
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    }
+  },
+  "$defs": {
+    "requiredQualifiedTags": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/qualifiedTag"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "qualifiedTags": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/qualifiedTag"
+      },
+      "uniqueItems": true
+    },
+    "qualifiedTag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["namespace", "tag"],
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "assetVariantSwitch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stateVariantId", "when"],
+      "properties": {
+        "stateVariantId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "when": {
+          "$ref": "#/$defs/outputTiming"
+        }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["delaySeconds", "durationSeconds", "tickIntervalSeconds"],
+      "properties": {
+        "delaySeconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "durationSeconds": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          ]
+        },
+        "tickIntervalSeconds": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          ]
+        }
+      }
+    },
+    "triggeredEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effectId", "when"],
+      "properties": {
+        "effectId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "when": {
+          "$ref": "#/$defs/outputTiming"
+        }
+      }
+    },
+    "outputTiming": {
+      "enum": ["onStart", "onTick", "onComplete"]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}

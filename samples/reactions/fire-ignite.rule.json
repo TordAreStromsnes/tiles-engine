@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 0,
+  "id": "rule.fire.ignite-flammable",
+  "name": "Ignite Flammable Target",
+  "description": "Fire sources add burning state to flammable targets unless they are wet or already burning.",
+  "sourceTags": [
+    {
+      "namespace": "source",
+      "tag": "fire"
+    }
+  ],
+  "requiredTargetTags": [
+    {
+      "namespace": "material",
+      "tag": "flammable"
+    }
+  ],
+  "blockedTargetTags": [
+    {
+      "namespace": "state",
+      "tag": "wet"
+    },
+    {
+      "namespace": "state",
+      "tag": "burning"
+    }
+  ],
+  "addStateTags": [
+    {
+      "namespace": "state",
+      "tag": "burning"
+    }
+  ],
+  "removeStateTags": [],
+  "assetVariantSwitch": null,
+  "timing": {
+    "delaySeconds": 0.0,
+    "durationSeconds": 5.0,
+    "tickIntervalSeconds": null
+  },
+  "triggeredEffects": [
+    {
+      "effectId": "effect.fire.flame",
+      "when": "onStart"
+    }
+  ],
+  "tags": ["fire", "state-change"]
+}
