@@ -72,6 +72,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Texture filtering and hot reload plan: [docs/texture-filtering-hot-reload-plan.md](docs/texture-filtering-hot-reload-plan.md)
 - Texture asset hot reload prototype: [docs/texture-asset-hot-reload-prototype.md](docs/texture-asset-hot-reload-prototype.md)
 - Editor selection model MVP: [docs/editor-selection-model-mvp.md](docs/editor-selection-model-mvp.md)
+- Selection hit testing MVP: [docs/selection-hit-testing-mvp.md](docs/selection-hit-testing-mvp.md)
 - Overlay primitive library MVP: [docs/overlay-primitive-library-mvp.md](docs/overlay-primitive-library-mvp.md)
 - Transform gizmo overlay prototype: [docs/transform-gizmo-overlay-prototype.md](docs/transform-gizmo-overlay-prototype.md)
 - Packaged preview binary lookup: [docs/packaged-preview-binary-lookup.md](docs/packaged-preview-binary-lookup.md)
