@@ -4234,6 +4234,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tiles-game-runner"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tiles-core",
+ "tiles-runtime",
+]
+
+[[package]]
 name = "tiles-native-preview"
 version = "0.1.0"
 dependencies = [
