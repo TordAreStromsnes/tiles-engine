@@ -43,7 +43,8 @@ V0 includes three sample rules:
   tagged `material.flammable`, unless blocked by `state.wet` or
   `state.burning`.
 - `rule.water.extinguish-fire`: `source.water` removes `state.burning`, adds
-  `state.wet`, and triggers smoke.
+  `state.wet` and `state.smoking`, switches the target to the `wet` asset
+  state variant, and triggers smoke.
 - `rule.fire.complete-burn`: `state.burning` can transition to `state.burned`
   and switch the target asset state variant to `burned` on completion.
 
