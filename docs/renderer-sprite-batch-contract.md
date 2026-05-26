@@ -20,6 +20,18 @@ Instances are sorted by:
 This gives maps, scenes, animation previews, and editor overlays a predictable
 starting point before the renderer grows more advanced render passes.
 
+## Camera
+
+`Camera2d` describes how world-space sprite data maps into the native preview:
+
+- World position at the center of the viewport.
+- World viewport size.
+- Zoom level.
+
+The renderer contract keeps sprites in world coordinates. The native preview
+projects sprite positions and sizes into clip space from the camera before
+uploading instance data to the GPU.
+
 ## Instance Fields
 
 Each `SpriteInstance` contains:
@@ -56,10 +68,13 @@ The native preview now builds a `SpriteBatch` from the preview scene and convert
 the sorted instances into GPU instance data. It samples a generated texture atlas
 using the source rectangles in the batch instances.
 
+The editor overlay uses a separate overlay batch and render pass after the scene
+sprite pass. The current preview draws a selection outline around the animated
+sprite and an origin marker, both projected through the same `Camera2d`.
+
 ## Known Limits
 
-- No camera transform yet.
-- No editor overlay pass yet.
 - No batching across multiple texture atlases yet.
 - No project image loading or atlas packing yet.
 - No clipping, blend modes, or material flags yet.
+- No full selection UI, gizmo editing, or overlay primitive library yet.

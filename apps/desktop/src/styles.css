@@ -123,6 +123,36 @@ h1 {
   line-height: 1.25;
 }
 
+.toolbar-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.preview-launch-button {
+  min-height: 36px;
+  padding: 8px 12px;
+  color: #0e2536;
+  background: #f2c14e;
+  border: 1px solid #d3a329;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.preview-launch-button:hover:not(:disabled) {
+  background: #f6ce6c;
+}
+
+.preview-launch-button:disabled {
+  color: #768390;
+  background: #e5ebf1;
+  border-color: #ccd5df;
+  cursor: not-allowed;
+}
+
 .eyebrow {
   display: block;
   color: #657687;
@@ -258,6 +288,18 @@ dd {
   line-height: 1.4;
 }
 
+.preview-launch-message {
+  overflow-wrap: anywhere;
+}
+
+.preview-launch-launched {
+  color: #0d663a;
+}
+
+.preview-launch-error {
+  color: #9b2525;
+}
+
 @media (max-width: 860px) {
   .app-shell,
   .workbench {
@@ -276,6 +318,10 @@ dd {
   .toolbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .toolbar-actions {
+    flex-wrap: wrap;
   }
 
   .viewport {
