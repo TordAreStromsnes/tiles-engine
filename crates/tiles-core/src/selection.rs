@@ -1,6 +1,7 @@
 use std::{collections::HashSet, error::Error, fmt};
 
 use serde::{Deserialize, Serialize};
+use tiles_renderer::Camera2d;
 
 use crate::maps::GridPoint;
 
@@ -72,6 +73,29 @@ pub struct WorldBounds {
     pub height: f32,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SelectionHitTestInput {
+    pub pointer_screen: [f32; 2],
+    pub surface_size: [f32; 2],
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SelectionHitTestResult {
+    pub world_position: [f32; 2],
+    pub primary_hit: Option<SelectionHit>,
+    pub candidates: Vec<SelectionHit>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SelectionHit {
+    pub item_id: String,
+    pub target: SelectionTarget,
+    pub bounds: WorldBounds,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum SelectionValidationError {
     UnsupportedSchemaVersion { actual: u32 },
@@ -87,6 +111,14 @@ pub enum SelectionValidationError {
     EmptyPlacementId { item_id: String },
     EmptyRegionId { item_id: String },
     InvalidWorldBounds { item_id: String },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum SelectionHitTestError {
+    InvalidSelectionState(SelectionValidationError),
+    InvalidCamera,
+    InvalidPointer,
+    InvalidSurfaceSize,
 }
 
 impl fmt::Display for SelectionValidationError {
@@ -139,6 +171,28 @@ impl fmt::Display for SelectionValidationError {
 }
 
 impl Error for SelectionValidationError {}
+
+impl fmt::Display for SelectionHitTestError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidSelectionState(error) => write!(formatter, "{error}"),
+            Self::InvalidCamera => write!(formatter, "selection hit test camera is invalid"),
+            Self::InvalidPointer => write!(formatter, "selection hit test pointer is invalid"),
+            Self::InvalidSurfaceSize => {
+                write!(formatter, "selection hit test surface size is invalid")
+            }
+        }
+    }
+}
+
+impl Error for SelectionHitTestError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            Self::InvalidSelectionState(error) => Some(error),
+            _ => None,
+        }
+    }
+}
 
 impl SelectionState {
     pub fn validate(&self) -> Result<(), SelectionValidationError> {
@@ -289,6 +343,97 @@ impl WorldBounds {
             && self.width > 0.0
             && self.height > 0.0
     }
+
+    pub fn contains_world_point(&self, point: [f32; 2]) -> bool {
+        self.is_valid()
+            && point.iter().all(|value| value.is_finite())
+            && point[0] >= self.x
+            && point[0] < self.x + self.width
+            && point[1] >= self.y
+            && point[1] < self.y + self.height
+    }
+
+    pub fn area(&self) -> f32 {
+        self.width * self.height
+    }
+}
+
+pub fn hit_test_selection(
+    state: &SelectionState,
+    camera: &Camera2d,
+    input: SelectionHitTestInput,
+) -> Result<SelectionHitTestResult, SelectionHitTestError> {
+    state
+        .validate()
+        .map_err(SelectionHitTestError::InvalidSelectionState)?;
+    camera
+        .validate()
+        .map_err(|_| SelectionHitTestError::InvalidCamera)?;
+    validate_hit_test_input(input)?;
+
+    let world_position = camera.screen_to_world(input.pointer_screen, input.surface_size);
+    let mut candidates = state
+        .items
+        .iter()
+        .filter_map(|item| {
+            let bounds = item.bounds?;
+            if bounds.contains_world_point(world_position) {
+                Some(SelectionHit {
+                    item_id: item.id.clone(),
+                    target: item.target.clone(),
+                    bounds,
+                })
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    candidates.sort_by(compare_selection_hits);
+
+    Ok(SelectionHitTestResult {
+        world_position,
+        primary_hit: candidates.first().cloned(),
+        candidates,
+    })
+}
+
+fn validate_hit_test_input(input: SelectionHitTestInput) -> Result<(), SelectionHitTestError> {
+    if input.pointer_screen.iter().any(|value| !value.is_finite()) {
+        return Err(SelectionHitTestError::InvalidPointer);
+    }
+
+    if input
+        .surface_size
+        .iter()
+        .any(|value| !value.is_finite() || *value <= 0.0)
+    {
+        return Err(SelectionHitTestError::InvalidSurfaceSize);
+    }
+
+    Ok(())
+}
+
+fn compare_selection_hits(left: &SelectionHit, right: &SelectionHit) -> std::cmp::Ordering {
+    right
+        .bounds
+        .z
+        .total_cmp(&left.bounds.z)
+        .then_with(|| {
+            selection_target_priority(&right.target).cmp(&selection_target_priority(&left.target))
+        })
+        .then_with(|| left.bounds.area().total_cmp(&right.bounds.area()))
+        .then_with(|| left.item_id.cmp(&right.item_id))
+}
+
+fn selection_target_priority(target: &SelectionTarget) -> u8 {
+    match target {
+        SelectionTarget::SceneEntity { .. } => 5,
+        SelectionTarget::MapPlacement { .. } => 4,
+        SelectionTarget::MapRegion { .. } => 3,
+        SelectionTarget::MapTile { .. } => 2,
+        SelectionTarget::Asset { .. } => 1,
+    }
 }
 
 pub fn sample_selection_state() -> SelectionState {
@@ -431,6 +576,98 @@ mod tests {
     }
 
     #[test]
+    fn hit_test_maps_pointer_to_world_and_returns_scene_entity() {
+        let state = hit_test_fixture();
+        let camera = test_camera();
+
+        let result = hit_test_selection(
+            &state,
+            &camera,
+            SelectionHitTestInput {
+                pointer_screen: [500.0, 500.0],
+                surface_size: [1000.0, 1000.0],
+            },
+        )
+        .expect("hit test should succeed");
+
+        assert_eq!(result.world_position, [0.0, 0.0]);
+        assert_eq!(
+            result.primary_hit.as_ref().map(|hit| hit.item_id.as_str()),
+            Some("selection.entity")
+        );
+    }
+
+    #[test]
+    fn hit_test_orders_overlaps_by_depth_specificity_area_and_id() {
+        let state = hit_test_fixture();
+        let camera = test_camera();
+
+        let result = hit_test_selection(
+            &state,
+            &camera,
+            SelectionHitTestInput {
+                pointer_screen: [500.0, 500.0],
+                surface_size: [1000.0, 1000.0],
+            },
+        )
+        .expect("hit test should succeed");
+
+        let item_ids = result
+            .candidates
+            .iter()
+            .map(|candidate| candidate.item_id.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            item_ids,
+            vec![
+                "selection.entity",
+                "selection.placement",
+                "selection.region",
+                "selection.tile"
+            ]
+        );
+    }
+
+    #[test]
+    fn hit_test_miss_returns_world_position_without_candidates() {
+        let state = hit_test_fixture();
+        let camera = test_camera();
+
+        let result = hit_test_selection(
+            &state,
+            &camera,
+            SelectionHitTestInput {
+                pointer_screen: [900.0, 900.0],
+                surface_size: [1000.0, 1000.0],
+            },
+        )
+        .expect("hit test should succeed");
+
+        assert_world_position_near(result.world_position, [4.0, -4.0]);
+        assert!(result.primary_hit.is_none());
+        assert!(result.candidates.is_empty());
+    }
+
+    #[test]
+    fn hit_test_rejects_invalid_surface_size() {
+        let state = hit_test_fixture();
+        let camera = test_camera();
+
+        assert!(matches!(
+            hit_test_selection(
+                &state,
+                &camera,
+                SelectionHitTestInput {
+                    pointer_screen: [500.0, 500.0],
+                    surface_size: [0.0, 1000.0],
+                },
+            ),
+            Err(SelectionHitTestError::InvalidSurfaceSize)
+        ));
+    }
+
+    #[test]
     fn selection_state_schema_is_valid_json_document() {
         let schema: serde_json::Value = serde_json::from_str(include_str!(
             "../../../schemas/tiles-selection-state.schema.json"
@@ -441,5 +678,85 @@ mod tests {
             schema["$id"],
             "https://tiles-engine.dev/schemas/tiles-selection-state.schema.json"
         );
+    }
+
+    fn hit_test_fixture() -> SelectionState {
+        SelectionState {
+            schema_version: SELECTION_STATE_SCHEMA_VERSION,
+            id: "selection.hit-test".to_string(),
+            primary_selection_id: None,
+            items: vec![
+                SelectionItem {
+                    id: "selection.region".to_string(),
+                    target: SelectionTarget::MapRegion {
+                        map_id: "map.village".to_string(),
+                        region_id: "region.market".to_string(),
+                    },
+                    bounds: Some(WorldBounds {
+                        x: -2.0,
+                        y: -2.0,
+                        z: 0.0,
+                        width: 4.0,
+                        height: 4.0,
+                    }),
+                },
+                SelectionItem {
+                    id: "selection.tile".to_string(),
+                    target: SelectionTarget::MapTile {
+                        map_id: "map.village".to_string(),
+                        layer_id: Some("terrain".to_string()),
+                        position: GridPoint { column: 0, row: 0 },
+                    },
+                    bounds: Some(WorldBounds {
+                        x: -0.5,
+                        y: -0.5,
+                        z: 0.0,
+                        width: 1.0,
+                        height: 1.0,
+                    }),
+                },
+                SelectionItem {
+                    id: "selection.placement".to_string(),
+                    target: SelectionTarget::MapPlacement {
+                        map_id: "map.village".to_string(),
+                        placement_id: "placement.crate".to_string(),
+                    },
+                    bounds: Some(WorldBounds {
+                        x: -0.5,
+                        y: -0.5,
+                        z: 0.0,
+                        width: 1.0,
+                        height: 1.0,
+                    }),
+                },
+                SelectionItem {
+                    id: "selection.entity".to_string(),
+                    target: SelectionTarget::SceneEntity {
+                        scene_id: "scene.village".to_string(),
+                        entity_id: "entity.player".to_string(),
+                    },
+                    bounds: Some(WorldBounds {
+                        x: -0.5,
+                        y: -0.5,
+                        z: 1.0,
+                        width: 1.0,
+                        height: 1.0,
+                    }),
+                },
+            ],
+        }
+    }
+
+    fn test_camera() -> Camera2d {
+        Camera2d {
+            position: [0.0, 0.0],
+            viewport_size: [10.0, 10.0],
+            zoom: 1.0,
+        }
+    }
+
+    fn assert_world_position_near(actual: [f32; 2], expected: [f32; 2]) {
+        assert!((actual[0] - expected[0]).abs() < 0.0001);
+        assert!((actual[1] - expected[1]).abs() < 0.0001);
     }
 }

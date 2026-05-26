@@ -53,12 +53,15 @@ world yet.
 - React/editor panels own user intent and inspector display.
 - `tiles-core` owns serialized selection state and validation.
 - Native preview consumes selected item bounds for drawing overlays.
-- Future hit testing should produce `SelectionTarget` ids rather than mutating
-  scene or map data directly.
+- Hit testing produces `SelectionTarget` ids rather than mutating scene or map
+  data directly.
+
+See [selection-hit-testing-mvp.md](selection-hit-testing-mvp.md) for pointer
+mapping, candidate ordering, and current limitations.
 
 ## Current Limits
 
-- No hit testing yet.
+- Hit testing is prototype-level and rectangular bounds only.
 - No transform gizmo behavior yet.
 - No multi-user selection or locking.
 - No selection history or undo stack.
