@@ -39,7 +39,9 @@ code yet; it defines the asset-pipeline decisions those systems should use.
 - Native preview does not yet accept a live texture replacement message.
 - Atlas repacking still needs copied pixels and edge padding before linear
   filtering can be recommended for packed atlases.
-- Packaged/exported-game asset reload is deferred.
+- Packaged/exported-game asset reload policy is separate from editor hot reload
+  and is documented in
+  [packaged-asset-reload-policy.md](packaged-asset-reload-policy.md).
 
 ## Manual Verification Notes
 

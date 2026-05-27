@@ -13,6 +13,8 @@ React editor state.
 
 The editor remains responsible for building and validating the export package.
 After export, shipped game content is read-only runtime input.
+Packaged asset reload policy is documented in
+[packaged-asset-reload-policy.md](packaged-asset-reload-policy.md).
 
 ## Editor Preview Versus Exported Game
 
