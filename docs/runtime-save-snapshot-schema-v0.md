@@ -29,6 +29,8 @@ Sample: [../samples/saves/village.save-snapshot.json](../samples/saves/village.s
 
 Rust API: `crates/tiles-core::runtime_save`
 
+Storage API: `crates/tiles-core::runtime_save_storage`
+
 The root `RuntimeSaveSnapshot` contains:
 
 - `projectId`: stable project id the save belongs to.
@@ -68,6 +70,8 @@ V0 validation checks:
 ## Follow-Ups
 
 - #68: Prototype desktop save/load UI.
+- #99: Implement exported game save storage adapter:
+  [exported-game-save-storage-adapter.md](exported-game-save-storage-adapter.md).
 - #97: Design runtime save migration strategy:
   [runtime-save-migration-strategy.md](runtime-save-migration-strategy.md).
 - #118: Implement runtime save migration scaffold.
