@@ -13,46 +13,243 @@
     "assets": {
       "type": "array",
       "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "name", "kind", "source", "tags"],
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1,
-            "pattern": "^[a-zA-Z0-9._-]+$"
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "sprite",
-              "tileSet",
-              "animationClip",
-              "map",
-              "scene",
-              "rule",
-              "assetPack"
-            ]
-          },
-          "source": {
-            "type": "string",
-            "minLength": 1
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            },
-            "uniqueItems": true
-          }
-        }
+        "$ref": "#/$defs/asset"
       },
       "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "kind", "source", "tags"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "sprite",
+            "spriteSource",
+            "spriteFrame",
+            "tileSet",
+            "animationClip",
+            "map",
+            "scene",
+            "rule",
+            "assetPack"
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/projectRelativePath"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        },
+        "sourceSchemaVersion": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "contentHash": {
+          "type": "string",
+          "minLength": 1
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assetFile"
+          },
+          "uniqueItems": true
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "license": {
+          "$ref": "#/$defs/license"
+        },
+        "licenseStatus": {
+          "type": "string",
+          "enum": ["unknown", "incomplete", "complete", "restricted"],
+          "default": "unknown"
+        },
+        "spriteSource": {
+          "$ref": "#/$defs/spriteSource"
+        }
+      }
+    },
+    "assetFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/projectRelativePath"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "source",
+            "bakedOutput",
+            "thumbnail",
+            "metadata",
+            "generatedRecipe",
+            "other"
+          ]
+        },
+        "contentHash": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "author": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceUrl": {
+          "type": "string",
+          "minLength": 1
+        },
+        "createdWithTilesVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "derivedFromAssetId": {
+          "$ref": "#/$defs/id"
+        },
+        "derivedFromVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generatedBy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generatorVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seed": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "license": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commercialUseAllowed": {
+          "type": "boolean"
+        },
+        "redistributionAllowed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "spriteSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceType", "path", "frames"],
+      "properties": {
+        "sourceType": {
+          "type": "string",
+          "enum": ["singleImage", "spriteSheet"]
+        },
+        "path": {
+          "$ref": "#/$defs/projectRelativePath"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "frames": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/spriteFrame"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "spriteFrame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "rect"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "rect": {
+          "$ref": "#/$defs/pixelRect"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "pixelRect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "width", "height"],
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "projectRelativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(^|[\\\\/])\\.\\.([\\\\/]|$)).+$"
     }
   }
 }
