@@ -6,7 +6,7 @@ use std::{
 };
 
 use serde::Serialize;
-use tiles_core::ExportManifest;
+use tiles_core::{ExportManifest, ExportedGameSaveStorageConfig, RuntimeSaveStorageAdapter};
 use tiles_runtime::{native_runtime_boundary, RuntimePreview, RuntimePreviewError};
 
 const EXPORT_MANIFEST_FILE: &str = "export-manifest.json";
@@ -28,6 +28,8 @@ struct RunnerLaunch {
     entry_scene_id: String,
     entry_map_id: String,
     active_map_id: String,
+    save_directory_path: String,
+    save_namespace: String,
     runtime_owner: String,
     smoke_test: bool,
     message: String,
@@ -43,6 +45,7 @@ enum RunnerError {
     ManifestInvalid { path: PathBuf, reason: String },
     EngineVersionMismatch { expected: String, actual: String },
     ContentRootUnavailable { path: PathBuf },
+    SaveStorage(String),
     RuntimeInit(RuntimePreviewError),
     LaunchSummaryJson(String),
 }
@@ -83,6 +86,9 @@ impl fmt::Display for RunnerError {
                 "export content root was not found at {}",
                 path.display()
             ),
+            Self::SaveStorage(reason) => {
+                write!(formatter, "failed to resolve exported game save storage: {reason}")
+            }
             Self::RuntimeInit(error) => write!(formatter, "failed to initialize runtime: {error}"),
             Self::LaunchSummaryJson(reason) => {
                 write!(formatter, "failed to serialize runner launch summary: {reason}")
@@ -136,6 +142,10 @@ fn launch_exported_game_from(
 
     let runtime = RuntimePreview::sample().map_err(RunnerError::RuntimeInit)?;
     let boundary = native_runtime_boundary();
+    let save_storage = RuntimeSaveStorageAdapter::exported_game(
+        &ExportedGameSaveStorageConfig::from_export_manifest(&manifest),
+    )
+    .map_err(|error| RunnerError::SaveStorage(error.to_string()))?;
 
     Ok(RunnerLaunch {
         manifest_path: manifest_path.display().to_string(),
@@ -145,6 +155,8 @@ fn launch_exported_game_from(
         entry_scene_id: manifest.entry.scene_id,
         entry_map_id: manifest.entry.map_id,
         active_map_id: runtime.state().active_map_id.clone(),
+        save_directory_path: save_storage.root().display().to_string(),
+        save_namespace: manifest.save_namespace,
         runtime_owner: boundary.packaged_game_owner,
         smoke_test: args.smoke_test,
         message: if args.smoke_test {
@@ -351,6 +363,9 @@ mod tests {
         assert_eq!(launch.entry_scene_id, "scene.village-preview");
         assert_eq!(launch.entry_map_id, "map.village");
         assert_eq!(launch.active_map_id, "map.village");
+        assert_eq!(launch.save_namespace, "starter-village");
+        assert!(launch.save_directory_path.contains("starter-village"));
+        assert!(launch.save_directory_path.contains("saves"));
         assert!(launch.runtime_owner.contains("exported games"));
     }
 
