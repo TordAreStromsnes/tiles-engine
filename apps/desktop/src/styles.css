@@ -311,6 +311,88 @@ h1 {
   min-height: 768px;
 }
 
+.asset-import-canvas {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+}
+
+.asset-import-preview {
+  display: grid;
+  width: min(460px, calc(100% - 48px));
+  gap: 12px;
+}
+
+.asset-import-status,
+.asset-metadata-preview,
+.asset-registry-preview,
+.asset-registry-row {
+  color: #18242e;
+  background: rgba(248, 250, 252, 0.94);
+  border: 1px solid #d7dee5;
+  border-radius: 8px;
+  box-shadow: 0 12px 24px rgba(29, 40, 52, 0.18);
+}
+
+.asset-import-status {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-color: #8ed0ab;
+}
+
+.asset-import-status-error {
+  border-color: #e4968d;
+}
+
+.asset-import-status span,
+.asset-metadata-preview span,
+.asset-metadata-preview small,
+.asset-registry-preview span,
+.asset-registry-row span,
+.asset-registry-row small {
+  min-width: 0;
+  overflow: hidden;
+  color: #657687;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.asset-metadata-preview {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+}
+
+.asset-metadata-preview strong {
+  font-size: 28px;
+}
+
+.asset-metadata-preview-empty strong {
+  font-size: 18px;
+}
+
+.asset-registry-preview {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.asset-registry-preview > span {
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.asset-registry-row {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  box-shadow: none;
+}
+
 .menu-settings-canvas {
   position: absolute;
   inset: 0;
@@ -508,6 +590,46 @@ dd {
   display: grid;
   gap: 14px;
   margin-top: 18px;
+}
+
+.asset-import-inspector {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.asset-import-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.asset-import-actions button {
+  min-height: 36px;
+  padding: 7px 8px;
+  color: #0e2536;
+  background: #ffffff;
+  border: 1px solid #c7d2de;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.asset-import-actions button:hover:not(:disabled) {
+  background: #e8eff5;
+  border-color: #8da1b2;
+}
+
+.asset-import-actions button:disabled {
+  color: #7c8894;
+  background: #edf2f6;
+  cursor: not-allowed;
+}
+
+.asset-import-details {
+  gap: 12px;
+  margin-top: 0;
 }
 
 .save-status {
