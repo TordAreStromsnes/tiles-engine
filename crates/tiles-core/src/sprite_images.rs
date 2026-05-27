@@ -503,6 +503,46 @@ pub fn load_sprite_image_metadata(
     })
 }
 
+pub fn load_sprite_image_file_metadata(
+    asset_id: impl AsRef<str>,
+    source_file_path: impl AsRef<Path>,
+) -> Result<SpriteImageMetadata, SpriteImageLoadError> {
+    let asset_id = asset_id.as_ref();
+    let source_file_path = source_file_path.as_ref();
+
+    if asset_id.trim().is_empty() {
+        return Err(SpriteImageLoadError::EmptyAssetId);
+    }
+
+    if source_file_path.as_os_str().is_empty() {
+        return Err(SpriteImageLoadError::EmptySourcePath);
+    }
+
+    let format = image_format_from_path(source_file_path)?;
+
+    if !source_file_path.exists() {
+        return Err(SpriteImageLoadError::MissingFile {
+            path: source_file_path.to_path_buf(),
+        });
+    }
+
+    let bytes = fs::read(source_file_path).map_err(|source| SpriteImageLoadError::Io {
+        path: source_file_path.to_path_buf(),
+        source,
+    })?;
+
+    let size = match format {
+        SpriteImageFormat::Png => png_size(&bytes, source_file_path)?,
+    };
+
+    Ok(SpriteImageMetadata {
+        asset_id: asset_id.to_string(),
+        source_path: source_file_path.to_string_lossy().replace('\\', "/"),
+        format,
+        size,
+    })
+}
+
 fn validate_relative_source_path(source_path: &Path) -> Result<(), SpriteImageLoadError> {
     if source_path.as_os_str().is_empty() {
         return Err(SpriteImageLoadError::EmptySourcePath);
@@ -614,6 +654,27 @@ mod tests {
 
         assert_eq!(metadata.asset_id, "sprite.hero");
         assert_eq!(metadata.source_path, "assets/sprites/hero.png");
+        assert_eq!(metadata.format, SpriteImageFormat::Png);
+        assert_eq!(
+            metadata.size,
+            TextureSize {
+                width: 2,
+                height: 3
+            }
+        );
+    }
+
+    #[test]
+    fn loads_png_metadata_from_direct_file_path() {
+        let root = prepare_fixture("loads_png_metadata_from_direct_file_path");
+        let image_path = root.join("external").join("hero.png");
+        write_fixture(&image_path, PNG_2X3_HEADER);
+
+        let metadata = load_sprite_image_file_metadata("sprite.hero", &image_path)
+            .expect("png metadata should load from direct file path");
+
+        assert_eq!(metadata.asset_id, "sprite.hero");
+        assert!(metadata.source_path.ends_with("external/hero.png"));
         assert_eq!(metadata.format, SpriteImageFormat::Png);
         assert_eq!(
             metadata.size,
