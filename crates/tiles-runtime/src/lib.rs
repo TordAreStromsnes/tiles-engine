@@ -8,7 +8,9 @@ use tiles_core::{
 };
 
 pub mod generic_interactions;
+pub mod menus;
 pub use generic_interactions::*;
+pub use menus::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
