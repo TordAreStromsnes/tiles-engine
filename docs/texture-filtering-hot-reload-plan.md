@@ -72,7 +72,8 @@ replacement versus atlas snapshot refresh.
 - Live scene streaming to the native preview is still a separate prototype.
 - File watching has a tested watch-state comparison model, but not an OS watcher
   loop in the desktop shell.
-- Packed preview/package asset paths are still undecided.
+- Packaged asset reload policy is documented in
+  [packaged-asset-reload-policy.md](packaged-asset-reload-policy.md).
 
 ## User-Visible Limits
 
@@ -86,3 +87,4 @@ replacement versus atlas snapshot refresh.
 
 - #54: Prototype live scene streaming to native preview.
 - #78: Prototype texture asset hot reload.
+- #101: Design packaged asset reload policy.
