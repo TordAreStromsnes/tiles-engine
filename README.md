@@ -58,6 +58,7 @@ See [docs/technical-direction.md](docs/technical-direction.md) and
 - Interaction trigger schema V0: [docs/interaction-trigger-schema-v0.md](docs/interaction-trigger-schema-v0.md)
 - Menu and settings schema V0: [docs/menu-settings-schema-v0.md](docs/menu-settings-schema-v0.md)
 - Runtime menu rendering slice: [docs/runtime-menu-rendering-slice.md](docs/runtime-menu-rendering-slice.md)
+- Menu settings editor panel: [docs/menu-settings-editor-panel.md](docs/menu-settings-editor-panel.md)
 - Menus and save/load after runtime preview: [docs/menus-save-load-after-runtime-preview.md](docs/menus-save-load-after-runtime-preview.md)
 - Runtime save snapshot schema V0: [docs/runtime-save-snapshot-schema-v0.md](docs/runtime-save-snapshot-schema-v0.md)
 - Desktop save/load UI prototype: [docs/desktop-save-load-ui-prototype.md](docs/desktop-save-load-ui-prototype.md)

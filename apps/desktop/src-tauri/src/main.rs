@@ -7,7 +7,9 @@ use std::{
 
 use serde::Serialize;
 use tauri_plugin_shell::ShellExt;
-use tiles_core::{sample_runtime_save_snapshot, RuntimeSaveSnapshot, SceneDocument};
+use tiles_core::{
+    sample_runtime_save_snapshot, MenuSettingsDocument, RuntimeSaveSnapshot, SceneDocument,
+};
 use tiles_renderer::{default_preview_scene, preview_snapshot, PreviewSnapshot};
 
 const NATIVE_PREVIEW_SIDECAR_NAME: &str = "tiles-native-preview";
@@ -46,6 +48,49 @@ fn validate_scene(scene: SceneDocument) -> SceneValidation {
             message: error.to_string(),
             entity_count: scene.entities.len(),
             map_count: scene.map_ids.len(),
+        },
+    }
+}
+
+#[tauri::command]
+fn sample_menu_settings() -> MenuSettingsDocument {
+    tiles_core::sample_menu_settings_document()
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MenuSettingsValidation {
+    valid: bool,
+    message: String,
+    menu_count: usize,
+    action_count: usize,
+    setting_count: usize,
+}
+
+#[tauri::command]
+fn validate_menu_settings(document: MenuSettingsDocument) -> MenuSettingsValidation {
+    let menu_count = document.menus.len();
+    let action_count = document.actions.len();
+    let setting_count = document
+        .settings
+        .iter()
+        .map(|group| group.settings.len())
+        .sum();
+
+    match document.validate() {
+        Ok(()) => MenuSettingsValidation {
+            valid: true,
+            message: "Menu settings data is valid.".to_string(),
+            menu_count,
+            action_count,
+            setting_count,
+        },
+        Err(error) => MenuSettingsValidation {
+            valid: false,
+            message: error.to_string(),
+            menu_count,
+            action_count,
+            setting_count,
         },
     }
 }
@@ -633,6 +678,8 @@ fn main() {
             engine_status,
             sample_scene,
             validate_scene,
+            sample_menu_settings,
+            validate_menu_settings,
             list_runtime_save_slots,
             save_runtime_snapshot,
             load_runtime_snapshot,
@@ -773,6 +820,39 @@ mod tests {
             Some("entity.player")
         );
         assert_eq!(loaded.slot.active_map_id.as_deref(), Some("map.village"));
+    }
+
+    #[test]
+    fn sample_menu_settings_command_returns_valid_document() {
+        let document = sample_menu_settings();
+
+        document
+            .validate()
+            .expect("desktop menu/settings sample should validate");
+        assert!(document.menus.iter().any(|menu| menu.id == "menu.title"));
+        assert!(document.menus.iter().any(|menu| menu.id == "menu.pause"));
+    }
+
+    #[test]
+    fn validate_menu_settings_reports_sample_counts() {
+        let document = sample_menu_settings();
+        let validation = validate_menu_settings(document);
+
+        assert!(validation.valid);
+        assert_eq!(validation.menu_count, 3);
+        assert_eq!(validation.action_count, 6);
+        assert_eq!(validation.setting_count, 5);
+    }
+
+    #[test]
+    fn validate_menu_settings_surfaces_schema_errors() {
+        let mut document = sample_menu_settings();
+        document.actions[0].id.clear();
+
+        let validation = validate_menu_settings(document);
+
+        assert!(!validation.valid);
+        assert!(validation.message.contains("action"));
     }
 
     #[test]
