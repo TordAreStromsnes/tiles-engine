@@ -18,6 +18,8 @@ V0 covers:
 
 It does not cover cloud sync, encryption, compression, migration tooling,
 autosave policy, full game-specific quest state, or editor project save files.
+Migration policy is captured in
+[runtime-save-migration-strategy.md](runtime-save-migration-strategy.md).
 
 ## Data Model
 
@@ -66,6 +68,8 @@ V0 validation checks:
 ## Follow-Ups
 
 - #68: Prototype desktop save/load UI.
-- #97: Design runtime save migration strategy.
+- #97: Design runtime save migration strategy:
+  [runtime-save-migration-strategy.md](runtime-save-migration-strategy.md).
+- #118: Implement runtime save migration scaffold.
 - Exported-game storage locations are documented in
   [exported-game-launch-path.md](exported-game-launch-path.md).
