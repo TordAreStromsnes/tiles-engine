@@ -2,10 +2,12 @@ use std::{
     collections::HashSet,
     error::Error,
     fmt, fs, io,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
 };
 
 use serde::{Deserialize, Serialize};
+
+use crate::assets::PixelRect;
 
 pub const PROJECT_FORMAT_VERSION: u32 = 0;
 pub const PROJECT_FOLDER_EXTENSION: &str = "tilesproj";
@@ -75,12 +77,28 @@ pub struct AssetRegistryEntry {
     pub kind: AssetKind,
     pub source: String,
     pub tags: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_schema_version: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub content_hash: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub files: Vec<AssetFileRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provenance: Option<AssetProvenance>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub license: Option<AssetLicenseMetadata>,
+    #[serde(default, skip_serializing_if = "AssetLicenseStatus::is_unknown")]
+    pub license_status: AssetLicenseStatus,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sprite_source: Option<SpriteRegistrySource>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum AssetKind {
     Sprite,
+    SpriteSource,
+    SpriteFrame,
     TileSet,
     AnimationClip,
     Map,
@@ -89,17 +107,197 @@ pub enum AssetKind {
     AssetPack,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetFileRef {
+    pub path: String,
+    pub role: AssetFileRole,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub content_hash: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AssetFileRole {
+    Source,
+    BakedOutput,
+    Thumbnail,
+    Metadata,
+    GeneratedRecipe,
+    Other,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetProvenance {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub created_with_tiles_version: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub derived_from_asset_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub derived_from_version: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub generated_by: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub generator_version: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub seed: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetLicenseMetadata {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub commercial_use_allowed: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub redistribution_allowed: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AssetLicenseStatus {
+    Unknown,
+    Incomplete,
+    Complete,
+    Restricted,
+}
+
+impl Default for AssetLicenseStatus {
+    fn default() -> Self {
+        Self::Unknown
+    }
+}
+
+impl AssetLicenseStatus {
+    fn is_unknown(&self) -> bool {
+        matches!(self, Self::Unknown)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpriteRegistrySource {
+    pub source_type: SpriteRegistrySourceType,
+    pub path: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub width: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub height: Option<u32>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub frames: Vec<SpriteRegistryFrame>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SpriteRegistrySourceType {
+    SingleImage,
+    SpriteSheet,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpriteRegistryFrame {
+    pub id: String,
+    pub rect: PixelRect,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProjectValidationError {
-    UnsupportedManifestVersion { actual: u32 },
-    UnsupportedAssetRegistryVersion { actual: u32 },
+    UnsupportedManifestVersion {
+        actual: u32,
+    },
+    UnsupportedAssetRegistryVersion {
+        actual: u32,
+    },
     EmptyProjectId,
     EmptyProjectName,
     EmptyAssetId,
-    DuplicateAssetId { id: String },
-    EmptyAssetName { id: String },
-    EmptyAssetSource { id: String },
-    AbsoluteAssetSource { id: String, source: String },
+    DuplicateAssetId {
+        id: String,
+    },
+    EmptyAssetName {
+        id: String,
+    },
+    EmptyAssetSource {
+        id: String,
+    },
+    AbsoluteAssetSource {
+        id: String,
+        source: String,
+    },
+    AssetSourceEscapesProject {
+        id: String,
+        source: String,
+    },
+    EmptyAssetTag {
+        id: String,
+    },
+    DuplicateAssetTag {
+        id: String,
+        tag: String,
+    },
+    EmptyAssetContentHash {
+        id: String,
+    },
+    EmptyAssetFilePath {
+        id: String,
+    },
+    AbsoluteAssetFilePath {
+        id: String,
+        path: String,
+    },
+    AssetFileEscapesProject {
+        id: String,
+        path: String,
+    },
+    EmptyAssetFileContentHash {
+        id: String,
+        path: String,
+    },
+    EmptySpriteSourcePath {
+        id: String,
+    },
+    AbsoluteSpriteSourcePath {
+        id: String,
+        path: String,
+    },
+    SpriteSourceEscapesProject {
+        id: String,
+        path: String,
+    },
+    EmptySpriteSourceFrames {
+        id: String,
+    },
+    EmptySpriteFrameId {
+        id: String,
+    },
+    DuplicateSpriteFrameId {
+        id: String,
+        frame_id: String,
+    },
+    InvalidSpriteFrameRect {
+        id: String,
+        frame_id: String,
+    },
+    EmptySpriteFrameTag {
+        id: String,
+        frame_id: String,
+    },
+    DuplicateSpriteFrameTag {
+        id: String,
+        frame_id: String,
+        tag: String,
+    },
 }
 
 impl fmt::Display for ProjectValidationError {
@@ -122,6 +320,65 @@ impl fmt::Display for ProjectValidationError {
             Self::AbsoluteAssetSource { id, source } => write!(
                 formatter,
                 "asset `{id}` source `{source}` must be relative to the project folder"
+            ),
+            Self::AssetSourceEscapesProject { id, source } => write!(
+                formatter,
+                "asset `{id}` source `{source}` must not contain parent directory components"
+            ),
+            Self::EmptyAssetTag { id } => write!(formatter, "asset `{id}` has an empty tag"),
+            Self::DuplicateAssetTag { id, tag } => {
+                write!(formatter, "asset `{id}` has duplicate tag `{tag}`")
+            }
+            Self::EmptyAssetContentHash { id } => {
+                write!(formatter, "asset `{id}` content hash must not be empty")
+            }
+            Self::EmptyAssetFilePath { id } => {
+                write!(formatter, "asset `{id}` file path must not be empty")
+            }
+            Self::AbsoluteAssetFilePath { id, path } => write!(
+                formatter,
+                "asset `{id}` file path `{path}` must be relative to the project folder"
+            ),
+            Self::AssetFileEscapesProject { id, path } => write!(
+                formatter,
+                "asset `{id}` file path `{path}` must not contain parent directory components"
+            ),
+            Self::EmptyAssetFileContentHash { id, path } => write!(
+                formatter,
+                "asset `{id}` file `{path}` content hash must not be empty"
+            ),
+            Self::EmptySpriteSourcePath { id } => {
+                write!(formatter, "asset `{id}` sprite source path must not be empty")
+            }
+            Self::AbsoluteSpriteSourcePath { id, path } => write!(
+                formatter,
+                "asset `{id}` sprite source path `{path}` must be relative to the project folder"
+            ),
+            Self::SpriteSourceEscapesProject { id, path } => write!(
+                formatter,
+                "asset `{id}` sprite source path `{path}` must not contain parent directory components"
+            ),
+            Self::EmptySpriteSourceFrames { id } => {
+                write!(formatter, "asset `{id}` sprite source needs at least one frame")
+            }
+            Self::EmptySpriteFrameId { id } => {
+                write!(formatter, "asset `{id}` has a sprite frame with an empty id")
+            }
+            Self::DuplicateSpriteFrameId { id, frame_id } => write!(
+                formatter,
+                "asset `{id}` has duplicate sprite frame `{frame_id}`"
+            ),
+            Self::InvalidSpriteFrameRect { id, frame_id } => write!(
+                formatter,
+                "asset `{id}` sprite frame `{frame_id}` must have positive size"
+            ),
+            Self::EmptySpriteFrameTag { id, frame_id } => write!(
+                formatter,
+                "asset `{id}` sprite frame `{frame_id}` has an empty tag"
+            ),
+            Self::DuplicateSpriteFrameTag { id, frame_id, tag } => write!(
+                formatter,
+                "asset `{id}` sprite frame `{frame_id}` has duplicate tag `{tag}`"
             ),
         }
     }
@@ -255,6 +512,29 @@ impl AssetRegistry {
 }
 
 impl AssetRegistryEntry {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        kind: AssetKind,
+        source: impl Into<String>,
+        tags: Vec<String>,
+    ) -> Self {
+        Self {
+            id: id.into(),
+            name: name.into(),
+            kind,
+            source: source.into(),
+            tags,
+            source_schema_version: None,
+            content_hash: None,
+            files: Vec::new(),
+            provenance: None,
+            license: None,
+            license_status: AssetLicenseStatus::Unknown,
+            sprite_source: None,
+        }
+    }
+
     pub fn validate(&self) -> Result<(), ProjectValidationError> {
         if self.id.trim().is_empty() {
             return Err(ProjectValidationError::EmptyAssetId);
@@ -272,15 +552,200 @@ impl AssetRegistryEntry {
             });
         }
 
-        if Path::new(&self.source).is_absolute() {
-            return Err(ProjectValidationError::AbsoluteAssetSource {
+        validate_project_relative_path(
+            &self.source,
+            || ProjectValidationError::EmptyAssetSource {
                 id: self.id.clone(),
-                source: self.source.clone(),
+            },
+            |source| ProjectValidationError::AbsoluteAssetSource {
+                id: self.id.clone(),
+                source,
+            },
+            |source| ProjectValidationError::AssetSourceEscapesProject {
+                id: self.id.clone(),
+                source,
+            },
+        )?;
+
+        validate_asset_tags(&self.id, &self.tags)?;
+
+        if self
+            .content_hash
+            .as_ref()
+            .is_some_and(|hash| hash.trim().is_empty())
+        {
+            return Err(ProjectValidationError::EmptyAssetContentHash {
+                id: self.id.clone(),
+            });
+        }
+
+        for file in &self.files {
+            file.validate(&self.id)?;
+        }
+
+        if let Some(sprite_source) = &self.sprite_source {
+            sprite_source.validate(&self.id)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl AssetFileRef {
+    fn validate(&self, asset_id: &str) -> Result<(), ProjectValidationError> {
+        validate_project_relative_path(
+            &self.path,
+            || ProjectValidationError::EmptyAssetFilePath {
+                id: asset_id.to_string(),
+            },
+            |path| ProjectValidationError::AbsoluteAssetFilePath {
+                id: asset_id.to_string(),
+                path,
+            },
+            |path| ProjectValidationError::AssetFileEscapesProject {
+                id: asset_id.to_string(),
+                path,
+            },
+        )?;
+
+        if self
+            .content_hash
+            .as_ref()
+            .is_some_and(|hash| hash.trim().is_empty())
+        {
+            return Err(ProjectValidationError::EmptyAssetFileContentHash {
+                id: asset_id.to_string(),
+                path: self.path.clone(),
             });
         }
 
         Ok(())
     }
+}
+
+impl SpriteRegistrySource {
+    fn validate(&self, asset_id: &str) -> Result<(), ProjectValidationError> {
+        validate_project_relative_path(
+            &self.path,
+            || ProjectValidationError::EmptySpriteSourcePath {
+                id: asset_id.to_string(),
+            },
+            |path| ProjectValidationError::AbsoluteSpriteSourcePath {
+                id: asset_id.to_string(),
+                path,
+            },
+            |path| ProjectValidationError::SpriteSourceEscapesProject {
+                id: asset_id.to_string(),
+                path,
+            },
+        )?;
+
+        if self.frames.is_empty() {
+            return Err(ProjectValidationError::EmptySpriteSourceFrames {
+                id: asset_id.to_string(),
+            });
+        }
+
+        let mut frame_ids = HashSet::new();
+        for frame in &self.frames {
+            if frame.id.trim().is_empty() {
+                return Err(ProjectValidationError::EmptySpriteFrameId {
+                    id: asset_id.to_string(),
+                });
+            }
+
+            if !frame_ids.insert(frame.id.as_str()) {
+                return Err(ProjectValidationError::DuplicateSpriteFrameId {
+                    id: asset_id.to_string(),
+                    frame_id: frame.id.clone(),
+                });
+            }
+
+            if frame.rect.width == 0 || frame.rect.height == 0 {
+                return Err(ProjectValidationError::InvalidSpriteFrameRect {
+                    id: asset_id.to_string(),
+                    frame_id: frame.id.clone(),
+                });
+            }
+
+            validate_sprite_frame_tags(asset_id, &frame.id, &frame.tags)?;
+        }
+
+        Ok(())
+    }
+}
+
+fn validate_project_relative_path(
+    path: &str,
+    empty_error: impl FnOnce() -> ProjectValidationError,
+    absolute_error: impl FnOnce(String) -> ProjectValidationError,
+    parent_error: impl FnOnce(String) -> ProjectValidationError,
+) -> Result<(), ProjectValidationError> {
+    if path.trim().is_empty() {
+        return Err(empty_error());
+    }
+
+    let path_ref = Path::new(path);
+    if path_ref.is_absolute() {
+        return Err(absolute_error(path.to_string()));
+    }
+
+    if path_ref
+        .components()
+        .any(|component| matches!(component, Component::ParentDir))
+    {
+        return Err(parent_error(path.to_string()));
+    }
+
+    Ok(())
+}
+
+fn validate_asset_tags(asset_id: &str, tags: &[String]) -> Result<(), ProjectValidationError> {
+    let mut seen = HashSet::new();
+
+    for tag in tags {
+        if tag.trim().is_empty() {
+            return Err(ProjectValidationError::EmptyAssetTag {
+                id: asset_id.to_string(),
+            });
+        }
+
+        if !seen.insert(tag.as_str()) {
+            return Err(ProjectValidationError::DuplicateAssetTag {
+                id: asset_id.to_string(),
+                tag: tag.clone(),
+            });
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_sprite_frame_tags(
+    asset_id: &str,
+    frame_id: &str,
+    tags: &[String],
+) -> Result<(), ProjectValidationError> {
+    let mut seen = HashSet::new();
+
+    for tag in tags {
+        if tag.trim().is_empty() {
+            return Err(ProjectValidationError::EmptySpriteFrameTag {
+                id: asset_id.to_string(),
+                frame_id: frame_id.to_string(),
+            });
+        }
+
+        if !seen.insert(tag.as_str()) {
+            return Err(ProjectValidationError::DuplicateSpriteFrameTag {
+                id: asset_id.to_string(),
+                frame_id: frame_id.to_string(),
+                tag: tag.clone(),
+            });
+        }
+    }
+
+    Ok(())
 }
 
 pub fn save_project(project: &TilesProject, root: impl AsRef<Path>) -> Result<(), ProjectIoError> {
@@ -369,13 +834,13 @@ mod tests {
     fn starter_project_saves_loads_and_validates() {
         let root = temp_project_root("starter-project");
         let mut project = TilesProject::starter("test-project", "Test Project");
-        project.asset_registry.assets.push(AssetRegistryEntry {
-            id: "sprite.hero".to_string(),
-            name: "Hero".to_string(),
-            kind: AssetKind::Sprite,
-            source: "assets/sprites/hero.sprite.json".to_string(),
-            tags: vec!["character".to_string(), "humanoid".to_string()],
-        });
+        project.asset_registry.assets.push(AssetRegistryEntry::new(
+            "sprite.hero",
+            "Hero",
+            AssetKind::Sprite,
+            "assets/sprites/hero.sprite.json",
+            vec!["character".to_string(), "humanoid".to_string()],
+        ));
 
         save_project(&project, &root).expect("project should save");
         let loaded = load_project(&root).expect("project should load");
@@ -394,20 +859,20 @@ mod tests {
     fn validation_rejects_duplicate_asset_ids() {
         let mut project = TilesProject::starter("test-project", "Test Project");
         project.asset_registry.assets = vec![
-            AssetRegistryEntry {
-                id: "sprite.hero".to_string(),
-                name: "Hero".to_string(),
-                kind: AssetKind::Sprite,
-                source: "assets/sprites/hero.sprite.json".to_string(),
-                tags: Vec::new(),
-            },
-            AssetRegistryEntry {
-                id: "sprite.hero".to_string(),
-                name: "Hero Variant".to_string(),
-                kind: AssetKind::Sprite,
-                source: "assets/sprites/hero-variant.sprite.json".to_string(),
-                tags: Vec::new(),
-            },
+            AssetRegistryEntry::new(
+                "sprite.hero",
+                "Hero",
+                AssetKind::Sprite,
+                "assets/sprites/hero.sprite.json",
+                Vec::new(),
+            ),
+            AssetRegistryEntry::new(
+                "sprite.hero",
+                "Hero Variant",
+                AssetKind::Sprite,
+                "assets/sprites/hero-variant.sprite.json",
+                Vec::new(),
+            ),
         ];
 
         let result = project.validate();
@@ -427,19 +892,179 @@ mod tests {
             .join("hero.sprite.json")
             .display()
             .to_string();
-        project.asset_registry.assets.push(AssetRegistryEntry {
-            id: "sprite.hero".to_string(),
-            name: "Hero".to_string(),
-            kind: AssetKind::Sprite,
-            source: absolute_source,
-            tags: Vec::new(),
-        });
+        project.asset_registry.assets.push(AssetRegistryEntry::new(
+            "sprite.hero",
+            "Hero",
+            AssetKind::Sprite,
+            absolute_source,
+            Vec::new(),
+        ));
 
         let result = project.validate();
 
         assert!(matches!(
             result,
             Err(ProjectValidationError::AbsoluteAssetSource { id, .. }) if id == "sprite.hero"
+        ));
+    }
+
+    #[test]
+    fn rich_asset_registry_entry_supports_sprite_source_metadata() {
+        let mut entry = AssetRegistryEntry::new(
+            "sprite.hero.sheet",
+            "Hero Sheet",
+            AssetKind::SpriteSource,
+            "assets/sprites/hero.png",
+            vec!["character".to_string(), "humanoid".to_string()],
+        );
+        entry.source_schema_version = Some(0);
+        entry.content_hash = Some("sha256:abc123".to_string());
+        entry.files = vec![
+            AssetFileRef {
+                path: "assets/sprites/hero.png".to_string(),
+                role: AssetFileRole::Source,
+                content_hash: Some("sha256:abc123".to_string()),
+            },
+            AssetFileRef {
+                path: "assets/sprites/hero.thumb.png".to_string(),
+                role: AssetFileRole::Thumbnail,
+                content_hash: None,
+            },
+        ];
+        entry.provenance = Some(AssetProvenance {
+            author: Some("Tiles Engine".to_string()),
+            source_url: None,
+            created_with_tiles_version: Some(env!("CARGO_PKG_VERSION").to_string()),
+            derived_from_asset_id: None,
+            derived_from_version: None,
+            generated_by: Some("tiles-engine-starter-generator".to_string()),
+            generator_version: Some("0".to_string()),
+            seed: Some("starter-hero".to_string()),
+        });
+        entry.license = Some(AssetLicenseMetadata {
+            id: Some("CC0-1.0".to_string()),
+            name: Some("Creative Commons Zero v1.0 Universal".to_string()),
+            commercial_use_allowed: Some(true),
+            redistribution_allowed: Some(true),
+        });
+        entry.license_status = AssetLicenseStatus::Complete;
+        entry.sprite_source = Some(SpriteRegistrySource {
+            source_type: SpriteRegistrySourceType::SpriteSheet,
+            path: "assets/sprites/hero.png".to_string(),
+            width: Some(64),
+            height: Some(32),
+            frames: vec![
+                SpriteRegistryFrame {
+                    id: "front.idle.0".to_string(),
+                    rect: PixelRect {
+                        x: 0,
+                        y: 0,
+                        width: 32,
+                        height: 32,
+                    },
+                    tags: vec!["front".to_string(), "idle".to_string()],
+                },
+                SpriteRegistryFrame {
+                    id: "back.idle.0".to_string(),
+                    rect: PixelRect {
+                        x: 32,
+                        y: 0,
+                        width: 32,
+                        height: 32,
+                    },
+                    tags: vec!["back".to_string(), "idle".to_string()],
+                },
+            ],
+        });
+
+        entry
+            .validate()
+            .expect("rich registry entry should validate");
+        let json = serde_json::to_string_pretty(&entry).expect("entry should serialize");
+        let loaded: AssetRegistryEntry =
+            serde_json::from_str(&json).expect("entry should deserialize");
+
+        assert_eq!(loaded, entry);
+        assert_eq!(loaded.license_status, AssetLicenseStatus::Complete);
+        assert_eq!(
+            loaded
+                .sprite_source
+                .as_ref()
+                .expect("sprite source should exist")
+                .frames
+                .len(),
+            2
+        );
+    }
+
+    #[test]
+    fn validation_rejects_project_escape_paths_in_registry_metadata() {
+        let mut entry = AssetRegistryEntry::new(
+            "sprite.hero",
+            "Hero",
+            AssetKind::Sprite,
+            "assets/sprites/hero.sprite.json",
+            Vec::new(),
+        );
+        entry.files.push(AssetFileRef {
+            path: "../outside.png".to_string(),
+            role: AssetFileRole::Source,
+            content_hash: None,
+        });
+
+        let result = entry.validate();
+
+        assert!(matches!(
+            result,
+            Err(ProjectValidationError::AssetFileEscapesProject { id, path })
+                if id == "sprite.hero" && path == "../outside.png"
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_duplicate_sprite_frame_ids() {
+        let mut entry = AssetRegistryEntry::new(
+            "sprite.hero.sheet",
+            "Hero Sheet",
+            AssetKind::SpriteSource,
+            "assets/sprites/hero.png",
+            Vec::new(),
+        );
+        entry.sprite_source = Some(SpriteRegistrySource {
+            source_type: SpriteRegistrySourceType::SpriteSheet,
+            path: "assets/sprites/hero.png".to_string(),
+            width: Some(64),
+            height: Some(32),
+            frames: vec![
+                SpriteRegistryFrame {
+                    id: "idle.0".to_string(),
+                    rect: PixelRect {
+                        x: 0,
+                        y: 0,
+                        width: 32,
+                        height: 32,
+                    },
+                    tags: Vec::new(),
+                },
+                SpriteRegistryFrame {
+                    id: "idle.0".to_string(),
+                    rect: PixelRect {
+                        x: 32,
+                        y: 0,
+                        width: 32,
+                        height: 32,
+                    },
+                    tags: Vec::new(),
+                },
+            ],
+        });
+
+        let result = entry.validate();
+
+        assert!(matches!(
+            result,
+            Err(ProjectValidationError::DuplicateSpriteFrameId { id, frame_id })
+                if id == "sprite.hero.sheet" && frame_id == "idle.0"
         ));
     }
 

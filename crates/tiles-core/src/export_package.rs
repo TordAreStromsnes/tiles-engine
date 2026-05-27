@@ -251,9 +251,11 @@ fn export_asset_bundles(assets: &[AssetRegistryEntry]) -> Vec<ExportAssetBundleR
 
 fn export_bundle_kind(kind: &AssetKind) -> ExportAssetBundleKind {
     match kind {
-        AssetKind::Sprite | AssetKind::TileSet | AssetKind::AssetPack => {
-            ExportAssetBundleKind::SpriteAssets
-        }
+        AssetKind::Sprite
+        | AssetKind::SpriteSource
+        | AssetKind::SpriteFrame
+        | AssetKind::TileSet
+        | AssetKind::AssetPack => ExportAssetBundleKind::SpriteAssets,
         AssetKind::AnimationClip => ExportAssetBundleKind::AnimationClips,
         AssetKind::Map => ExportAssetBundleKind::Map,
         AssetKind::Scene => ExportAssetBundleKind::Scene,
@@ -465,13 +467,13 @@ mod tests {
     fn export_development_package_reports_missing_asset_source() {
         let project_root = temp_project_root("export-missing-source");
         let mut project = TilesProject::starter("starter-village", "Starter Village");
-        project.asset_registry.assets.push(AssetRegistryEntry {
-            id: "scene.entry".to_string(),
-            name: "Entry Scene".to_string(),
-            kind: AssetKind::Scene,
-            source: "scenes/missing.scene.json".to_string(),
-            tags: Vec::new(),
-        });
+        project.asset_registry.assets.push(AssetRegistryEntry::new(
+            "scene.entry",
+            "Entry Scene",
+            AssetKind::Scene,
+            "scenes/missing.scene.json",
+            Vec::new(),
+        ));
         save_project(&project, &project_root).expect("project should save");
 
         let error = export_development_package(&project_root)
@@ -489,20 +491,20 @@ mod tests {
         let project_root = temp_project_root(name);
         let mut project = TilesProject::starter("starter-village", "Starter Village");
         project.asset_registry.assets = vec![
-            AssetRegistryEntry {
-                id: "scene.entry".to_string(),
-                name: "Entry Scene".to_string(),
-                kind: AssetKind::Scene,
-                source: "scenes/village.scene.json".to_string(),
-                tags: vec!["entry".to_string()],
-            },
-            AssetRegistryEntry {
-                id: "map.village".to_string(),
-                name: "Village Map".to_string(),
-                kind: AssetKind::Map,
-                source: "maps/village.map.json".to_string(),
-                tags: vec!["entry".to_string()],
-            },
+            AssetRegistryEntry::new(
+                "scene.entry",
+                "Entry Scene",
+                AssetKind::Scene,
+                "scenes/village.scene.json",
+                vec!["entry".to_string()],
+            ),
+            AssetRegistryEntry::new(
+                "map.village",
+                "Village Map",
+                AssetKind::Map,
+                "maps/village.map.json",
+                vec!["entry".to_string()],
+            ),
         ];
 
         save_project(&project, &project_root).expect("project should save");
