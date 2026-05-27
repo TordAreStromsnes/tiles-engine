@@ -223,6 +223,38 @@ type MenuSettingsValidation = {
   settingCount: number;
 };
 
+type SpriteImageMetadata = {
+  assetId: string;
+  sourcePath: string;
+  format: "png";
+  size: {
+    width: number;
+    height: number;
+  };
+};
+
+type AssetRegistryEntry = {
+  id: string;
+  name: string;
+  kind: "sprite" | "tileSet" | "animationClip" | "map" | "scene" | "rule" | "assetPack";
+  source: string;
+  tags: string[];
+};
+
+type SpriteAssetImportRequest = {
+  projectRoot: string;
+  assetId: string;
+  name: string;
+  sourcePath: string;
+};
+
+type SpriteAssetImportResult = {
+  ok: boolean;
+  message: string;
+  metadata: SpriteImageMetadata | null;
+  registryEntry: AssetRegistryEntry | null;
+};
+
 const fallbackStatus: EngineStatus = {
   engineName: "Tiles Engine",
   stack: {
@@ -495,6 +527,20 @@ const fallbackMenuSettingsValidation: MenuSettingsValidation = {
   ),
 };
 
+const fallbackSpriteImportRequest: SpriteAssetImportRequest = {
+  projectRoot: "",
+  assetId: "sprite.hero",
+  name: "Hero",
+  sourcePath: "assets/sprites/hero.png",
+};
+
+const fallbackSpriteImportResult: SpriteAssetImportResult = {
+  ok: false,
+  message: "Import pending.",
+  metadata: null,
+  registryEntry: null,
+};
+
 export function App() {
   const [status, setStatus] = useState<EngineStatus>(fallbackStatus);
   const [shellState, setShellState] = useState<ShellState>("checking");
@@ -520,6 +566,14 @@ export function App() {
   const [menuSettingsValidation, setMenuSettingsValidation] = useState<MenuSettingsValidation>(
     fallbackMenuSettingsValidation,
   );
+  const [spriteImportRequest, setSpriteImportRequest] = useState<SpriteAssetImportRequest>(
+    fallbackSpriteImportRequest,
+  );
+  const [spriteImportResult, setSpriteImportResult] = useState<SpriteAssetImportResult>(
+    fallbackSpriteImportResult,
+  );
+  const [importedSpriteAssets, setImportedSpriteAssets] = useState<AssetRegistryEntry[]>([]);
+  const [spriteImportBusy, setSpriteImportBusy] = useState(false);
 
   useEffect(() => {
     if (!isTauri()) {
@@ -864,6 +918,46 @@ export function App() {
     });
   };
 
+  const updateSpriteImportRequest = (changes: Partial<SpriteAssetImportRequest>) => {
+    setSpriteImportRequest((currentRequest) => ({ ...currentRequest, ...changes }));
+  };
+
+  const runSpriteAssetImport = (addToRegistry: boolean) => {
+    setSpriteImportBusy(true);
+
+    const result = isTauri()
+      ? invoke<SpriteAssetImportResult>("preview_sprite_asset_import", {
+          request: spriteImportRequest,
+        })
+      : Promise.resolve(validateSpriteImportInBrowser(spriteImportRequest));
+
+    result
+      .then((response) => {
+        setSpriteImportResult(response);
+
+        const importedEntry = response.registryEntry;
+
+        if (addToRegistry && response.ok && importedEntry) {
+          setImportedSpriteAssets((currentAssets) =>
+            currentAssets.some((asset) => asset.id === importedEntry.id)
+              ? currentAssets.map((asset) =>
+                  asset.id === importedEntry.id ? importedEntry : asset,
+                )
+              : [...currentAssets, importedEntry],
+          );
+        }
+      })
+      .catch((error) => {
+        setSpriteImportResult({
+          ok: false,
+          message: String(error),
+          metadata: null,
+          registryEntry: null,
+        });
+      })
+      .finally(() => setSpriteImportBusy(false));
+  };
+
   return (
     <main className="app-shell">
       <aside className="rail" aria-label="Editor panels">
@@ -913,7 +1007,12 @@ export function App() {
         <section className="workbench">
           <div className="viewport" aria-label={`${activePanel} preview`}>
             <div className="tile-grid" />
-            {activePanel === "Saves" ? (
+            {activePanel === "Assets" ? (
+              <AssetImportViewport
+                importedAssets={importedSpriteAssets}
+                result={spriteImportResult}
+              />
+            ) : activePanel === "Saves" ? (
               <SaveSlotsViewport selectedSlotId={selectedSaveSlotId} slots={saveSlots.slots} />
             ) : activePanel === "Menus" ? (
               <MenuSettingsViewport
@@ -940,7 +1039,17 @@ export function App() {
           <aside className="inspector" aria-label="Inspector">
             <span className="eyebrow">Active Panel</span>
             <h2>{activePanel}</h2>
-            {activePanel === "Saves" ? (
+            {activePanel === "Assets" ? (
+              <AssetImportInspector
+                busy={spriteImportBusy}
+                importedAssets={importedSpriteAssets}
+                request={spriteImportRequest}
+                result={spriteImportResult}
+                onAdd={() => runSpriteAssetImport(true)}
+                onUpdateRequest={updateSpriteImportRequest}
+                onValidate={() => runSpriteAssetImport(false)}
+              />
+            ) : activePanel === "Saves" ? (
               <SaveLoadInspector
                 selectedSlot={selectedSaveSlot}
                 selectedSlotId={selectedSaveSlotId}
@@ -1047,6 +1156,54 @@ function SceneComposerViewport({
           {entityGlyph(entity)}
         </button>
       ))}
+    </div>
+  );
+}
+
+type AssetImportViewportProps = {
+  importedAssets: AssetRegistryEntry[];
+  result: SpriteAssetImportResult;
+};
+
+function AssetImportViewport({ importedAssets, result }: AssetImportViewportProps) {
+  return (
+    <div className="asset-import-canvas" aria-label="Sprite asset import preview">
+      <div className="asset-import-preview">
+        <div className={result.ok ? "asset-import-status" : "asset-import-status asset-import-status-error"}>
+          <strong>{result.ok ? "Import ready" : "Import status"}</strong>
+          <span>{result.message}</span>
+        </div>
+
+        {result.metadata ? (
+          <div className="asset-metadata-preview">
+            <span>{result.metadata.assetId}</span>
+            <strong>
+              {result.metadata.size.width} x {result.metadata.size.height}
+            </strong>
+            <small>{result.metadata.sourcePath}</small>
+          </div>
+        ) : (
+          <div className="asset-metadata-preview asset-metadata-preview-empty">
+            <span>PNG</span>
+            <strong>No metadata loaded</strong>
+            <small>Project-relative source pending</small>
+          </div>
+        )}
+
+        <div className="asset-registry-preview" aria-label="Imported sprite registry entries">
+          {importedAssets.length === 0 ? (
+            <span>No imported sprite assets</span>
+          ) : (
+            importedAssets.map((asset) => (
+              <div className="asset-registry-row" key={asset.id}>
+                <strong>{asset.name}</strong>
+                <span>{asset.id}</span>
+                <small>{asset.source}</small>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1236,6 +1393,102 @@ function SaveLoadInspector({
             <dd>{selectedSlot.invalidReason}</dd>
           </div>
         ) : null}
+      </dl>
+    </div>
+  );
+}
+
+type AssetImportInspectorProps = {
+  busy: boolean;
+  importedAssets: AssetRegistryEntry[];
+  request: SpriteAssetImportRequest;
+  result: SpriteAssetImportResult;
+  onUpdateRequest: (changes: Partial<SpriteAssetImportRequest>) => void;
+  onValidate: () => void;
+  onAdd: () => void;
+};
+
+function AssetImportInspector({
+  busy,
+  importedAssets,
+  request,
+  result,
+  onUpdateRequest,
+  onValidate,
+  onAdd,
+}: AssetImportInspectorProps) {
+  return (
+    <div className="asset-import-inspector">
+      <div className={result.ok ? "validation validation-valid" : "validation validation-error"}>
+        <strong>{result.ok ? "Valid sprite import" : "Sprite import"}</strong>
+        <span>{result.message}</span>
+      </div>
+
+      <label className="field">
+        <span>Project root</span>
+        <input
+          value={request.projectRoot}
+          onChange={(event) => onUpdateRequest({ projectRoot: event.target.value })}
+        />
+      </label>
+
+      <label className="field">
+        <span>Asset id</span>
+        <input
+          value={request.assetId}
+          onChange={(event) => onUpdateRequest({ assetId: event.target.value })}
+        />
+      </label>
+
+      <label className="field">
+        <span>Name</span>
+        <input
+          value={request.name}
+          onChange={(event) => onUpdateRequest({ name: event.target.value })}
+        />
+      </label>
+
+      <label className="field">
+        <span>Source path</span>
+        <input
+          value={request.sourcePath}
+          onChange={(event) => onUpdateRequest({ sourcePath: event.target.value })}
+        />
+      </label>
+
+      <div className="asset-import-actions">
+        <button disabled={busy} onClick={onValidate} type="button">
+          {busy ? "Checking..." : "Validate"}
+        </button>
+        <button disabled={busy} onClick={onAdd} type="button">
+          {busy ? "Adding..." : "Add"}
+        </button>
+      </div>
+
+      {result.metadata ? (
+        <dl className="asset-import-details">
+          <div>
+            <dt>Format</dt>
+            <dd>{result.metadata.format.toUpperCase()}</dd>
+          </div>
+          <div>
+            <dt>Dimensions</dt>
+            <dd>
+              {result.metadata.size.width} x {result.metadata.size.height}
+            </dd>
+          </div>
+          <div>
+            <dt>Registry source</dt>
+            <dd>{result.registryEntry?.source ?? result.metadata.sourcePath}</dd>
+          </div>
+        </dl>
+      ) : null}
+
+      <dl className="asset-import-details">
+        <div>
+          <dt>Imported sprites</dt>
+          <dd>{importedAssets.length}</dd>
+        </div>
       </dl>
     </div>
   );
@@ -2142,4 +2395,70 @@ function menuActionCommandLabel(command: MenuActionCommand) {
     case "custom":
       return `Custom: ${command.data.commandId}`;
   }
+}
+
+function validateSpriteImportInBrowser(
+  request: SpriteAssetImportRequest,
+): SpriteAssetImportResult {
+  const sourcePathParts = request.sourcePath.split(/[\\/]+/);
+
+  if (request.assetId.trim() === "") {
+    return spriteImportError("sprite image asset id must not be empty");
+  }
+
+  if (request.name.trim() === "") {
+    return spriteImportError(`asset ${request.assetId} must have a name`);
+  }
+
+  if (request.sourcePath.trim() === "") {
+    return spriteImportError("sprite image source path must not be empty");
+  }
+
+  if (/^[a-zA-Z]:/.test(request.sourcePath) || request.sourcePath.startsWith("/")) {
+    return spriteImportError(
+      `sprite image source path ${request.sourcePath} must be relative to the project root`,
+    );
+  }
+
+  if (sourcePathParts.includes("..")) {
+    return spriteImportError(
+      `sprite image source path ${request.sourcePath} must not contain parent directory components`,
+    );
+  }
+
+  if (!request.sourcePath.toLowerCase().endsWith(".png")) {
+    return spriteImportError(
+      `sprite image file ${request.sourcePath} uses an unsupported format; MVP supports PNG`,
+    );
+  }
+
+  const metadata: SpriteImageMetadata = {
+    assetId: request.assetId,
+    sourcePath: request.sourcePath,
+    format: "png",
+    size: { width: 32, height: 32 },
+  };
+  const registryEntry: AssetRegistryEntry = {
+    id: request.assetId,
+    name: request.name,
+    kind: "sprite",
+    source: request.sourcePath,
+    tags: ["sprite", "imported"],
+  };
+
+  return {
+    ok: true,
+    message: `Sprite asset ${request.assetId} is ready to add to the asset registry.`,
+    metadata,
+    registryEntry,
+  };
+}
+
+function spriteImportError(message: string): SpriteAssetImportResult {
+  return {
+    ok: false,
+    message,
+    metadata: null,
+    registryEntry: null,
+  };
 }

@@ -50,3 +50,5 @@ Generated metadata uses nearest texture sampling by default.
 
 - #45: Build texture atlas packing MVP.
 - #78: Prototype texture asset hot reload.
+- #102: Prototype sprite asset import UI:
+  [sprite-asset-import-ui-prototype.md](sprite-asset-import-ui-prototype.md).

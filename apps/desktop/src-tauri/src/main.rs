@@ -5,10 +5,12 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri_plugin_shell::ShellExt;
 use tiles_core::{
-    sample_runtime_save_snapshot, MenuSettingsDocument, RuntimeSaveSnapshot, SceneDocument,
+    load_sprite_image_metadata, sample_runtime_save_snapshot, AssetKind, AssetRegistry,
+    AssetRegistryEntry, MenuSettingsDocument, RuntimeSaveSnapshot, SceneDocument,
+    SpriteImageMetadata, PROJECT_FORMAT_VERSION,
 };
 use tiles_renderer::{default_preview_scene, preview_snapshot, PreviewSnapshot};
 
@@ -91,6 +93,73 @@ fn validate_menu_settings(document: MenuSettingsDocument) -> MenuSettingsValidat
             menu_count,
             action_count,
             setting_count,
+        },
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SpriteAssetImportRequest {
+    project_root: String,
+    asset_id: String,
+    name: String,
+    source_path: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SpriteAssetImportResult {
+    ok: bool,
+    message: String,
+    metadata: Option<SpriteImageMetadata>,
+    registry_entry: Option<AssetRegistryEntry>,
+}
+
+#[tauri::command]
+fn preview_sprite_asset_import(request: SpriteAssetImportRequest) -> SpriteAssetImportResult {
+    let project_root = if request.project_root.trim().is_empty() {
+        workspace_root_from_manifest(Path::new(env!("CARGO_MANIFEST_DIR")))
+    } else {
+        PathBuf::from(request.project_root.trim())
+    };
+
+    match load_sprite_image_metadata(&project_root, &request.asset_id, &request.source_path) {
+        Ok(metadata) => {
+            let registry_entry = AssetRegistryEntry {
+                id: request.asset_id,
+                name: request.name,
+                kind: AssetKind::Sprite,
+                source: request.source_path,
+                tags: vec!["sprite".to_string(), "imported".to_string()],
+            };
+            let registry = AssetRegistry {
+                schema_version: PROJECT_FORMAT_VERSION,
+                assets: vec![registry_entry.clone()],
+            };
+
+            match registry.validate() {
+                Ok(()) => SpriteAssetImportResult {
+                    ok: true,
+                    message: format!(
+                        "Sprite asset `{}` is ready to add to the asset registry.",
+                        registry_entry.id
+                    ),
+                    metadata: Some(metadata),
+                    registry_entry: Some(registry_entry),
+                },
+                Err(error) => SpriteAssetImportResult {
+                    ok: false,
+                    message: error.to_string(),
+                    metadata: Some(metadata),
+                    registry_entry: None,
+                },
+            }
+        }
+        Err(error) => SpriteAssetImportResult {
+            ok: false,
+            message: error.to_string(),
+            metadata: None,
+            registry_entry: None,
         },
     }
 }
@@ -680,6 +749,7 @@ fn main() {
             validate_scene,
             sample_menu_settings,
             validate_menu_settings,
+            preview_sprite_asset_import,
             list_runtime_save_slots,
             save_runtime_snapshot,
             load_runtime_snapshot,
@@ -692,6 +762,12 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const PNG_2X3_HEADER: &[u8] = &[
+        0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, b'I', b'H', b'D',
+        b'R', 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x03, 0x08, 0x06, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00,
+    ];
 
     #[test]
     fn workspace_root_resolves_from_tauri_manifest_dir() {
@@ -856,6 +932,58 @@ mod tests {
     }
 
     #[test]
+    fn sprite_asset_import_loads_png_metadata_and_registry_entry() {
+        let project_root = temp_workspace_root("sprite-import-ok");
+        let image_path = project_root.join("assets").join("sprites").join("hero.png");
+        write_fixture(&image_path, PNG_2X3_HEADER);
+
+        let result = preview_sprite_asset_import(SpriteAssetImportRequest {
+            project_root: project_root.display().to_string(),
+            asset_id: "sprite.hero".to_string(),
+            name: "Hero".to_string(),
+            source_path: "assets/sprites/hero.png".to_string(),
+        });
+        let _ = fs::remove_dir_all(&project_root);
+
+        assert!(result.ok);
+        assert_eq!(
+            result.metadata.as_ref().map(|metadata| metadata.size.width),
+            Some(2)
+        );
+        assert_eq!(
+            result
+                .metadata
+                .as_ref()
+                .map(|metadata| metadata.size.height),
+            Some(3)
+        );
+        assert_eq!(
+            result
+                .registry_entry
+                .as_ref()
+                .map(|entry| entry.source.as_str()),
+            Some("assets/sprites/hero.png")
+        );
+    }
+
+    #[test]
+    fn sprite_asset_import_reports_project_relative_path_errors() {
+        let project_root = temp_workspace_root("sprite-import-parent-path");
+        let result = preview_sprite_asset_import(SpriteAssetImportRequest {
+            project_root: project_root.display().to_string(),
+            asset_id: "sprite.hero".to_string(),
+            name: "Hero".to_string(),
+            source_path: "../hero.png".to_string(),
+        });
+        let _ = fs::remove_dir_all(&project_root);
+
+        assert!(!result.ok);
+        assert!(result.message.contains("must not contain parent directory"));
+        assert!(result.metadata.is_none());
+        assert!(result.registry_entry.is_none());
+    }
+
+    #[test]
     fn preview_snapshot_for_launch_serializes_for_native_preview() {
         let scene = tiles_core::sample_village_scene();
         let snapshot = preview_snapshot_for_launch(&scene);
@@ -910,5 +1038,15 @@ mod tests {
         ));
         assert!(error.to_string().contains("sidecar:prepare"));
         assert!(error.to_string().contains("binaries/tiles-native-preview"));
+    }
+
+    fn temp_workspace_root(name: &str) -> PathBuf {
+        std::env::temp_dir().join(format!("tiles-engine-{name}-{}", std::process::id()))
+    }
+
+    fn write_fixture(path: &Path, bytes: &[u8]) {
+        let parent = path.parent().expect("fixture path should have parent");
+        fs::create_dir_all(parent).expect("fixture parent should be created");
+        fs::write(path, bytes).expect("fixture should be written");
     }
 }
