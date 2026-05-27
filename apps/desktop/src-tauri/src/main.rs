@@ -8,10 +8,13 @@ use std::{
 use serde::{Deserialize, Serialize};
 use tauri_plugin_shell::ShellExt;
 use tiles_core::{
-    load_sprite_image_metadata, sample_runtime_save_snapshot, AssetKind, AssetRegistry,
-    AssetRegistryEntry, MenuSettingsDocument, RuntimeSaveSnapshot, SceneDocument,
-    SpriteImageMetadata, PROJECT_FORMAT_VERSION,
+    load_project, load_sprite_image_file_metadata, load_sprite_image_metadata,
+    sample_runtime_save_snapshot, save_project, AssetFileRef, AssetFileRole, AssetKind,
+    AssetLicenseMetadata, AssetLicenseStatus, AssetProvenance, AssetRegistry, AssetRegistryEntry,
+    MenuSettingsDocument, RuntimeSaveSnapshot, SceneDocument, SpriteImageMetadata,
+    SpriteRegistryFrame, SpriteRegistrySource, SpriteRegistrySourceType, PROJECT_FORMAT_VERSION,
 };
+use tiles_core::{PixelRect, ASSETS_DIR};
 use tiles_renderer::{default_preview_scene, preview_snapshot, PreviewSnapshot};
 
 const NATIVE_PREVIEW_SIDECAR_NAME: &str = "tiles-native-preview";
@@ -104,6 +107,7 @@ struct SpriteAssetImportRequest {
     asset_id: String,
     name: String,
     source_path: String,
+    target_path: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -113,25 +117,40 @@ struct SpriteAssetImportResult {
     message: String,
     metadata: Option<SpriteImageMetadata>,
     registry_entry: Option<AssetRegistryEntry>,
+    copied_path: Option<String>,
 }
 
 #[tauri::command]
 fn preview_sprite_asset_import(request: SpriteAssetImportRequest) -> SpriteAssetImportResult {
-    let project_root = if request.project_root.trim().is_empty() {
-        workspace_root_from_manifest(Path::new(env!("CARGO_MANIFEST_DIR")))
+    let project_root = sprite_import_project_root(&request);
+    let source_file_path = sprite_import_source_file_path(&project_root, &request.source_path);
+    let metadata_result = if Path::new(&request.source_path).is_absolute() {
+        load_sprite_image_file_metadata(&request.asset_id, &source_file_path)
     } else {
-        PathBuf::from(request.project_root.trim())
+        load_sprite_image_metadata(&project_root, &request.asset_id, &request.source_path)
     };
 
-    match load_sprite_image_metadata(&project_root, &request.asset_id, &request.source_path) {
+    match metadata_result {
         Ok(metadata) => {
-            let registry_entry = AssetRegistryEntry {
-                id: request.asset_id,
-                name: request.name,
-                kind: AssetKind::Sprite,
-                source: request.source_path,
-                tags: vec!["sprite".to_string(), "imported".to_string()],
+            let registry_source = match sprite_import_preview_registry_path(&request) {
+                Ok(path) => path,
+                Err(message) => {
+                    return SpriteAssetImportResult {
+                        ok: false,
+                        message,
+                        metadata: Some(metadata),
+                        registry_entry: None,
+                        copied_path: None,
+                    };
+                }
             };
+            let registry_entry = sprite_import_registry_entry(
+                &request.asset_id,
+                &request.name,
+                &registry_source,
+                &metadata,
+                None,
+            );
             let registry = AssetRegistry {
                 schema_version: PROJECT_FORMAT_VERSION,
                 assets: vec![registry_entry.clone()],
@@ -146,12 +165,14 @@ fn preview_sprite_asset_import(request: SpriteAssetImportRequest) -> SpriteAsset
                     ),
                     metadata: Some(metadata),
                     registry_entry: Some(registry_entry),
+                    copied_path: None,
                 },
                 Err(error) => SpriteAssetImportResult {
                     ok: false,
                     message: error.to_string(),
                     metadata: Some(metadata),
                     registry_entry: None,
+                    copied_path: None,
                 },
             }
         }
@@ -160,8 +181,306 @@ fn preview_sprite_asset_import(request: SpriteAssetImportRequest) -> SpriteAsset
             message: error.to_string(),
             metadata: None,
             registry_entry: None,
+            copied_path: None,
         },
     }
+}
+
+#[tauri::command]
+fn persist_sprite_asset_import(request: SpriteAssetImportRequest) -> SpriteAssetImportResult {
+    match persist_sprite_asset_import_to_project(&request) {
+        Ok(result) => result,
+        Err(message) => SpriteAssetImportResult {
+            ok: false,
+            message,
+            metadata: None,
+            registry_entry: None,
+            copied_path: None,
+        },
+    }
+}
+
+fn persist_sprite_asset_import_to_project(
+    request: &SpriteAssetImportRequest,
+) -> Result<SpriteAssetImportResult, String> {
+    let project_root = sprite_import_project_root(request);
+    let mut project = load_project(&project_root).map_err(|error| {
+        format!(
+            "Cannot import sprite because project files could not be loaded from {}: {error}",
+            project_root.display()
+        )
+    })?;
+
+    if project
+        .asset_registry
+        .assets
+        .iter()
+        .any(|asset| asset.id == request.asset_id)
+    {
+        return Err(format!(
+            "Asset id `{}` already exists in the project registry.",
+            request.asset_id
+        ));
+    }
+
+    let source_file_path = sprite_import_source_file_path(&project_root, &request.source_path);
+    load_sprite_image_file_metadata(&request.asset_id, &source_file_path)
+        .map_err(|error| error.to_string())?;
+
+    let source_bytes = fs::read(&source_file_path).map_err(|error| {
+        format!(
+            "Failed to read sprite image file `{}`: {error}",
+            source_file_path.display()
+        )
+    })?;
+    let target_path = sprite_import_target_path(request)?;
+    validate_sprite_import_target_path(&target_path)?;
+    let destination_path = project_root.join(&target_path);
+    let same_file = source_file_path == destination_path
+        || source_file_path
+            .canonicalize()
+            .ok()
+            .zip(destination_path.canonicalize().ok())
+            .is_some_and(|(source, destination)| source == destination);
+
+    if destination_path.exists() && !same_file {
+        return Err(format!(
+            "Target sprite asset file `{}` already exists. Choose a different target path.",
+            target_path
+        ));
+    }
+
+    if !same_file {
+        if let Some(parent) = destination_path.parent() {
+            fs::create_dir_all(parent).map_err(|error| {
+                format!(
+                    "Failed to create sprite asset folder `{}`: {error}",
+                    parent.display()
+                )
+            })?;
+        }
+
+        fs::write(&destination_path, &source_bytes).map_err(|error| {
+            format!(
+                "Failed to copy sprite image to `{}`: {error}",
+                destination_path.display()
+            )
+        })?;
+    }
+
+    let metadata = load_sprite_image_metadata(&project_root, &request.asset_id, &target_path)
+        .map_err(|error| error.to_string())?;
+    let registry_entry = sprite_import_registry_entry(
+        &request.asset_id,
+        &request.name,
+        &target_path,
+        &metadata,
+        Some(content_hash_for_bytes(&source_bytes)),
+    );
+
+    project.asset_registry.assets.push(registry_entry.clone());
+    project
+        .asset_registry
+        .validate()
+        .map_err(|error| error.to_string())?;
+    save_project(&project, &project_root).map_err(|error| error.to_string())?;
+
+    Ok(SpriteAssetImportResult {
+        ok: true,
+        message: format!(
+            "Sprite asset `{}` was copied to `{}` and saved in the project registry.",
+            registry_entry.id, target_path
+        ),
+        metadata: Some(metadata),
+        registry_entry: Some(registry_entry),
+        copied_path: Some(target_path),
+    })
+}
+
+fn sprite_import_project_root(request: &SpriteAssetImportRequest) -> PathBuf {
+    if request.project_root.trim().is_empty() {
+        workspace_root_from_manifest(Path::new(env!("CARGO_MANIFEST_DIR")))
+    } else {
+        PathBuf::from(request.project_root.trim())
+    }
+}
+
+fn sprite_import_source_file_path(project_root: &Path, source_path: &str) -> PathBuf {
+    let source_path = PathBuf::from(source_path.trim());
+
+    if source_path.is_absolute() {
+        source_path
+    } else {
+        project_root.join(source_path)
+    }
+}
+
+fn sprite_import_target_path(request: &SpriteAssetImportRequest) -> Result<String, String> {
+    let target_path = request
+        .target_path
+        .as_deref()
+        .map(str::trim)
+        .filter(|path| !path.is_empty())
+        .map(ToOwned::to_owned)
+        .unwrap_or_else(|| {
+            format!(
+                "{ASSETS_DIR}/sprites/{}.png",
+                sanitize_asset_id_for_filename(&request.asset_id)
+            )
+        });
+
+    if target_path.trim().is_empty() {
+        return Err("Target sprite asset path must not be empty.".to_string());
+    }
+
+    Ok(target_path.replace('\\', "/"))
+}
+
+fn sprite_import_preview_registry_path(
+    request: &SpriteAssetImportRequest,
+) -> Result<String, String> {
+    if request
+        .target_path
+        .as_deref()
+        .is_some_and(|path| !path.trim().is_empty())
+        || Path::new(&request.source_path).is_absolute()
+    {
+        let target_path = sprite_import_target_path(request)?;
+        validate_sprite_import_target_path(&target_path)?;
+        Ok(target_path)
+    } else {
+        Ok(request.source_path.trim().replace('\\', "/"))
+    }
+}
+
+fn validate_sprite_import_target_path(target_path: &str) -> Result<(), String> {
+    let path = Path::new(target_path);
+
+    if path.is_absolute() {
+        return Err(format!(
+            "Target sprite asset path `{target_path}` must be relative to the project folder."
+        ));
+    }
+
+    if path
+        .components()
+        .any(|component| matches!(component, std::path::Component::ParentDir))
+    {
+        return Err(format!(
+            "Target sprite asset path `{target_path}` must not contain parent directory components."
+        ));
+    }
+
+    if path
+        .components()
+        .next()
+        .and_then(|component| match component {
+            std::path::Component::Normal(value) => value.to_str(),
+            _ => None,
+        })
+        != Some(ASSETS_DIR)
+    {
+        return Err(format!(
+            "Target sprite asset path `{target_path}` must be inside the `{ASSETS_DIR}` folder."
+        ));
+    }
+
+    if !target_path.to_ascii_lowercase().ends_with(".png") {
+        return Err(format!(
+            "Target sprite asset path `{target_path}` must use the .png extension."
+        ));
+    }
+
+    Ok(())
+}
+
+fn sprite_import_registry_entry(
+    asset_id: &str,
+    name: &str,
+    source_path: &str,
+    metadata: &SpriteImageMetadata,
+    content_hash: Option<String>,
+) -> AssetRegistryEntry {
+    let mut entry = AssetRegistryEntry::new(
+        asset_id,
+        name,
+        AssetKind::Sprite,
+        source_path,
+        vec!["sprite".to_string(), "imported".to_string()],
+    );
+    entry.content_hash = content_hash.clone();
+    entry.files = vec![AssetFileRef {
+        path: source_path.to_string(),
+        role: AssetFileRole::Source,
+        content_hash,
+    }];
+    entry.provenance = Some(AssetProvenance {
+        author: None,
+        source_url: None,
+        created_with_tiles_version: Some(env!("CARGO_PKG_VERSION").to_string()),
+        derived_from_asset_id: None,
+        derived_from_version: None,
+        generated_by: None,
+        generator_version: None,
+        seed: None,
+    });
+    entry.license = Some(AssetLicenseMetadata {
+        id: None,
+        name: None,
+        commercial_use_allowed: None,
+        redistribution_allowed: None,
+    });
+    entry.license_status = AssetLicenseStatus::Incomplete;
+    entry.sprite_source = Some(SpriteRegistrySource {
+        source_type: SpriteRegistrySourceType::SingleImage,
+        path: source_path.to_string(),
+        width: Some(metadata.size.width),
+        height: Some(metadata.size.height),
+        frames: vec![SpriteRegistryFrame {
+            id: "default".to_string(),
+            rect: PixelRect {
+                x: 0,
+                y: 0,
+                width: metadata.size.width,
+                height: metadata.size.height,
+            },
+            tags: vec!["default".to_string()],
+        }],
+    });
+    entry
+}
+
+fn sanitize_asset_id_for_filename(asset_id: &str) -> String {
+    let sanitized: String = asset_id
+        .chars()
+        .map(|character| {
+            if character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.') {
+                character
+            } else {
+                '_'
+            }
+        })
+        .collect();
+
+    let sanitized = sanitized.trim_matches('.');
+    if sanitized.is_empty() {
+        "sprite".to_string()
+    } else {
+        sanitized.to_string()
+    }
+}
+
+fn content_hash_for_bytes(bytes: &[u8]) -> String {
+    const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
+    const FNV_PRIME: u64 = 0x100000001b3;
+
+    let mut hash = FNV_OFFSET_BASIS;
+    for byte in bytes {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(FNV_PRIME);
+    }
+
+    format!("fnv1a64:{hash:016x}")
 }
 
 #[derive(Debug, Serialize)]
@@ -750,6 +1069,7 @@ fn main() {
             sample_menu_settings,
             validate_menu_settings,
             preview_sprite_asset_import,
+            persist_sprite_asset_import,
             list_runtime_save_slots,
             save_runtime_snapshot,
             load_runtime_snapshot,
@@ -942,6 +1262,7 @@ mod tests {
             asset_id: "sprite.hero".to_string(),
             name: "Hero".to_string(),
             source_path: "assets/sprites/hero.png".to_string(),
+            target_path: None,
         });
         let _ = fs::remove_dir_all(&project_root);
 
@@ -974,6 +1295,7 @@ mod tests {
             asset_id: "sprite.hero".to_string(),
             name: "Hero".to_string(),
             source_path: "../hero.png".to_string(),
+            target_path: None,
         });
         let _ = fs::remove_dir_all(&project_root);
 
@@ -981,6 +1303,80 @@ mod tests {
         assert!(result.message.contains("must not contain parent directory"));
         assert!(result.metadata.is_none());
         assert!(result.registry_entry.is_none());
+    }
+
+    #[test]
+    fn persistent_sprite_import_copies_file_and_updates_project_registry() {
+        let project_root = temp_workspace_root("sprite-import-persist-project");
+        let source_root = temp_workspace_root("sprite-import-persist-source");
+        let source_path = source_root.join("hero.png");
+        let project = tiles_core::TilesProject::starter("test-project", "Test Project");
+        save_project(&project, &project_root).expect("project should save");
+        write_fixture(&source_path, PNG_2X3_HEADER);
+
+        let result = persist_sprite_asset_import(SpriteAssetImportRequest {
+            project_root: project_root.display().to_string(),
+            asset_id: "sprite.hero".to_string(),
+            name: "Hero".to_string(),
+            source_path: source_path.display().to_string(),
+            target_path: Some("assets/sprites/hero.png".to_string()),
+        });
+        let loaded = load_project(&project_root).expect("project should reload");
+        let _ = fs::remove_dir_all(&project_root);
+        let _ = fs::remove_dir_all(&source_root);
+
+        assert!(result.ok, "{}", result.message);
+        assert_eq!(
+            result.copied_path.as_deref(),
+            Some("assets/sprites/hero.png")
+        );
+        assert_eq!(loaded.asset_registry.assets.len(), 1);
+        let entry = &loaded.asset_registry.assets[0];
+        assert_eq!(entry.id, "sprite.hero");
+        assert_eq!(entry.source, "assets/sprites/hero.png");
+        assert!(entry
+            .content_hash
+            .as_deref()
+            .is_some_and(|hash| hash.starts_with("fnv1a64:")));
+        assert_eq!(entry.license_status, AssetLicenseStatus::Incomplete);
+        assert_eq!(
+            entry
+                .sprite_source
+                .as_ref()
+                .and_then(|source| source.frames.first())
+                .map(|frame| (frame.rect.width, frame.rect.height)),
+            Some((2, 3))
+        );
+    }
+
+    #[test]
+    fn persistent_sprite_import_rejects_duplicate_asset_ids() {
+        let project_root = temp_workspace_root("sprite-import-duplicate-project");
+        let source_root = temp_workspace_root("sprite-import-duplicate-source");
+        let source_path = source_root.join("hero.png");
+        let mut project = tiles_core::TilesProject::starter("test-project", "Test Project");
+        project.asset_registry.assets.push(AssetRegistryEntry::new(
+            "sprite.hero",
+            "Hero",
+            AssetKind::Sprite,
+            "assets/sprites/hero.png",
+            Vec::new(),
+        ));
+        save_project(&project, &project_root).expect("project should save");
+        write_fixture(&source_path, PNG_2X3_HEADER);
+
+        let result = persist_sprite_asset_import(SpriteAssetImportRequest {
+            project_root: project_root.display().to_string(),
+            asset_id: "sprite.hero".to_string(),
+            name: "Hero".to_string(),
+            source_path: source_path.display().to_string(),
+            target_path: Some("assets/sprites/hero-copy.png".to_string()),
+        });
+        let _ = fs::remove_dir_all(&project_root);
+        let _ = fs::remove_dir_all(&source_root);
+
+        assert!(!result.ok);
+        assert!(result.message.contains("already exists"));
     }
 
     #[test]

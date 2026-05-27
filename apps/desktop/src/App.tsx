@@ -236,9 +236,21 @@ type SpriteImageMetadata = {
 type AssetRegistryEntry = {
   id: string;
   name: string;
-  kind: "sprite" | "tileSet" | "animationClip" | "map" | "scene" | "rule" | "assetPack";
+  kind:
+    | "sprite"
+    | "spriteSource"
+    | "spriteFrame"
+    | "tileSet"
+    | "animationClip"
+    | "map"
+    | "scene"
+    | "rule"
+    | "assetPack";
   source: string;
   tags: string[];
+  sourceSchemaVersion?: number;
+  contentHash?: string;
+  licenseStatus?: "unknown" | "incomplete" | "complete" | "restricted";
 };
 
 type SpriteAssetImportRequest = {
@@ -246,6 +258,7 @@ type SpriteAssetImportRequest = {
   assetId: string;
   name: string;
   sourcePath: string;
+  targetPath: string;
 };
 
 type SpriteAssetImportResult = {
@@ -253,6 +266,7 @@ type SpriteAssetImportResult = {
   message: string;
   metadata: SpriteImageMetadata | null;
   registryEntry: AssetRegistryEntry | null;
+  copiedPath: string | null;
 };
 
 const fallbackStatus: EngineStatus = {
@@ -532,6 +546,7 @@ const fallbackSpriteImportRequest: SpriteAssetImportRequest = {
   assetId: "sprite.hero",
   name: "Hero",
   sourcePath: "assets/sprites/hero.png",
+  targetPath: "",
 };
 
 const fallbackSpriteImportResult: SpriteAssetImportResult = {
@@ -539,6 +554,7 @@ const fallbackSpriteImportResult: SpriteAssetImportResult = {
   message: "Import pending.",
   metadata: null,
   registryEntry: null,
+  copiedPath: null,
 };
 
 export function App() {
@@ -926,10 +942,13 @@ export function App() {
     setSpriteImportBusy(true);
 
     const result = isTauri()
-      ? invoke<SpriteAssetImportResult>("preview_sprite_asset_import", {
-          request: spriteImportRequest,
-        })
-      : Promise.resolve(validateSpriteImportInBrowser(spriteImportRequest));
+      ? invoke<SpriteAssetImportResult>(
+          addToRegistry ? "persist_sprite_asset_import" : "preview_sprite_asset_import",
+          {
+            request: spriteImportRequest,
+          },
+        )
+      : Promise.resolve(validateSpriteImportInBrowser(spriteImportRequest, addToRegistry));
 
     result
       .then((response) => {
@@ -953,6 +972,7 @@ export function App() {
           message: String(error),
           metadata: null,
           registryEntry: null,
+          copiedPath: null,
         });
       })
       .finally(() => setSpriteImportBusy(false));
@@ -1449,10 +1469,18 @@ function AssetImportInspector({
       </label>
 
       <label className="field">
-        <span>Source path</span>
+        <span>Source file path</span>
         <input
           value={request.sourcePath}
           onChange={(event) => onUpdateRequest({ sourcePath: event.target.value })}
+        />
+      </label>
+
+      <label className="field">
+        <span>Target path</span>
+        <input
+          value={request.targetPath}
+          onChange={(event) => onUpdateRequest({ targetPath: event.target.value })}
         />
       </label>
 
@@ -1480,6 +1508,10 @@ function AssetImportInspector({
           <div>
             <dt>Registry source</dt>
             <dd>{result.registryEntry?.source ?? result.metadata.sourcePath}</dd>
+          </div>
+          <div>
+            <dt>Copied path</dt>
+            <dd>{result.copiedPath ?? "-"}</dd>
           </div>
         </dl>
       ) : null}
@@ -2399,8 +2431,15 @@ function menuActionCommandLabel(command: MenuActionCommand) {
 
 function validateSpriteImportInBrowser(
   request: SpriteAssetImportRequest,
+  persist = false,
 ): SpriteAssetImportResult {
   const sourcePathParts = request.sourcePath.split(/[\\/]+/);
+  const sourceIsAbsolute = /^[a-zA-Z]:/.test(request.sourcePath) || request.sourcePath.startsWith("/");
+  const targetPath =
+    request.targetPath.trim() === ""
+      ? `assets/sprites/${sanitizeAssetIdForFilename(request.assetId)}.png`
+      : request.targetPath.trim().replace(/\\/g, "/");
+  const useRegistryTarget = persist || sourceIsAbsolute || request.targetPath.trim() !== "";
 
   if (request.assetId.trim() === "") {
     return spriteImportError("sprite image asset id must not be empty");
@@ -2414,13 +2453,7 @@ function validateSpriteImportInBrowser(
     return spriteImportError("sprite image source path must not be empty");
   }
 
-  if (/^[a-zA-Z]:/.test(request.sourcePath) || request.sourcePath.startsWith("/")) {
-    return spriteImportError(
-      `sprite image source path ${request.sourcePath} must be relative to the project root`,
-    );
-  }
-
-  if (sourcePathParts.includes("..")) {
+  if (!sourceIsAbsolute && sourcePathParts.includes("..")) {
     return spriteImportError(
       `sprite image source path ${request.sourcePath} must not contain parent directory components`,
     );
@@ -2432,9 +2465,31 @@ function validateSpriteImportInBrowser(
     );
   }
 
+  if (useRegistryTarget) {
+    if (/^[a-zA-Z]:/.test(targetPath) || targetPath.startsWith("/")) {
+      return spriteImportError(
+        `target sprite asset path ${targetPath} must be relative to the project folder`,
+      );
+    }
+
+    if (targetPath.split(/[\\/]+/).includes("..")) {
+      return spriteImportError(
+        `target sprite asset path ${targetPath} must not contain parent directory components`,
+      );
+    }
+
+    if (!targetPath.startsWith("assets/")) {
+      return spriteImportError(`target sprite asset path ${targetPath} must be inside the assets folder`);
+    }
+
+    if (!targetPath.toLowerCase().endsWith(".png")) {
+      return spriteImportError(`target sprite asset path ${targetPath} must use the .png extension`);
+    }
+  }
+
   const metadata: SpriteImageMetadata = {
     assetId: request.assetId,
-    sourcePath: request.sourcePath,
+    sourcePath: useRegistryTarget ? targetPath : request.sourcePath,
     format: "png",
     size: { width: 32, height: 32 },
   };
@@ -2442,15 +2497,19 @@ function validateSpriteImportInBrowser(
     id: request.assetId,
     name: request.name,
     kind: "sprite",
-    source: request.sourcePath,
+    source: useRegistryTarget ? targetPath : request.sourcePath,
     tags: ["sprite", "imported"],
+    licenseStatus: "incomplete",
   };
 
   return {
     ok: true,
-    message: `Sprite asset ${request.assetId} is ready to add to the asset registry.`,
+    message: persist
+      ? `Sprite asset ${request.assetId} would be copied to ${targetPath} in desktop mode.`
+      : `Sprite asset ${request.assetId} is ready to add to the asset registry.`,
     metadata,
     registryEntry,
+    copiedPath: persist ? targetPath : null,
   };
 }
 
@@ -2460,5 +2519,12 @@ function spriteImportError(message: string): SpriteAssetImportResult {
     message,
     metadata: null,
     registryEntry: null,
+    copiedPath: null,
   };
+}
+
+function sanitizeAssetIdForFilename(assetId: string) {
+  const sanitized = assetId.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/^\.+|\.+$/g, "");
+
+  return sanitized === "" ? "sprite" : sanitized;
 }
