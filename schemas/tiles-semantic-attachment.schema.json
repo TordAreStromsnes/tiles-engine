@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-semantic-attachment.schema.json",
+  "title": "Tiles Engine Semantic Attachment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "kind",
+    "sourceAssetId",
+    "compatibleBodyPlanIds",
+    "targetSlots",
+    "coveredSlots",
+    "layerOrder",
+    "paletteSlots",
+    "directionOffsets",
+    "compatibilityMode",
+    "warnings",
+    "tags"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9._-]+$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["clothing", "equipment"]
+    },
+    "sourceAssetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "compatibleBodyPlanIds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "targetSlots": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/partSlot"
+      },
+      "uniqueItems": true
+    },
+    "coveredSlots": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/partSlot"
+      },
+      "uniqueItems": true
+    },
+    "layerOrder": {
+      "type": "integer"
+    },
+    "paletteSlots": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/paletteSlot"
+      },
+      "uniqueItems": true
+    },
+    "directionOffsets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/directionOffset"
+      },
+      "uniqueItems": true
+    },
+    "compatibilityMode": {
+      "type": "string",
+      "enum": ["strict", "warnAndAllow"]
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/warning"
+      }
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    }
+  },
+  "$defs": {
+    "partSlot": {
+      "type": "string",
+      "enum": [
+        "bodyBase",
+        "head",
+        "hair",
+        "eyes",
+        "clothingTop",
+        "clothingBottom",
+        "shoesFeet",
+        "accessory",
+        "equipment"
+      ]
+    },
+    "paletteSlot": {
+      "type": "string",
+      "enum": [
+        "skin",
+        "hair",
+        "eye",
+        "clothingPrimary",
+        "clothingSecondary",
+        "accessory",
+        "outline"
+      ]
+    },
+    "direction": {
+      "type": "string",
+      "enum": ["front", "back", "left", "right", "topDown"]
+    },
+    "directionOffset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["direction", "offset", "rotationDegrees", "zIndexOffset"],
+      "properties": {
+        "direction": {
+          "$ref": "#/$defs/direction"
+        },
+        "offset": {
+          "$ref": "#/$defs/point2"
+        },
+        "rotationDegrees": {
+          "type": "number"
+        },
+        "zIndexOffset": {
+          "type": "integer"
+        }
+      }
+    },
+    "warning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "targetSlot"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetSlot": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/partSlot"
+            }
+          ]
+        }
+      }
+    },
+    "point2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}

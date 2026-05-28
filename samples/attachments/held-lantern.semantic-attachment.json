@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 0,
+  "id": "attachment.item.lantern",
+  "name": "Held Lantern",
+  "kind": "equipment",
+  "sourceAssetId": "sprite.equipment.lantern",
+  "compatibleBodyPlanIds": ["humanoid"],
+  "targetSlots": ["equipment"],
+  "coveredSlots": [],
+  "layerOrder": 60,
+  "paletteSlots": ["accessory", "outline"],
+  "directionOffsets": [
+    { "direction": "front", "offset": { "x": 5.0, "y": 3.0 }, "rotationDegrees": 0.0, "zIndexOffset": 0 },
+    { "direction": "back", "offset": { "x": -5.0, "y": 3.0 }, "rotationDegrees": 0.0, "zIndexOffset": -1 },
+    { "direction": "left", "offset": { "x": -8.0, "y": 4.0 }, "rotationDegrees": 0.0, "zIndexOffset": 0 },
+    { "direction": "right", "offset": { "x": 8.0, "y": 4.0 }, "rotationDegrees": 0.0, "zIndexOffset": 0 },
+    { "direction": "topDown", "offset": { "x": 6.0, "y": -2.0 }, "rotationDegrees": 0.0, "zIndexOffset": 1 }
+  ],
+  "compatibilityMode": "warnAndAllow",
+  "warnings": [
+    {
+      "code": "hand-anchor-required",
+      "message": "Held items need a hand attachment point for final animation offsets.",
+      "targetSlot": "equipment"
+    }
+  ],
+  "tags": ["equipment", "held-item"]
+}

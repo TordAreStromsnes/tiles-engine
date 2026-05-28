@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 0,
+  "id": "attachment.boots.simple",
+  "name": "Simple Boots",
+  "kind": "clothing",
+  "sourceAssetId": "sprite.part.humanoid.shoes",
+  "compatibleBodyPlanIds": ["humanoid"],
+  "targetSlots": ["shoesFeet"],
+  "coveredSlots": ["shoesFeet"],
+  "layerOrder": 40,
+  "paletteSlots": ["accessory"],
+  "directionOffsets": [
+    { "direction": "front", "offset": { "x": 0.0, "y": 0.0 }, "rotationDegrees": 0.0, "zIndexOffset": 0 },
+    { "direction": "back", "offset": { "x": 0.0, "y": 0.0 }, "rotationDegrees": 0.0, "zIndexOffset": 0 },
+    { "direction": "left", "offset": { "x": 0.0, "y": 0.0 }, "rotationDegrees": 0.0, "zIndexOffset": 0 },
+    { "direction": "right", "offset": { "x": 0.0, "y": 0.0 }, "rotationDegrees": 0.0, "zIndexOffset": 0 },
+    { "direction": "topDown", "offset": { "x": 0.0, "y": 0.0 }, "rotationDegrees": 0.0, "zIndexOffset": 0 }
+  ],
+  "compatibilityMode": "warnAndAllow",
+  "warnings": [],
+  "tags": ["clothing", "boots"]
+}
