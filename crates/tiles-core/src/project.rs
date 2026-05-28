@@ -191,6 +191,8 @@ pub struct SpriteRegistrySource {
     pub width: Option<u32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub height: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub grid: Option<SpriteSheetGrid>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub frames: Vec<SpriteRegistryFrame>,
 }
@@ -200,6 +202,23 @@ pub struct SpriteRegistrySource {
 pub enum SpriteRegistrySourceType {
     SingleImage,
     SpriteSheet,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpriteSheetGrid {
+    pub columns: u32,
+    pub rows: u32,
+    pub cell_width: u32,
+    pub cell_height: u32,
+    #[serde(default)]
+    pub margin_x: u32,
+    #[serde(default)]
+    pub margin_y: u32,
+    #[serde(default)]
+    pub spacing_x: u32,
+    #[serde(default)]
+    pub spacing_y: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -277,6 +296,17 @@ pub enum ProjectValidationError {
     },
     EmptySpriteSourceFrames {
         id: String,
+    },
+    SpriteSheetGridOnSingleImage {
+        id: String,
+    },
+    InvalidSpriteSheetGrid {
+        id: String,
+    },
+    SpriteSheetGridExceedsSourceBounds {
+        id: String,
+        width: u32,
+        height: u32,
     },
     EmptySpriteFrameId {
         id: String,
@@ -361,6 +391,18 @@ impl fmt::Display for ProjectValidationError {
             Self::EmptySpriteSourceFrames { id } => {
                 write!(formatter, "asset `{id}` sprite source needs at least one frame")
             }
+            Self::SpriteSheetGridOnSingleImage { id } => write!(
+                formatter,
+                "asset `{id}` cannot use sprite sheet grid metadata on a single-image source"
+            ),
+            Self::InvalidSpriteSheetGrid { id } => write!(
+                formatter,
+                "asset `{id}` sprite sheet grid must have positive rows, columns, and cell size"
+            ),
+            Self::SpriteSheetGridExceedsSourceBounds { id, width, height } => write!(
+                formatter,
+                "asset `{id}` sprite sheet grid exceeds source bounds {width} x {height}"
+            ),
             Self::EmptySpriteFrameId { id } => {
                 write!(formatter, "asset `{id}` has a sprite frame with an empty id")
             }
@@ -640,7 +682,17 @@ impl SpriteRegistrySource {
             },
         )?;
 
-        if self.frames.is_empty() {
+        if let Some(grid) = self.grid {
+            if self.source_type == SpriteRegistrySourceType::SingleImage {
+                return Err(ProjectValidationError::SpriteSheetGridOnSingleImage {
+                    id: asset_id.to_string(),
+                });
+            }
+
+            grid.validate(asset_id, self.width, self.height)?;
+        }
+
+        if self.frames.is_empty() && self.grid.is_none() {
             return Err(ProjectValidationError::EmptySpriteSourceFrames {
                 id: asset_id.to_string(),
             });
@@ -672,6 +724,84 @@ impl SpriteRegistrySource {
         }
 
         Ok(())
+    }
+}
+
+impl SpriteSheetGrid {
+    pub fn frame_count(&self) -> u32 {
+        self.columns.saturating_mul(self.rows)
+    }
+
+    pub fn rect_for_cell(&self, column: u32, row: u32) -> Option<PixelRect> {
+        if column >= self.columns
+            || row >= self.rows
+            || self.cell_width == 0
+            || self.cell_height == 0
+        {
+            return None;
+        }
+
+        Some(PixelRect {
+            x: self.margin_x + column * (self.cell_width + self.spacing_x),
+            y: self.margin_y + row * (self.cell_height + self.spacing_y),
+            width: self.cell_width,
+            height: self.cell_height,
+        })
+    }
+
+    fn validate(
+        &self,
+        asset_id: &str,
+        source_width: Option<u32>,
+        source_height: Option<u32>,
+    ) -> Result<(), ProjectValidationError> {
+        if self.columns == 0 || self.rows == 0 || self.cell_width == 0 || self.cell_height == 0 {
+            return Err(ProjectValidationError::InvalidSpriteSheetGrid {
+                id: asset_id.to_string(),
+            });
+        }
+
+        let required_width = u64::from(self.margin_x)
+            + u64::from(self.columns) * u64::from(self.cell_width)
+            + u64::from(self.columns.saturating_sub(1)) * u64::from(self.spacing_x);
+        let required_height = u64::from(self.margin_y)
+            + u64::from(self.rows) * u64::from(self.cell_height)
+            + u64::from(self.rows.saturating_sub(1)) * u64::from(self.spacing_y);
+
+        if source_width.is_some_and(|width| required_width > u64::from(width))
+            || source_height.is_some_and(|height| required_height > u64::from(height))
+        {
+            return Err(ProjectValidationError::SpriteSheetGridExceedsSourceBounds {
+                id: asset_id.to_string(),
+                width: source_width.unwrap_or(0),
+                height: source_height.unwrap_or(0),
+            });
+        }
+
+        Ok(())
+    }
+}
+
+impl SpriteRegistrySource {
+    pub fn generated_grid_frames(&self) -> Option<Vec<SpriteRegistryFrame>> {
+        let grid = self.grid?;
+
+        let mut frames = Vec::with_capacity(grid.frame_count() as usize);
+        for row in 0..grid.rows {
+            for column in 0..grid.columns {
+                frames.push(SpriteRegistryFrame {
+                    id: format!("grid.r{row}.c{column}"),
+                    rect: grid.rect_for_cell(column, row)?,
+                    tags: vec![
+                        format!("row:{row}"),
+                        format!("column:{column}"),
+                        "grid".to_string(),
+                    ],
+                });
+            }
+        }
+
+        Some(frames)
     }
 }
 
@@ -953,6 +1083,7 @@ mod tests {
             path: "assets/sprites/hero.png".to_string(),
             width: Some(64),
             height: Some(32),
+            grid: None,
             frames: vec![
                 SpriteRegistryFrame {
                     id: "front.idle.0".to_string(),
@@ -1035,6 +1166,7 @@ mod tests {
             path: "assets/sprites/hero.png".to_string(),
             width: Some(64),
             height: Some(32),
+            grid: None,
             frames: vec![
                 SpriteRegistryFrame {
                     id: "idle.0".to_string(),
@@ -1065,6 +1197,92 @@ mod tests {
             result,
             Err(ProjectValidationError::DuplicateSpriteFrameId { id, frame_id })
                 if id == "sprite.hero.sheet" && frame_id == "idle.0"
+        ));
+    }
+
+    #[test]
+    fn sprite_sheet_grid_metadata_can_generate_frame_rectangles() {
+        let mut entry = AssetRegistryEntry::new(
+            "sprite.hero.sheet",
+            "Hero Sheet",
+            AssetKind::SpriteSource,
+            "assets/sprites/hero.png",
+            Vec::new(),
+        );
+        entry.sprite_source = Some(SpriteRegistrySource {
+            source_type: SpriteRegistrySourceType::SpriteSheet,
+            path: "assets/sprites/hero.png".to_string(),
+            width: Some(70),
+            height: Some(35),
+            grid: Some(SpriteSheetGrid {
+                columns: 2,
+                rows: 2,
+                cell_width: 32,
+                cell_height: 16,
+                margin_x: 1,
+                margin_y: 1,
+                spacing_x: 2,
+                spacing_y: 1,
+            }),
+            frames: Vec::new(),
+        });
+
+        entry.validate().expect("grid source should validate");
+        let frames = entry
+            .sprite_source
+            .as_ref()
+            .and_then(SpriteRegistrySource::generated_grid_frames)
+            .expect("grid should generate frames");
+
+        assert_eq!(frames.len(), 4);
+        assert_eq!(frames[0].id, "grid.r0.c0");
+        assert_eq!(
+            frames[3].rect,
+            PixelRect {
+                x: 35,
+                y: 18,
+                width: 32,
+                height: 16,
+            }
+        );
+    }
+
+    #[test]
+    fn validation_rejects_sprite_sheet_grid_outside_source_bounds() {
+        let mut entry = AssetRegistryEntry::new(
+            "sprite.hero.sheet",
+            "Hero Sheet",
+            AssetKind::SpriteSource,
+            "assets/sprites/hero.png",
+            Vec::new(),
+        );
+        entry.sprite_source = Some(SpriteRegistrySource {
+            source_type: SpriteRegistrySourceType::SpriteSheet,
+            path: "assets/sprites/hero.png".to_string(),
+            width: Some(32),
+            height: Some(32),
+            grid: Some(SpriteSheetGrid {
+                columns: 2,
+                rows: 1,
+                cell_width: 32,
+                cell_height: 32,
+                margin_x: 0,
+                margin_y: 0,
+                spacing_x: 1,
+                spacing_y: 0,
+            }),
+            frames: Vec::new(),
+        });
+
+        let result = entry.validate();
+
+        assert!(matches!(
+            result,
+            Err(ProjectValidationError::SpriteSheetGridExceedsSourceBounds {
+                id,
+                width: 32,
+                height: 32
+            }) if id == "sprite.hero.sheet"
         ));
     }
 

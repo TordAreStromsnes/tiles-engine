@@ -436,6 +436,7 @@ fn sprite_import_registry_entry(
         path: source_path.to_string(),
         width: Some(metadata.size.width),
         height: Some(metadata.size.height),
+        grid: None,
         frames: vec![SpriteRegistryFrame {
             id: "default".to_string(),
             rect: PixelRect {
