@@ -25,6 +25,30 @@
         "attachment.boots.simple",
         "attachment.item.lantern"
       ],
+      "eventMarkers": [
+        {
+          "id": "footstep.left",
+          "eventType": "footstep",
+          "targetId": "footContactArea",
+          "payload": { "foot": "left" }
+        }
+      ],
+      "namedBoxes": [
+        {
+          "id": "bodyHurtbox",
+          "boxType": "bodyHurtbox",
+          "rect": { "x": 8.0, "y": 8.0, "width": 16.0, "height": 34.0 },
+          "targetPartId": "body",
+          "tags": ["damageable"]
+        },
+        {
+          "id": "footContactArea",
+          "boxType": "footContactArea",
+          "rect": { "x": 10.0, "y": 40.0, "width": 12.0, "height": 6.0 },
+          "targetPartId": "body",
+          "tags": ["movement"]
+        }
+      ],
       "placeholder": true
     },
     {

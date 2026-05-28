@@ -67,7 +67,7 @@ pub struct CharacterBakePaletteSwap {
     pub to: Rgba8,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BakedCharacterSpriteSheetMetadata {
     pub schema_version: u32,
@@ -81,7 +81,7 @@ pub struct BakedCharacterSpriteSheetMetadata {
     pub warnings: Vec<CharacterBakeDiagnostic>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BakedCharacterSpriteSheet {
     pub metadata: BakedCharacterSpriteSheetMetadata,
     pub pixels: Vec<Rgba8>,

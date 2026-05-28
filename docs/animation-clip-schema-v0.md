@@ -10,6 +10,7 @@ Samples:
 
 - [../samples/animations/hero.idle.animation.json](../samples/animations/hero.idle.animation.json)
 - [../samples/animations/hero.walk.animation.json](../samples/animations/hero.walk.animation.json)
+- [../samples/animations/hero.attack.animation.json](../samples/animations/hero.attack.animation.json)
 
 ## Clip Shape
 
@@ -76,12 +77,32 @@ Each frame stores:
   at `feet.ground`, hiding a held item, or showing an equipment layer.
 - `paletteEvents`: palette-slot changes over time, useful for flashes, damage
   tints, or animation-specific color swaps.
+- `eventMarkers`: extensible gameplay markers such as `footstep`,
+  `spawnParticle`, `playSound`, `attackWindowStart`, `attackWindowEnd`, or
+  `emitInteraction`. Runtime systems should preserve unknown marker types even
+  when they cannot execute them yet.
+- `namedBoxes`: time-varying overlay boxes such as `bodyHurtbox`,
+  `weaponHitbox`, `interactionBox`, or `footContactArea`.
 - `eventIds`: named events such as `footstep.left`.
 
 The clip does not store image pixels unless a future `importedFrameSheet` source
 type is implemented. Semantic clips reference rig part ids, layer ids, attachment
 ids, and palette slots from sprite, character recipe, or future multi-view asset
 data.
+
+## Event And Box Metadata
+
+Event markers are intentionally string typed. The engine can recognize common
+types over time, while custom tools and later gameplay systems can round-trip
+unknown types without data loss.
+
+Named boxes live on frames so they can change over time. They are editor-overlay
+metadata first; runtime collision, combat, sound, and particle systems can opt
+into consuming specific `boxType` or `eventType` values as those systems land.
+
+Character bake frames can also carry `eventMarkers` and `namedBoxes` so baked
+sprite-sheet metadata does not strip gameplay timing data while the runtime is
+catching up.
 
 ## Preview Strategy
 

@@ -3,6 +3,7 @@ use std::{error::Error, fmt};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    animation::{AnimationNamedBox, AnimationTimelineEvent},
     assets::PixelRect,
     humanoid_recipe::{HumanoidBakedOutputRef, HumanoidCharacterRecipe, HumanoidRecipeDirection},
     palette_slots::ResolvedPaletteSlot,
@@ -36,7 +37,7 @@ pub struct CharacterBakeManifest {
     pub warnings: Vec<CharacterBakeDiagnostic>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CharacterBakeFrame {
     pub id: String,
@@ -45,6 +46,10 @@ pub struct CharacterBakeFrame {
     pub rect: PixelRect,
     pub part_asset_ids: Vec<String>,
     pub attachment_ids: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub event_markers: Vec<AnimationTimelineEvent>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub named_boxes: Vec<AnimationNamedBox>,
     pub placeholder: bool,
 }
 
@@ -274,6 +279,8 @@ fn plan_placeholder_frames(request: &CharacterBakeRequest) -> Vec<CharacterBakeF
                 },
                 part_asset_ids: part_asset_ids.clone(),
                 attachment_ids: attachment_ids.clone(),
+                event_markers: Vec::new(),
+                named_boxes: Vec::new(),
                 placeholder: true,
             });
         }
@@ -412,6 +419,23 @@ mod tests {
             CHARACTER_BAKE_MANIFEST_SCHEMA_VERSION
         );
         assert_eq!(manifest.frames.len(), 5);
+    }
+
+    #[test]
+    fn character_bake_manifest_sample_preserves_animation_metadata() {
+        let manifest: CharacterBakeManifest = serde_json::from_str(include_str!(
+            "../../../samples/bakes/hero.character-bake-manifest.json"
+        ))
+        .expect("sample manifest should deserialize");
+
+        assert!(manifest.frames[0]
+            .event_markers
+            .iter()
+            .any(|event| event.event_type == "footstep"));
+        assert!(manifest.frames[0]
+            .named_boxes
+            .iter()
+            .any(|named_box| named_box.box_type == "footContactArea"));
     }
 
     #[test]

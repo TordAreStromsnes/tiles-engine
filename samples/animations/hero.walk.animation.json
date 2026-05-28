@@ -43,6 +43,30 @@
               "rotationDegrees": 0.0
             }
           ],
+          "eventMarkers": [
+            {
+              "id": "footstep.left",
+              "eventType": "footstep",
+              "targetId": "footContactArea",
+              "payload": { "foot": "left" }
+            }
+          ],
+          "namedBoxes": [
+            {
+              "id": "bodyHurtbox",
+              "boxType": "bodyHurtbox",
+              "rect": { "x": 8.0, "y": 8.0, "width": 16.0, "height": 34.0 },
+              "targetPartId": "body",
+              "tags": ["damageable"]
+            },
+            {
+              "id": "footContactArea",
+              "boxType": "footContactArea",
+              "rect": { "x": 10.0, "y": 40.0, "width": 12.0, "height": 6.0 },
+              "targetPartId": "body",
+              "tags": ["movement"]
+            }
+          ],
           "eventIds": ["footstep.left"]
         },
         {
@@ -80,6 +104,14 @@
               "attachmentPointId": "hand.right",
               "translation": { "x": 1.0, "y": 0.0 },
               "rotationDegrees": 0.0
+            }
+          ],
+          "eventMarkers": [
+            {
+              "id": "footstep.right",
+              "eventType": "footstep",
+              "targetId": "footContactArea",
+              "payload": { "foot": "right" }
             }
           ],
           "eventIds": ["footstep.right"]
