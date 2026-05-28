@@ -195,11 +195,13 @@ h1 {
   display: grid;
   grid-template-columns: minmax(420px, 1fr) 320px;
   gap: 0;
+  height: calc(100vh - 76px);
   min-height: 0;
 }
 
 .viewport {
   position: relative;
+  height: calc(100vh - 76px);
   min-height: calc(100vh - 76px);
   overflow: hidden;
   background: #9db9c6;
@@ -649,6 +651,237 @@ h1 {
   border-color: #e99b9b;
 }
 
+.animation-canvas {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 18px;
+  padding: 28px;
+}
+
+.animation-stage {
+  position: relative;
+  display: grid;
+  min-height: 360px;
+  place-items: center;
+  overflow: hidden;
+  color: #f7fbff;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
+    linear-gradient(135deg, #263848, #315d61 55%, #756a44);
+  background-size: 24px 24px, 24px 24px, cover;
+  border: 1px solid rgba(248, 250, 252, 0.24);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(29, 40, 52, 0.2);
+}
+
+.animation-stage-header {
+  position: absolute;
+  left: 16px;
+  top: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: min(360px, calc(100% - 32px));
+  gap: 3px 10px;
+  padding: 10px 12px;
+  background: rgba(15, 28, 38, 0.78);
+  border: 1px solid rgba(248, 250, 252, 0.24);
+  border-radius: 8px;
+}
+
+.animation-stage-header span,
+.animation-stage-header strong,
+.animation-stage-header small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.animation-stage-header span {
+  font-weight: 900;
+}
+
+.animation-stage-header strong {
+  color: #f2c14e;
+  text-align: right;
+}
+
+.animation-stage-header small {
+  grid-column: 1 / -1;
+  color: #c9d8e4;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.animation-sprite {
+  position: relative;
+  width: 168px;
+  height: 168px;
+}
+
+.animation-sprite .sprite-head {
+  left: 64px;
+  top: 28px;
+}
+
+.animation-sprite .sprite-body {
+  left: 58px;
+  top: 66px;
+}
+
+.animation-sprite .sprite-shadow {
+  left: 50px;
+  bottom: 18px;
+}
+
+.animation-box-overlay {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+  border: 2px solid #f2c14e;
+  background: rgba(242, 193, 78, 0.14);
+  border-radius: 3px;
+}
+
+.animation-box-hurtbox {
+  border-color: #e4968d;
+  background: rgba(228, 150, 141, 0.16);
+}
+
+.animation-box-collision {
+  border-color: #8ed0ab;
+  background: rgba(142, 208, 171, 0.16);
+}
+
+.animation-box-contact {
+  border-color: #80b9dd;
+  background: rgba(128, 185, 221, 0.16);
+}
+
+.animation-event-stack {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  max-width: min(420px, calc(100% - 32px));
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.animation-event-chip {
+  max-width: 180px;
+  min-height: 28px;
+  padding: 6px 8px;
+  overflow: hidden;
+  color: #10202b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: #f2c14e;
+  border: 1px solid #f7d77d;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.animation-timeline-strip {
+  display: flex;
+  gap: 8px;
+  min-height: 96px;
+  padding: 10px;
+  overflow-x: auto;
+  background: rgba(248, 250, 252, 0.94);
+  border: 1px solid #d7dee5;
+  border-radius: 8px;
+  box-shadow: 0 12px 24px rgba(29, 40, 52, 0.16);
+}
+
+.animation-frame-button {
+  display: grid;
+  min-width: 92px;
+  min-height: 74px;
+  align-content: center;
+  gap: 3px;
+  padding: 8px;
+  color: #18242e;
+  text-align: left;
+  background: #ffffff;
+  border: 1px solid #c7d2de;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.animation-frame-button:hover,
+.animation-frame-button-active {
+  border-color: #d3a329;
+  box-shadow: 0 8px 16px rgba(88, 102, 116, 0.18);
+}
+
+.animation-frame-button-active {
+  background: #fff2cf;
+}
+
+.animation-frame-button span,
+.animation-frame-button strong,
+.animation-frame-button small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.animation-frame-button span {
+  color: #657687;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.animation-frame-button small {
+  color: #657687;
+  font-size: 11px;
+}
+
+.animation-inspector {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.animation-section {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #d7dee5;
+}
+
+.animation-section h3 {
+  margin: 0;
+  color: #18242e;
+  font-size: 15px;
+}
+
+.animation-row {
+  display: grid;
+  gap: 9px;
+  padding: 10px;
+  background: #ffffff;
+  border: 1px solid #d7dee5;
+  border-radius: 8px;
+}
+
+.animation-row .field-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.muted-line {
+  color: #657687;
+  font-size: 13px;
+}
+
 .entity-marker {
   position: absolute;
   display: grid;
@@ -1065,6 +1298,13 @@ dd {
   border-radius: 6px;
 }
 
+.field input:disabled,
+.field select:disabled {
+  color: #7c8894;
+  background: #edf2f6;
+  cursor: not-allowed;
+}
+
 .field-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1080,6 +1320,10 @@ dd {
   .app-shell,
   .workbench {
     grid-template-columns: 1fr;
+  }
+
+  .workbench {
+    height: auto;
   }
 
   .rail {
@@ -1101,6 +1345,7 @@ dd {
   }
 
   .viewport {
+    height: 420px;
     min-height: 420px;
   }
 
