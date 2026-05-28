@@ -20,7 +20,14 @@ Samples:
   "name": "Hero Walk",
   "target": {
     "assetId": "sprite.hero",
-    "bodyPlanId": "humanoid"
+    "bodyPlanId": "humanoid",
+    "rigId": "rig.humanoid.lightweight"
+  },
+  "source": {
+    "sourceType": "projectLocalCopy",
+    "readOnly": false,
+    "copiedFromTemplateId": "template.humanoid.walk.v0",
+    "copiedFromTemplateVersion": "0"
   },
   "frameRate": 12,
   "loopMode": "loop",
@@ -28,6 +35,20 @@ Samples:
   "viewTracks": []
 }
 ```
+
+## Source And Template Copies
+
+Every clip declares where it came from:
+
+- `builtInTemplate`: bundled with the engine, read-only, and safe to refresh when the engine updates.
+- `projectLocalCopy`: copied into a project from a built-in template, editable by the creator, and still linked back to the template id/version it came from.
+- `custom`: authored directly in the project with the same timeline shape as presets.
+- `importedFrameSheet`: reserved for later imported or baked frame-sheet timelines.
+
+Built-in templates should not be edited in place. When a creator customizes a
+preset, the editor should copy it into the project as `projectLocalCopy`, set
+`readOnly` to `false`, and preserve `copiedFromTemplateId` so future tooling can
+explain what changed from the bundled preset.
 
 ## View Tracks
 
@@ -47,12 +68,20 @@ will not always be clean mirrors of each other.
 Each frame stores:
 
 - `durationTicks`: frame duration in clip ticks.
+- `bodyPartPoses`: semantic rig part transforms such as `body`, `head`, or
+  `clothingTop`. This is the primary path for future character rebaking.
 - `layerPoses`: per-layer translation, rotation, scale, and opacity.
 - `attachmentPoses`: per-attachment translation and rotation offsets.
+- `attachmentEvents`: discrete attachment actions such as triggering a footstep
+  at `feet.ground`, hiding a held item, or showing an equipment layer.
+- `paletteEvents`: palette-slot changes over time, useful for flashes, damage
+  tints, or animation-specific color swaps.
 - `eventIds`: named events such as `footstep.left`.
 
-The clip does not store image pixels. It references layer ids and attachment ids
-from sprite or future multi-view asset data.
+The clip does not store image pixels unless a future `importedFrameSheet` source
+type is implemented. Semantic clips reference rig part ids, layer ids, attachment
+ids, and palette slots from sprite, character recipe, or future multi-view asset
+data.
 
 ## Preview Strategy
 
@@ -72,6 +101,8 @@ texture atlas issues land.
 - V0 does not define inverse kinematics.
 - V0 does not define animation blending.
 - V0 does not define state machines.
+- V0 reserves imported frame-sheet source metadata but does not implement the
+  imported frame-sheet editor.
 - V0 does not generate walking/running/jumping from creator controls yet.
 - V0 does not require every body plan to support the humanoid five-view set.
 

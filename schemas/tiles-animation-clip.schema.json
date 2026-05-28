@@ -9,6 +9,7 @@
     "id",
     "name",
     "target",
+    "source",
     "frameRate",
     "loopMode",
     "tags",
@@ -30,6 +31,9 @@
     },
     "target": {
       "$ref": "#/$defs/target"
+    },
+    "source": {
+      "$ref": "#/$defs/source"
     },
     "frameRate": {
       "type": "integer",
@@ -64,6 +68,52 @@
         "bodyPlanId": {
           "type": "string",
           "minLength": 1
+        },
+        "rigId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceType", "readOnly"],
+      "properties": {
+        "sourceType": {
+          "type": "string",
+          "enum": [
+            "builtInTemplate",
+            "projectLocalCopy",
+            "custom",
+            "importedFrameSheet"
+          ]
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "templateId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "copiedFromTemplateId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "copiedFromTemplateVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceAssetId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
@@ -97,6 +147,12 @@
           "type": "integer",
           "minimum": 1
         },
+        "bodyPartPoses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/bodyPartPose"
+          }
+        },
         "layerPoses": {
           "type": "array",
           "items": {
@@ -109,6 +165,18 @@
             "$ref": "#/$defs/attachmentPose"
           }
         },
+        "attachmentEvents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attachmentEvent"
+          }
+        },
+        "paletteEvents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/paletteEvent"
+          }
+        },
         "eventIds": {
           "type": "array",
           "items": {
@@ -116,6 +184,37 @@
             "minLength": 1
           },
           "uniqueItems": true
+        }
+      }
+    },
+    "bodyPartPose": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "partId",
+        "translation",
+        "rotationDegrees",
+        "scale",
+        "opacity"
+      ],
+      "properties": {
+        "partId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "translation": {
+          "$ref": "#/$defs/point2"
+        },
+        "rotationDegrees": {
+          "type": "number"
+        },
+        "scale": {
+          "$ref": "#/$defs/positivePoint2"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
         }
       }
     },
@@ -164,6 +263,44 @@
         },
         "rotationDegrees": {
           "type": "number"
+        }
+      }
+    },
+    "attachmentEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventId", "attachmentId", "action"],
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attachmentId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "action": {
+          "type": "string",
+          "enum": ["attach", "detach", "show", "hide", "trigger"]
+        }
+      }
+    },
+    "paletteEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slotId", "swatch", "transitionTicks"],
+      "properties": {
+        "slotId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "swatch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transitionTicks": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },
