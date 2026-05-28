@@ -223,6 +223,117 @@ type MenuSettingsValidation = {
   settingCount: number;
 };
 
+type AnimationViewId = "front" | "back" | "left" | "right" | "topDown";
+
+type AnimationClipSourceType =
+  | "builtInTemplate"
+  | "projectLocalCopy"
+  | "custom"
+  | "importedFrameSheet";
+
+type AnimationClipSource = {
+  sourceType: AnimationClipSourceType;
+  readOnly: boolean;
+  templateId?: string;
+  copiedFromTemplateId?: string;
+  copiedFromTemplateVersion?: string;
+  sourceAssetId?: string;
+  sourcePath?: string;
+  notes?: string[];
+};
+
+type AnimationClip = {
+  schemaVersion: number;
+  id: string;
+  name: string;
+  target: {
+    assetId: string;
+    bodyPlanId: string;
+    rigId?: string;
+  };
+  source: AnimationClipSource;
+  frameRate: number;
+  loopMode: "once" | "loop" | "pingPong";
+  tags: string[];
+  viewTracks: AnimationViewTrack[];
+};
+
+type AnimationViewTrack = {
+  view: AnimationViewId;
+  frames: AnimationFrame[];
+};
+
+type AnimationFrame = {
+  durationTicks: number;
+  bodyPartPoses: AnimationBodyPartPose[];
+  layerPoses: AnimationLayerPose[];
+  attachmentPoses: AnimationAttachmentPose[];
+  attachmentEvents: AnimationAttachmentEvent[];
+  paletteEvents: AnimationPaletteEvent[];
+  eventMarkers: AnimationTimelineEvent[];
+  namedBoxes: AnimationNamedBox[];
+  eventIds: string[];
+};
+
+type AnimationBodyPartPose = {
+  partId: string;
+  translation: Point2;
+  rotationDegrees: number;
+  scale: Point2;
+  opacity: number;
+};
+
+type AnimationLayerPose = {
+  layerId: string;
+  translation: Point2;
+  rotationDegrees: number;
+  scale: Point2;
+  opacity: number;
+};
+
+type AnimationAttachmentPose = {
+  attachmentPointId: string;
+  translation: Point2;
+  rotationDegrees: number;
+};
+
+type AnimationAttachmentEvent = {
+  eventId: string;
+  attachmentId: string;
+  action: "attach" | "detach" | "show" | "hide" | "trigger";
+};
+
+type AnimationPaletteEvent = {
+  slotId: string;
+  swatch: string;
+  transitionTicks: number;
+};
+
+type AnimationTimelineEvent = {
+  id: string;
+  eventType: string;
+  targetId?: string;
+  payload?: Record<string, unknown>;
+};
+
+type AnimationNamedBox = {
+  id: string;
+  boxType: string;
+  rect: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  targetPartId?: string;
+  tags: string[];
+};
+
+type Point2 = {
+  x: number;
+  y: number;
+};
+
 type SpriteImageMetadata = {
   assetId: string;
   sourcePath: string;
@@ -588,6 +699,120 @@ const fallbackMenuSettingsValidation: MenuSettingsValidation = {
   ),
 };
 
+const fallbackAnimationClips: AnimationClip[] = [
+  {
+    schemaVersion: 0,
+    id: "animation.hero.idle",
+    name: "Hero Idle",
+    target: {
+      assetId: "sprite.hero",
+      bodyPlanId: "humanoid",
+      rigId: "rig.humanoid.lightweight",
+    },
+    source: {
+      sourceType: "builtInTemplate",
+      readOnly: true,
+      templateId: "template.humanoid.idle.v0",
+      notes: ["Copy this template into a project before editing."],
+    },
+    frameRate: 8,
+    loopMode: "loop",
+    tags: ["humanoid", "idle"],
+    viewTracks: animationViews().map((view) => ({
+      view,
+      frames: [
+        animationFrame(6, 0, 0, []),
+        animationFrame(6, 0, view === "topDown" ? 0 : -0.25, []),
+      ],
+    })),
+  },
+  {
+    schemaVersion: 0,
+    id: "animation.hero.walk.copy",
+    name: "Hero Walk Copy",
+    target: {
+      assetId: "sprite.hero",
+      bodyPlanId: "humanoid",
+      rigId: "rig.humanoid.lightweight",
+    },
+    source: {
+      sourceType: "projectLocalCopy",
+      readOnly: false,
+      copiedFromTemplateId: "template.humanoid.walk.v0",
+      copiedFromTemplateVersion: "0",
+    },
+    frameRate: 12,
+    loopMode: "loop",
+    tags: ["humanoid", "walk", "editable"],
+    viewTracks: animationViews().map((view) => ({
+      view,
+      frames: [
+        animationFrame(3, view === "left" ? -0.4 : view === "right" ? 0.4 : 0, -0.2, [
+          timelineEvent("footstep.left", "footstep", "footContactArea", { foot: "left" }),
+        ]),
+        animationFrame(3, 0, -0.5, []),
+        animationFrame(3, view === "left" ? 0.4 : view === "right" ? -0.4 : 0, 0.2, [
+          timelineEvent("footstep.right", "footstep", "footContactArea", { foot: "right" }),
+        ]),
+        animationFrame(3, 0, -0.5, []),
+      ],
+    })),
+  },
+  {
+    schemaVersion: 0,
+    id: "animation.hero.attack",
+    name: "Hero Attack",
+    target: {
+      assetId: "sprite.hero",
+      bodyPlanId: "humanoid",
+      rigId: "rig.humanoid.lightweight",
+    },
+    source: { sourceType: "custom", readOnly: false },
+    frameRate: 12,
+    loopMode: "once",
+    tags: ["humanoid", "attack"],
+    viewTracks: [
+      {
+        view: "front",
+        frames: [
+          {
+            ...animationFrame(4, 0, 0, [
+              timelineEvent("attack.window.start", "attackWindowStart", "weaponHitbox", {
+                damageKind: "slash",
+              }),
+              timelineEvent("attack.sound.swing", "playSound", undefined, {
+                soundId: "sound.sword.swing",
+              }),
+              timelineEvent("attack.dust", "spawnParticle", "footContactArea", {
+                emitterId: "particle.dust-puff",
+              }),
+            ]),
+            namedBoxes: [
+              ...defaultAnimationBoxes(),
+              animationBox("weaponHitbox", "weaponHitbox", 22, 18, 14, 10, "equipment", [
+                "attack",
+              ]),
+              animationBox("interactionBox", "interactionBox", 18, 14, 18, 18, "body", [
+                "interaction",
+              ]),
+            ],
+            eventIds: ["attack.window.start"],
+          },
+          {
+            ...animationFrame(4, 0, -0.25, [
+              timelineEvent("attack.window.end", "attackWindowEnd", "weaponHitbox"),
+              timelineEvent("attack.emit.interaction", "emitInteraction", "interactionBox", {
+                interactionId: "interaction.weapon.slash",
+              }),
+            ]),
+            eventIds: ["attack.window.end"],
+          },
+        ],
+      },
+    ],
+  },
+];
+
 const fallbackSpriteImportRequest: SpriteAssetImportRequest = {
   projectRoot: "",
   assetId: "sprite.hero",
@@ -672,6 +897,14 @@ export function App() {
   const [menuSettingsValidation, setMenuSettingsValidation] = useState<MenuSettingsValidation>(
     fallbackMenuSettingsValidation,
   );
+  const [animationClips, setAnimationClips] = useState<AnimationClip[]>(fallbackAnimationClips);
+  const [selectedAnimationClipId, setSelectedAnimationClipId] = useState(
+    fallbackAnimationClips[1].id,
+  );
+  const [selectedAnimationView, setSelectedAnimationView] = useState<AnimationViewId>(
+    fallbackAnimationClips[1].viewTracks[0].view,
+  );
+  const [selectedAnimationFrameIndex, setSelectedAnimationFrameIndex] = useState(0);
   const [spriteImportRequest, setSpriteImportRequest] = useState<SpriteAssetImportRequest>(
     fallbackSpriteImportRequest,
   );
@@ -901,6 +1134,24 @@ export function App() {
     [menuSettings.settings, selectedSettingsGroupId],
   );
 
+  const selectedAnimationClip = useMemo(
+    () =>
+      animationClips.find((clip) => clip.id === selectedAnimationClipId) ?? animationClips[0],
+    [animationClips, selectedAnimationClipId],
+  );
+
+  const selectedAnimationTrack = useMemo(
+    () =>
+      selectedAnimationClip?.viewTracks.find((track) => track.view === selectedAnimationView) ??
+      selectedAnimationClip?.viewTracks[0],
+    [selectedAnimationClip, selectedAnimationView],
+  );
+
+  const selectedAnimationFrame = useMemo(() => {
+    const frames = selectedAnimationTrack?.frames ?? [];
+    return frames[Math.min(selectedAnimationFrameIndex, Math.max(frames.length - 1, 0))];
+  }, [selectedAnimationFrameIndex, selectedAnimationTrack]);
+
   const selectedAsset = useMemo(
     () =>
       assetLibraryAssets.find((asset) => asset.id === selectedAssetId) ?? assetLibraryAssets[0],
@@ -1033,6 +1284,78 @@ export function App() {
     });
   };
 
+  const selectAnimationClip = (clipId: string) => {
+    const clip = animationClips.find((candidate) => candidate.id === clipId) ?? animationClips[0];
+
+    setSelectedAnimationClipId(clip.id);
+    setSelectedAnimationView(clip.viewTracks[0]?.view ?? "front");
+    setSelectedAnimationFrameIndex(0);
+  };
+
+  const selectAnimationView = (view: AnimationViewId) => {
+    setSelectedAnimationView(view);
+    setSelectedAnimationFrameIndex(0);
+  };
+
+  const updateSelectedAnimationClip = (updater: (clip: AnimationClip) => AnimationClip) => {
+    if (!selectedAnimationClip || selectedAnimationClip.source.readOnly) return;
+
+    setAnimationClips((currentClips) =>
+      currentClips.map((clip) => (clip.id === selectedAnimationClip.id ? updater(clip) : clip)),
+    );
+  };
+
+  const updateSelectedAnimationFrame = (updater: (frame: AnimationFrame) => AnimationFrame) => {
+    if (!selectedAnimationTrack) return;
+
+    updateSelectedAnimationClip((clip) => ({
+      ...clip,
+      viewTracks: clip.viewTracks.map((track) =>
+        track.view === selectedAnimationTrack.view
+          ? {
+              ...track,
+              frames: track.frames.map((frame, index) =>
+                index === selectedAnimationFrameIndex ? updater(frame) : frame,
+              ),
+            }
+          : track,
+      ),
+    }));
+  };
+
+  const updateSelectedBodyPartPose = (
+    poseIndex: number,
+    updater: (pose: AnimationBodyPartPose) => AnimationBodyPartPose,
+  ) => {
+    updateSelectedAnimationFrame((frame) => ({
+      ...frame,
+      bodyPartPoses: frame.bodyPartPoses.map((pose, index) =>
+        index === poseIndex ? updater(pose) : pose,
+      ),
+    }));
+  };
+
+  const updateSelectedEventMarker = (
+    eventIndex: number,
+    changes: Partial<AnimationTimelineEvent>,
+  ) => {
+    updateSelectedAnimationFrame((frame) => ({
+      ...frame,
+      eventMarkers: frame.eventMarkers.map((eventMarker, index) =>
+        index === eventIndex ? { ...eventMarker, ...changes } : eventMarker,
+      ),
+    }));
+  };
+
+  const updateSelectedNamedBox = (boxIndex: number, changes: Partial<AnimationNamedBox>) => {
+    updateSelectedAnimationFrame((frame) => ({
+      ...frame,
+      namedBoxes: frame.namedBoxes.map((namedBox, index) =>
+        index === boxIndex ? { ...namedBox, ...changes } : namedBox,
+      ),
+    }));
+  };
+
   const updateSpriteImportRequest = (changes: Partial<SpriteAssetImportRequest>) => {
     setSpriteImportRequest((currentRequest) => ({ ...currentRequest, ...changes }));
   };
@@ -1141,6 +1464,14 @@ export function App() {
                 validation={menuSettingsValidation}
                 onSelectMenu={setSelectedMenuId}
               />
+            ) : activePanel === "Animation" && selectedAnimationClip && selectedAnimationTrack ? (
+              <AnimationTimelineViewport
+                clip={selectedAnimationClip}
+                selectedFrame={selectedAnimationFrame}
+                selectedFrameIndex={selectedAnimationFrameIndex}
+                track={selectedAnimationTrack}
+                onSelectFrame={setSelectedAnimationFrameIndex}
+              />
             ) : activePanel === "Scene" ? (
               <SceneComposerViewport
                 entities={scene.entities}
@@ -1198,6 +1529,22 @@ export function App() {
                 onUpdateMenuItemKind={updateMenuItemKind}
                 onUpdateSetting={updateSettingDefinition}
                 onUpdateSettingsGroup={updateSettingsGroup}
+              />
+            ) : activePanel === "Animation" && selectedAnimationClip && selectedAnimationTrack ? (
+              <AnimationTimelineInspector
+                clip={selectedAnimationClip}
+                clips={animationClips}
+                frame={selectedAnimationFrame}
+                frameIndex={selectedAnimationFrameIndex}
+                track={selectedAnimationTrack}
+                onSelectClip={selectAnimationClip}
+                onSelectFrame={setSelectedAnimationFrameIndex}
+                onSelectView={selectAnimationView}
+                onUpdateBodyPartPose={updateSelectedBodyPartPose}
+                onUpdateClip={updateSelectedAnimationClip}
+                onUpdateEventMarker={updateSelectedEventMarker}
+                onUpdateFrame={updateSelectedAnimationFrame}
+                onUpdateNamedBox={updateSelectedNamedBox}
               />
             ) : activePanel === "Scene" && selectedEntity ? (
               <SceneComposerInspector
@@ -1456,6 +1803,362 @@ function MenuSettingsViewport({
         </div>
       </div>
     </div>
+  );
+}
+
+type AnimationTimelineViewportProps = {
+  clip: AnimationClip;
+  track: AnimationViewTrack;
+  selectedFrame?: AnimationFrame;
+  selectedFrameIndex: number;
+  onSelectFrame: (frameIndex: number) => void;
+};
+
+function AnimationTimelineViewport({
+  clip,
+  track,
+  selectedFrame,
+  selectedFrameIndex,
+  onSelectFrame,
+}: AnimationTimelineViewportProps) {
+  const totalTicks = track.frames.reduce((sum, frame) => sum + frame.durationTicks, 0);
+
+  return (
+    <div className="animation-canvas" aria-label="Animation timeline preview">
+      <div className="animation-stage">
+        <div className="animation-stage-header">
+          <span>{clip.name}</span>
+          <strong>{animationViewLabel(track.view)}</strong>
+          <small>
+            {clip.frameRate} fps / {totalTicks} ticks
+          </small>
+        </div>
+        <div className="animation-sprite">
+          <div className="sprite-head" />
+          <div className="sprite-body" />
+          <div className="sprite-shadow" />
+          {selectedFrame?.namedBoxes.map((namedBox) => (
+            <span
+              className={`animation-box-overlay animation-box-${namedBox.boxType}`}
+              key={namedBox.id}
+              style={{
+                left: `${namedBox.rect.x * 3}px`,
+                top: `${namedBox.rect.y * 3}px`,
+                width: `${namedBox.rect.width * 3}px`,
+                height: `${namedBox.rect.height * 3}px`,
+              }}
+              title={`${namedBox.id} (${namedBox.boxType})`}
+            />
+          ))}
+        </div>
+        <div className="animation-event-stack">
+          {(selectedFrame?.eventMarkers ?? []).map((eventMarker) => (
+            <span className="animation-event-chip" key={eventMarker.id}>
+              {eventMarker.eventType}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="animation-timeline-strip" aria-label="Animation keyframes">
+        {track.frames.map((frame, index) => (
+          <button
+            className={
+              index === selectedFrameIndex
+                ? "animation-frame-button animation-frame-button-active"
+                : "animation-frame-button"
+            }
+            key={`${track.view}-${index}`}
+            onClick={() => onSelectFrame(index)}
+            style={{ flexGrow: frame.durationTicks }}
+            type="button"
+          >
+            <span>{index + 1}</span>
+            <strong>{frame.durationTicks}t</strong>
+            <small>{frame.eventMarkers.map((event) => event.eventType).join(", ") || "-"}</small>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type AnimationTimelineInspectorProps = {
+  clips: AnimationClip[];
+  clip: AnimationClip;
+  track: AnimationViewTrack;
+  frame?: AnimationFrame;
+  frameIndex: number;
+  onSelectClip: (clipId: string) => void;
+  onSelectView: (view: AnimationViewId) => void;
+  onSelectFrame: (frameIndex: number) => void;
+  onUpdateClip: (updater: (clip: AnimationClip) => AnimationClip) => void;
+  onUpdateFrame: (updater: (frame: AnimationFrame) => AnimationFrame) => void;
+  onUpdateBodyPartPose: (
+    poseIndex: number,
+    updater: (pose: AnimationBodyPartPose) => AnimationBodyPartPose,
+  ) => void;
+  onUpdateEventMarker: (eventIndex: number, changes: Partial<AnimationTimelineEvent>) => void;
+  onUpdateNamedBox: (boxIndex: number, changes: Partial<AnimationNamedBox>) => void;
+};
+
+function AnimationTimelineInspector({
+  clips,
+  clip,
+  track,
+  frame,
+  frameIndex,
+  onSelectClip,
+  onSelectView,
+  onSelectFrame,
+  onUpdateClip,
+  onUpdateFrame,
+  onUpdateBodyPartPose,
+  onUpdateEventMarker,
+  onUpdateNamedBox,
+}: AnimationTimelineInspectorProps) {
+  const readOnly = clip.source.readOnly;
+
+  return (
+    <div className="animation-inspector">
+      <div className={readOnly ? "validation validation-error" : "validation validation-valid"}>
+        <strong>{readOnly ? "Read-only template" : "Editable project clip"}</strong>
+        <span>{animationSourceSummary(clip.source)}</span>
+      </div>
+
+      <label className="field">
+        <span>Clip</span>
+        <select value={clip.id} onChange={(event) => onSelectClip(event.target.value)}>
+          {clips.map((candidate) => (
+            <option key={candidate.id} value={candidate.id}>
+              {candidate.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className="field-grid">
+        <label className="field">
+          <span>Name</span>
+          <input
+            disabled={readOnly}
+            value={clip.name}
+            onChange={(event) =>
+              onUpdateClip((currentClip) => ({ ...currentClip, name: event.target.value }))
+            }
+          />
+        </label>
+        <label className="field">
+          <span>Frame rate</span>
+          <input
+            disabled={readOnly}
+            min="1"
+            type="number"
+            value={clip.frameRate}
+            onChange={(event) =>
+              updateFromNumber(event.target.value, (value) =>
+                onUpdateClip((currentClip) => ({
+                  ...currentClip,
+                  frameRate: Math.max(1, Math.round(value)),
+                })),
+              )
+            }
+          />
+        </label>
+      </div>
+
+      <div className="field-grid">
+        <label className="field">
+          <span>Direction</span>
+          <select value={track.view} onChange={(event) => onSelectView(event.target.value as AnimationViewId)}>
+            {clip.viewTracks.map((viewTrack) => (
+              <option key={viewTrack.view} value={viewTrack.view}>
+                {animationViewLabel(viewTrack.view)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>Keyframe</span>
+          <select value={frameIndex} onChange={(event) => onSelectFrame(Number(event.target.value))}>
+            {track.frames.map((candidateFrame, index) => (
+              <option key={`${track.view}-${index}`} value={index}>
+                {index + 1} / {candidateFrame.durationTicks}t
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {frame ? (
+        <>
+          <label className="field">
+            <span>Duration ticks</span>
+            <input
+              disabled={readOnly}
+              min="1"
+              type="number"
+              value={frame.durationTicks}
+              onChange={(event) =>
+                updateFromNumber(event.target.value, (value) =>
+                  onUpdateFrame((currentFrame) => ({
+                    ...currentFrame,
+                    durationTicks: Math.max(1, Math.round(value)),
+                  })),
+                )
+              }
+            />
+          </label>
+
+          <section className="animation-section">
+            <h3>Body Parts</h3>
+            {frame.bodyPartPoses.map((pose, index) => (
+              <div className="animation-row" key={`${pose.partId}-${index}`}>
+                <div className="menu-row-heading">
+                  <strong>{pose.partId}</strong>
+                  <span>{pose.opacity.toFixed(2)}</span>
+                </div>
+                <div className="field-grid">
+                  <NumberField
+                    disabled={readOnly}
+                    label="X"
+                    value={pose.translation.x}
+                    onChange={(value) =>
+                      onUpdateBodyPartPose(index, (currentPose) => ({
+                        ...currentPose,
+                        translation: { ...currentPose.translation, x: value },
+                      }))
+                    }
+                  />
+                  <NumberField
+                    disabled={readOnly}
+                    label="Y"
+                    value={pose.translation.y}
+                    onChange={(value) =>
+                      onUpdateBodyPartPose(index, (currentPose) => ({
+                        ...currentPose,
+                        translation: { ...currentPose.translation, y: value },
+                      }))
+                    }
+                  />
+                </div>
+              </div>
+            ))}
+          </section>
+
+          <section className="animation-section">
+            <h3>Events</h3>
+            {frame.eventMarkers.map((eventMarker, index) => (
+              <div className="animation-row" key={`${eventMarker.id}-${index}`}>
+                <label className="field">
+                  <span>Type</span>
+                  <input
+                    disabled={readOnly}
+                    value={eventMarker.eventType}
+                    onChange={(event) =>
+                      onUpdateEventMarker(index, { eventType: event.target.value })
+                    }
+                  />
+                </label>
+                <label className="field">
+                  <span>Target</span>
+                  <input
+                    disabled={readOnly}
+                    value={eventMarker.targetId ?? ""}
+                    onChange={(event) =>
+                      onUpdateEventMarker(index, {
+                        targetId: event.target.value || undefined,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+            ))}
+            {frame.eventMarkers.length === 0 ? <span className="muted-line">No event markers.</span> : null}
+          </section>
+
+          <section className="animation-section">
+            <h3>Boxes</h3>
+            {frame.namedBoxes.map((namedBox, index) => (
+              <div className="animation-row" key={`${namedBox.id}-${index}`}>
+                <div className="menu-row-heading">
+                  <strong>{namedBox.id}</strong>
+                  <span>{namedBox.boxType}</span>
+                </div>
+                <div className="field-grid">
+                  <NumberField
+                    disabled={readOnly}
+                    label="X"
+                    value={namedBox.rect.x}
+                    onChange={(value) =>
+                      onUpdateNamedBox(index, {
+                        rect: { ...namedBox.rect, x: value },
+                      })
+                    }
+                  />
+                  <NumberField
+                    disabled={readOnly}
+                    label="Y"
+                    value={namedBox.rect.y}
+                    onChange={(value) =>
+                      onUpdateNamedBox(index, {
+                        rect: { ...namedBox.rect, y: value },
+                      })
+                    }
+                  />
+                  <NumberField
+                    disabled={readOnly}
+                    label="W"
+                    min={1}
+                    value={namedBox.rect.width}
+                    onChange={(value) =>
+                      onUpdateNamedBox(index, {
+                        rect: { ...namedBox.rect, width: Math.max(1, value) },
+                      })
+                    }
+                  />
+                  <NumberField
+                    disabled={readOnly}
+                    label="H"
+                    min={1}
+                    value={namedBox.rect.height}
+                    onChange={(value) =>
+                      onUpdateNamedBox(index, {
+                        rect: { ...namedBox.rect, height: Math.max(1, value) },
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            ))}
+          </section>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+type NumberFieldProps = {
+  disabled?: boolean;
+  label: string;
+  min?: number;
+  value: number;
+  onChange: (value: number) => void;
+};
+
+function NumberField({ disabled = false, label, min, value, onChange }: NumberFieldProps) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <input
+        disabled={disabled}
+        min={min}
+        step="0.25"
+        type="number"
+        value={Number.isFinite(value) ? value : 0}
+        onChange={(event) => updateFromNumber(event.target.value, onChange)}
+      />
+    </label>
   );
 }
 
@@ -2463,6 +3166,113 @@ function updateFromNumber(value: string, onValidNumber: (value: number) => void)
 
   if (Number.isFinite(nextValue)) {
     onValidNumber(nextValue);
+  }
+}
+
+function animationViews(): AnimationViewId[] {
+  return ["front", "back", "left", "right", "topDown"];
+}
+
+function animationFrame(
+  durationTicks: number,
+  bodyX: number,
+  bodyY: number,
+  eventMarkers: AnimationTimelineEvent[],
+): AnimationFrame {
+  return {
+    durationTicks,
+    bodyPartPoses: [
+      animationBodyPartPose("body", bodyX, bodyY),
+      animationBodyPartPose("head", bodyX * 0.45, bodyY - 0.15),
+      animationBodyPartPose("hair", bodyX * 0.45, bodyY - 0.2),
+      animationBodyPartPose("clothing", bodyX, bodyY),
+      animationBodyPartPose("leftFoot", bodyX - 0.2, bodyY + 0.3),
+      animationBodyPartPose("rightFoot", bodyX + 0.2, bodyY - 0.3),
+    ],
+    layerPoses: [],
+    attachmentPoses: [],
+    attachmentEvents: [],
+    paletteEvents: [],
+    eventMarkers,
+    namedBoxes: defaultAnimationBoxes(),
+    eventIds: eventMarkers.map((eventMarker) => eventMarker.id),
+  };
+}
+
+function animationBodyPartPose(
+  partId: string,
+  x: number,
+  y: number,
+): AnimationBodyPartPose {
+  return {
+    partId,
+    translation: { x, y },
+    rotationDegrees: 0,
+    scale: { x: 1, y: 1 },
+    opacity: 1,
+  };
+}
+
+function timelineEvent(
+  id: string,
+  eventType: string,
+  targetId?: string,
+  payload?: Record<string, unknown>,
+): AnimationTimelineEvent {
+  return {
+    id,
+    eventType,
+    ...(targetId ? { targetId } : {}),
+    ...(payload ? { payload } : {}),
+  };
+}
+
+function defaultAnimationBoxes(): AnimationNamedBox[] {
+  return [
+    animationBox("hurtbox.core", "hurtbox", 17, 6, 22, 35, "body", ["damage"]),
+    animationBox("collision.core", "collision", 20, 24, 16, 18, "body", ["movement"]),
+    animationBox("footContactArea", "contact", 18, 40, 20, 8, "leftFoot", ["feet"]),
+  ];
+}
+
+function animationBox(
+  id: string,
+  boxType: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  targetPartId?: string,
+  tags: string[] = [],
+): AnimationNamedBox {
+  return {
+    id,
+    boxType,
+    rect: { x, y, width, height },
+    ...(targetPartId ? { targetPartId } : {}),
+    tags,
+  };
+}
+
+function animationViewLabel(view: AnimationViewId) {
+  switch (view) {
+    case "topDown":
+      return "Top down";
+    default:
+      return view[0].toUpperCase() + view.slice(1);
+  }
+}
+
+function animationSourceSummary(source: AnimationClipSource) {
+  switch (source.sourceType) {
+    case "builtInTemplate":
+      return `Built-in template ${source.templateId ?? "without template id"}`;
+    case "projectLocalCopy":
+      return `Project copy of ${source.copiedFromTemplateId ?? "template"}`;
+    case "custom":
+      return "Custom project animation";
+    case "importedFrameSheet":
+      return `Imported frame sheet ${source.sourcePath ?? "without source path"}`;
   }
 }
 
