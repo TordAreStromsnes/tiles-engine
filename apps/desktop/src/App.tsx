@@ -250,7 +250,54 @@ type AssetRegistryEntry = {
   tags: string[];
   sourceSchemaVersion?: number;
   contentHash?: string;
+  files?: AssetFileRef[];
+  provenance?: AssetProvenance | null;
+  license?: AssetLicenseMetadata | null;
   licenseStatus?: "unknown" | "incomplete" | "complete" | "restricted";
+  spriteSource?: SpriteRegistrySource | null;
+};
+
+type AssetFileRef = {
+  path: string;
+  role: "source" | "bakedOutput" | "thumbnail" | "metadata" | "generatedRecipe" | "other";
+  contentHash?: string;
+};
+
+type AssetProvenance = {
+  author?: string;
+  sourceUrl?: string;
+  createdWithTilesVersion?: string;
+  derivedFromAssetId?: string;
+  derivedFromVersion?: string;
+  generatedBy?: string;
+  generatorVersion?: string;
+  seed?: string;
+};
+
+type AssetLicenseMetadata = {
+  id?: string;
+  name?: string;
+  commercialUseAllowed?: boolean;
+  redistributionAllowed?: boolean;
+};
+
+type SpriteRegistrySource = {
+  sourceType: "singleImage" | "spriteSheet";
+  path: string;
+  width?: number;
+  height?: number;
+  frames?: SpriteRegistryFrame[];
+};
+
+type SpriteRegistryFrame = {
+  id: string;
+  rect: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  tags: string[];
 };
 
 type SpriteAssetImportRequest = {
@@ -557,6 +604,49 @@ const fallbackSpriteImportResult: SpriteAssetImportResult = {
   copiedPath: null,
 };
 
+const fallbackAssetLibraryAssets: AssetRegistryEntry[] = [
+  {
+    id: "sprite.hero",
+    name: "Hero",
+    kind: "sprite",
+    source: "assets/sprites/hero.png",
+    tags: ["sprite", "sample", "player"],
+    licenseStatus: "incomplete",
+    provenance: { createdWithTilesVersion: "0.1.0" },
+    license: { name: "Pending review" },
+    spriteSource: {
+      sourceType: "singleImage",
+      path: "assets/sprites/hero.png",
+      width: 32,
+      height: 32,
+      frames: [
+        {
+          id: "default",
+          rect: { x: 0, y: 0, width: 32, height: 32 },
+          tags: ["default"],
+        },
+      ],
+    },
+  },
+  {
+    id: "tiles.village-grass-water",
+    name: "Village Grass Water",
+    kind: "tileSet",
+    source: "assets/tiles/village-grass-water.png",
+    tags: ["tiles", "sample", "outdoor"],
+    licenseStatus: "unknown",
+  },
+  {
+    id: "map.village",
+    name: "Village Map",
+    kind: "map",
+    source: "maps/village.tiles.json",
+    tags: ["map", "sample", "top-down"],
+    licenseStatus: "complete",
+    provenance: { createdWithTilesVersion: "0.1.0" },
+  },
+];
+
 export function App() {
   const [status, setStatus] = useState<EngineStatus>(fallbackStatus);
   const [shellState, setShellState] = useState<ShellState>("checking");
@@ -588,7 +678,10 @@ export function App() {
   const [spriteImportResult, setSpriteImportResult] = useState<SpriteAssetImportResult>(
     fallbackSpriteImportResult,
   );
-  const [importedSpriteAssets, setImportedSpriteAssets] = useState<AssetRegistryEntry[]>([]);
+  const [assetLibraryAssets, setAssetLibraryAssets] =
+    useState<AssetRegistryEntry[]>(fallbackAssetLibraryAssets);
+  const [selectedAssetId, setSelectedAssetId] = useState(fallbackAssetLibraryAssets[0].id);
+  const [assetSearchQuery, setAssetSearchQuery] = useState("");
   const [spriteImportBusy, setSpriteImportBusy] = useState(false);
 
   useEffect(() => {
@@ -808,6 +901,12 @@ export function App() {
     [menuSettings.settings, selectedSettingsGroupId],
   );
 
+  const selectedAsset = useMemo(
+    () =>
+      assetLibraryAssets.find((asset) => asset.id === selectedAssetId) ?? assetLibraryAssets[0],
+    [assetLibraryAssets, selectedAssetId],
+  );
+
   const updateSelectedEntity = (changes: Partial<SceneEntity>) => {
     if (!selectedEntity) return;
 
@@ -957,13 +1056,10 @@ export function App() {
         const importedEntry = response.registryEntry;
 
         if (addToRegistry && response.ok && importedEntry) {
-          setImportedSpriteAssets((currentAssets) =>
-            currentAssets.some((asset) => asset.id === importedEntry.id)
-              ? currentAssets.map((asset) =>
-                  asset.id === importedEntry.id ? importedEntry : asset,
-                )
-              : [...currentAssets, importedEntry],
+          setAssetLibraryAssets((currentAssets) =>
+            upsertAssetRegistryEntry(currentAssets, importedEntry),
           );
+          setSelectedAssetId(importedEntry.id);
         }
       })
       .catch((error) => {
@@ -1029,8 +1125,12 @@ export function App() {
             <div className="tile-grid" />
             {activePanel === "Assets" ? (
               <AssetImportViewport
-                importedAssets={importedSpriteAssets}
+                assets={assetLibraryAssets}
+                searchQuery={assetSearchQuery}
+                selectedAssetId={selectedAsset?.id}
                 result={spriteImportResult}
+                onSearchChange={setAssetSearchQuery}
+                onSelectAsset={setSelectedAssetId}
               />
             ) : activePanel === "Saves" ? (
               <SaveSlotsViewport selectedSlotId={selectedSaveSlotId} slots={saveSlots.slots} />
@@ -1061,10 +1161,11 @@ export function App() {
             <h2>{activePanel}</h2>
             {activePanel === "Assets" ? (
               <AssetImportInspector
+                assets={assetLibraryAssets}
                 busy={spriteImportBusy}
-                importedAssets={importedSpriteAssets}
                 request={spriteImportRequest}
                 result={spriteImportResult}
+                selectedAsset={selectedAsset}
                 onAdd={() => runSpriteAssetImport(true)}
                 onUpdateRequest={updateSpriteImportRequest}
                 onValidate={() => runSpriteAssetImport(false)}
@@ -1181,47 +1282,98 @@ function SceneComposerViewport({
 }
 
 type AssetImportViewportProps = {
-  importedAssets: AssetRegistryEntry[];
+  assets: AssetRegistryEntry[];
+  searchQuery: string;
+  selectedAssetId?: string;
   result: SpriteAssetImportResult;
+  onSearchChange: (query: string) => void;
+  onSelectAsset: (assetId: string) => void;
 };
 
-function AssetImportViewport({ importedAssets, result }: AssetImportViewportProps) {
+function AssetImportViewport({
+  assets,
+  searchQuery,
+  selectedAssetId,
+  result,
+  onSearchChange,
+  onSelectAsset,
+}: AssetImportViewportProps) {
+  const filteredAssets = filterAssetLibraryAssets(assets, searchQuery);
+  const groupedAssets = groupAssetsByKind(filteredAssets);
+
   return (
-    <div className="asset-import-canvas" aria-label="Sprite asset import preview">
-      <div className="asset-import-preview">
-        <div className={result.ok ? "asset-import-status" : "asset-import-status asset-import-status-error"}>
-          <strong>{result.ok ? "Import ready" : "Import status"}</strong>
-          <span>{result.message}</span>
+    <div className="asset-library-canvas" aria-label="Asset library browser">
+      <div className="asset-library-shell">
+        <div className="asset-library-toolbar">
+          <label className="asset-library-search">
+            <span>Search</span>
+            <input
+              value={searchQuery}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder="Name, id, source, tag"
+            />
+          </label>
+          <div className="asset-library-count">
+            <strong>{filteredAssets.length}</strong>
+            <span>{filteredAssets.length === 1 ? "asset" : "assets"}</span>
+          </div>
         </div>
 
-        {result.metadata ? (
-          <div className="asset-metadata-preview">
-            <span>{result.metadata.assetId}</span>
-            <strong>
-              {result.metadata.size.width} x {result.metadata.size.height}
-            </strong>
-            <small>{result.metadata.sourcePath}</small>
-          </div>
-        ) : (
-          <div className="asset-metadata-preview asset-metadata-preview-empty">
-            <span>PNG</span>
-            <strong>No metadata loaded</strong>
-            <small>Project-relative source pending</small>
-          </div>
-        )}
-
-        <div className="asset-registry-preview" aria-label="Imported sprite registry entries">
-          {importedAssets.length === 0 ? (
-            <span>No imported sprite assets</span>
+        <div className="asset-library-groups" aria-label="Registered assets by kind">
+          {groupedAssets.length === 0 ? (
+            <div className="asset-library-empty">
+              <strong>No matching assets</strong>
+              <span>Search returned 0 assets.</span>
+            </div>
           ) : (
-            importedAssets.map((asset) => (
-              <div className="asset-registry-row" key={asset.id}>
-                <strong>{asset.name}</strong>
-                <span>{asset.id}</span>
-                <small>{asset.source}</small>
-              </div>
+            groupedAssets.map(([kind, kindAssets]) => (
+              <section className="asset-library-group" key={kind}>
+                <div className="asset-library-group-heading">
+                  <strong>{assetKindLabel(kind)}</strong>
+                  <span>{kindAssets.length}</span>
+                </div>
+                <div className="asset-library-list">
+                  {kindAssets.map((asset) => (
+                    <button
+                      className={
+                        asset.id === selectedAssetId
+                          ? "asset-library-row asset-library-row-active"
+                          : "asset-library-row"
+                      }
+                      key={asset.id}
+                      onClick={() => onSelectAsset(asset.id)}
+                      type="button"
+                    >
+                      <span className="asset-thumbnail-placeholder" aria-hidden="true">
+                        {assetKindInitials(asset.kind)}
+                      </span>
+                      <span className="asset-library-row-main">
+                        <strong>{asset.name}</strong>
+                        <span>{asset.id}</span>
+                        <small>{asset.source}</small>
+                      </span>
+                      <span
+                        className={`asset-license-pill asset-license-${assetLicenseStatus(asset)}`}
+                      >
+                        {licenseStatusLabel(asset.licenseStatus)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
             ))
           )}
+        </div>
+
+        <div
+          className={
+            result.ok
+              ? "asset-library-import-status"
+              : "asset-library-import-status asset-library-import-status-error"
+          }
+        >
+          <strong>{result.ok ? "Import ready" : "Import status"}</strong>
+          <span>{result.message}</span>
         </div>
       </div>
     </div>
@@ -1419,20 +1571,22 @@ function SaveLoadInspector({
 }
 
 type AssetImportInspectorProps = {
+  assets: AssetRegistryEntry[];
   busy: boolean;
-  importedAssets: AssetRegistryEntry[];
   request: SpriteAssetImportRequest;
   result: SpriteAssetImportResult;
+  selectedAsset?: AssetRegistryEntry;
   onUpdateRequest: (changes: Partial<SpriteAssetImportRequest>) => void;
   onValidate: () => void;
   onAdd: () => void;
 };
 
 function AssetImportInspector({
+  assets,
   busy,
-  importedAssets,
   request,
   result,
+  selectedAsset,
   onUpdateRequest,
   onValidate,
   onAdd,
@@ -1518,11 +1672,73 @@ function AssetImportInspector({
 
       <dl className="asset-import-details">
         <div>
-          <dt>Imported sprites</dt>
-          <dd>{importedAssets.length}</dd>
+          <dt>Library assets</dt>
+          <dd>{assets.length}</dd>
         </div>
       </dl>
+
+      <AssetMetadataInspector asset={selectedAsset} />
     </div>
+  );
+}
+
+function AssetMetadataInspector({ asset }: { asset?: AssetRegistryEntry }) {
+  if (!asset) {
+    return (
+      <section className="asset-metadata-inspector">
+        <strong>No asset selected</strong>
+        <span>Selection pending.</span>
+      </section>
+    );
+  }
+
+  return (
+    <section className="asset-metadata-inspector">
+      <div className="asset-metadata-heading">
+        <span className="asset-thumbnail-placeholder" aria-hidden="true">
+          {assetKindInitials(asset.kind)}
+        </span>
+        <div>
+          <strong>{asset.name}</strong>
+          <span>{asset.id}</span>
+        </div>
+      </div>
+
+      <dl className="asset-import-details">
+        <div>
+          <dt>Kind</dt>
+          <dd>{assetKindLabel(asset.kind)}</dd>
+        </div>
+        <div>
+          <dt>Source</dt>
+          <dd>{asset.source}</dd>
+        </div>
+        <div>
+          <dt>License</dt>
+          <dd>{licenseStatusLabel(asset.licenseStatus)}</dd>
+        </div>
+        <div>
+          <dt>Provenance</dt>
+          <dd>{assetProvenanceLabel(asset)}</dd>
+        </div>
+        <div>
+          <dt>Sprite size</dt>
+          <dd>{assetSpriteSizeLabel(asset)}</dd>
+        </div>
+        <div>
+          <dt>Files</dt>
+          <dd>{asset.files?.length ?? (asset.source ? 1 : 0)}</dd>
+        </div>
+        <div>
+          <dt>Tags</dt>
+          <dd>{asset.tags.length === 0 ? "-" : asset.tags.join(", ")}</dd>
+        </div>
+        <div>
+          <dt>Hash</dt>
+          <dd>{asset.contentHash ?? "-"}</dd>
+        </div>
+      </dl>
+    </section>
   );
 }
 
@@ -2427,6 +2643,138 @@ function menuActionCommandLabel(command: MenuActionCommand) {
     case "custom":
       return `Custom: ${command.data.commandId}`;
   }
+}
+
+function upsertAssetRegistryEntry(assets: AssetRegistryEntry[], entry: AssetRegistryEntry) {
+  return assets.some((asset) => asset.id === entry.id)
+    ? assets.map((asset) => (asset.id === entry.id ? entry : asset))
+    : [...assets, entry];
+}
+
+function filterAssetLibraryAssets(assets: AssetRegistryEntry[], query: string) {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  if (normalizedQuery === "") {
+    return assets;
+  }
+
+  return assets.filter((asset) =>
+    [
+      asset.id,
+      asset.name,
+      asset.kind,
+      asset.source,
+      asset.licenseStatus ?? "unknown",
+      ...asset.tags,
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedQuery),
+  );
+}
+
+function groupAssetsByKind(assets: AssetRegistryEntry[]) {
+  const kindOrder: AssetRegistryEntry["kind"][] = [
+    "sprite",
+    "spriteSource",
+    "spriteFrame",
+    "tileSet",
+    "animationClip",
+    "map",
+    "scene",
+    "rule",
+    "assetPack",
+  ];
+
+  return kindOrder
+    .map((kind) => [kind, assets.filter((asset) => asset.kind === kind)] as const)
+    .filter(([, kindAssets]) => kindAssets.length > 0);
+}
+
+function assetKindLabel(kind: AssetRegistryEntry["kind"]) {
+  switch (kind) {
+    case "sprite":
+      return "Sprites";
+    case "spriteSource":
+      return "Sprite Sources";
+    case "spriteFrame":
+      return "Sprite Frames";
+    case "tileSet":
+      return "Tile Sets";
+    case "animationClip":
+      return "Animation Clips";
+    case "map":
+      return "Maps";
+    case "scene":
+      return "Scenes";
+    case "rule":
+      return "Rules";
+    case "assetPack":
+      return "Asset Packs";
+  }
+}
+
+function assetKindInitials(kind: AssetRegistryEntry["kind"]) {
+  switch (kind) {
+    case "sprite":
+      return "SP";
+    case "spriteSource":
+      return "SS";
+    case "spriteFrame":
+      return "SF";
+    case "tileSet":
+      return "TS";
+    case "animationClip":
+      return "AC";
+    case "map":
+      return "MP";
+    case "scene":
+      return "SC";
+    case "rule":
+      return "RL";
+    case "assetPack":
+      return "AP";
+  }
+}
+
+function assetLicenseStatus(asset: AssetRegistryEntry) {
+  return asset.licenseStatus ?? "unknown";
+}
+
+function licenseStatusLabel(status: AssetRegistryEntry["licenseStatus"]) {
+  switch (status ?? "unknown") {
+    case "complete":
+      return "Complete";
+    case "incomplete":
+      return "Incomplete";
+    case "restricted":
+      return "Restricted";
+    case "unknown":
+      return "Unknown";
+  }
+}
+
+function assetProvenanceLabel(asset: AssetRegistryEntry) {
+  if (asset.provenance?.author) {
+    return asset.provenance.author;
+  }
+
+  if (asset.provenance?.sourceUrl) {
+    return asset.provenance.sourceUrl;
+  }
+
+  if (asset.provenance?.createdWithTilesVersion) {
+    return `Tiles ${asset.provenance.createdWithTilesVersion}`;
+  }
+
+  return "Incomplete";
+}
+
+function assetSpriteSizeLabel(asset: AssetRegistryEntry) {
+  const width = asset.spriteSource?.width;
+  const height = asset.spriteSource?.height;
+
+  return width && height ? `${width} x ${height}` : "-";
 }
 
 function validateSpriteImportInBrowser(
