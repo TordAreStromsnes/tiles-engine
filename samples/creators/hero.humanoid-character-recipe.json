@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 0,
+  "id": "recipe.hero",
+  "name": "Hero Character Recipe",
+  "bodyPlan": {
+    "id": "humanoid",
+    "kind": "humanoid",
+    "requiredPartSlots": [
+      "bodyBase",
+      "head",
+      "eyes",
+      "clothingTop",
+      "clothingBottom",
+      "shoesFeet"
+    ],
+    "optionalPartSlots": ["hair", "accessory", "equipment"],
+    "plannedDirections": ["front", "back", "left", "right", "topDown"]
+  },
+  "tags": ["character", "humanoid", "playable"],
+  "proportions": {
+    "bodyHeight": 1.0,
+    "bodyWidth": 1.0,
+    "headSize": 1.08,
+    "shoulderWidth": 1.0,
+    "armLength": 1.0,
+    "legLength": 1.0,
+    "footSize": 1.0
+  },
+  "directions": ["front", "back", "left", "right", "topDown"],
+  "palettes": [
+    {
+      "slot": "skin",
+      "swatches": ["#f0c7a4", "#c98f6b"]
+    },
+    {
+      "slot": "hair",
+      "swatches": ["#5a3523", "#2a1710"]
+    },
+    {
+      "slot": "eye",
+      "swatches": ["#3d6fa3"]
+    },
+    {
+      "slot": "clothingPrimary",
+      "swatches": ["#3f74a3"]
+    },
+    {
+      "slot": "clothingSecondary",
+      "swatches": ["#c84f4f"]
+    },
+    {
+      "slot": "accessory",
+      "swatches": ["#f2c14e"]
+    },
+    {
+      "slot": "outline",
+      "swatches": ["#25323f"]
+    }
+  ],
+  "parts": [
+    {
+      "slot": "bodyBase",
+      "assetId": "sprite.part.humanoid.body.average",
+      "partId": "humanoid.body.average",
+      "variantId": null,
+      "paletteSlots": ["skin"],
+      "directions": ["front", "back", "left", "right", "topDown"],
+      "attachmentPoints": []
+    },
+    {
+      "slot": "head",
+      "assetId": "sprite.part.humanoid.head.round",
+      "partId": "humanoid.head.round",
+      "variantId": null,
+      "paletteSlots": ["skin"],
+      "directions": ["front", "back", "left", "right", "topDown"],
+      "attachmentPoints": []
+    },
+    {
+      "slot": "hair",
+      "assetId": "sprite.part.humanoid.hair.short",
+      "partId": "humanoid.hair.short",
+      "variantId": null,
+      "paletteSlots": ["hair"],
+      "directions": ["front", "back", "left", "right", "topDown"],
+      "attachmentPoints": []
+    },
+    {
+      "slot": "eyes",
+      "assetId": "sprite.part.humanoid.eyes.round",
+      "partId": "humanoid.eyes.round",
+      "variantId": null,
+      "paletteSlots": ["eye"],
+      "directions": ["front", "back", "left", "right", "topDown"],
+      "attachmentPoints": []
+    },
+    {
+      "slot": "clothingTop",
+      "assetId": "sprite.part.humanoid.tunic",
+      "partId": "humanoid.tunic",
+      "variantId": null,
+      "paletteSlots": ["clothingPrimary", "clothingSecondary"],
+      "directions": ["front", "back", "left", "right", "topDown"],
+      "attachmentPoints": []
+    },
+    {
+      "slot": "clothingBottom",
+      "assetId": "sprite.part.humanoid.trousers",
+      "partId": "humanoid.trousers",
+      "variantId": null,
+      "paletteSlots": ["clothingPrimary"],
+      "directions": ["front", "back", "left", "right", "topDown"],
+      "attachmentPoints": []
+    },
+    {
+      "slot": "shoesFeet",
+      "assetId": "sprite.part.humanoid.shoes",
+      "partId": "humanoid.shoes",
+      "variantId": null,
+      "paletteSlots": ["accessory"],
+      "directions": ["front", "back", "left", "right", "topDown"],
+      "attachmentPoints": []
+    }
+  ],
+  "warnings": [
+    {
+      "code": "top-down-needs-review",
+      "severity": "info",
+      "message": "Top-down view is stored in the recipe and can be refined by future baking tools.",
+      "partSlot": null
+    }
+  ],
+  "bakedOutputs": [
+    {
+      "assetId": "sprite.hero",
+      "path": "samples/assets/hero.sprite.json",
+      "directions": ["front", "back", "left", "right", "topDown"]
+    }
+  ]
+}
