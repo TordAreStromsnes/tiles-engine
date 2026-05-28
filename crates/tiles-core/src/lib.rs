@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod animation;
 pub mod assets;
+pub mod character_bake;
 pub mod export_manifest;
 pub mod export_package;
 pub mod humanoid;
@@ -26,6 +27,7 @@ pub mod semantic_rig;
 pub mod sprite_images;
 pub use animation::*;
 pub use assets::*;
+pub use character_bake::*;
 pub use export_manifest::*;
 pub use export_package::*;
 pub use humanoid::*;

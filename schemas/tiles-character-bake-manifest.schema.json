@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-character-bake-manifest.schema.json",
+  "title": "Tiles Engine Character Bake Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "recipeId",
+    "rigId",
+    "bodyPlanId",
+    "directions",
+    "outputs",
+    "palette",
+    "frames",
+    "warnings"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 0 },
+    "recipeId": { "type": "string", "minLength": 1 },
+    "rigId": { "type": "string", "minLength": 1 },
+    "bodyPlanId": { "type": "string", "minLength": 1 },
+    "directions": { "$ref": "#/$defs/directions" },
+    "outputs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/output" }
+    },
+    "palette": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/paletteSlot" }
+    },
+    "frames": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/frame" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagnostic" }
+    }
+  },
+  "$defs": {
+    "directions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/direction" },
+      "uniqueItems": true
+    },
+    "direction": {
+      "type": "string",
+      "enum": ["front", "back", "left", "right", "topDown"]
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetId", "path", "directions"],
+      "properties": {
+        "assetId": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "directions": { "$ref": "#/$defs/directions" }
+      }
+    },
+    "paletteSlot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["slotId", "swatch", "source"],
+      "properties": {
+        "slotId": { "type": "string", "minLength": 1 },
+        "swatch": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["theme", "attachmentOverride"]
+        }
+      }
+    },
+    "frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "direction",
+        "outputAssetId",
+        "rect",
+        "partAssetIds",
+        "attachmentIds",
+        "placeholder"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "direction": { "$ref": "#/$defs/direction" },
+        "outputAssetId": { "type": "string", "minLength": 1 },
+        "rect": { "$ref": "#/$defs/pixelRect" },
+        "partAssetIds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "attachmentIds": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "placeholder": { "type": "boolean" }
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "message", "sourceId"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "severity": { "type": "string", "enum": ["warning", "error"] },
+        "message": { "type": "string", "minLength": 1 },
+        "sourceId": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "minLength": 1 }
+          ]
+        }
+      }
+    },
+    "pixelRect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "width", "height"],
+      "properties": {
+        "x": { "type": "integer", "minimum": 0 },
+        "y": { "type": "integer", "minimum": 0 },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}
