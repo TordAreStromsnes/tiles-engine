@@ -71,6 +71,12 @@ Palette slots match the existing humanoid creator and part-pack data:
 Proportions are normalized scale values between `0.1` and `3.0`, matching the
 current humanoid creator controls.
 
+`paletteSystem` adds scoped part and attachment palette ids such as
+`skin.primary`, `hair.base`, `shirt.fabric`, `boots.leather`, and
+`lantern.metal`. Character themes provide defaults, while attachment overrides
+can replace those defaults for a shirt, boots, held item, or similar semantic
+attachment.
+
 ## Warnings
 
 `warnings` are persisted as data. They can record forced compatibility choices,
