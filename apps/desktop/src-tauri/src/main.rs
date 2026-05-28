@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     fmt, fs,
     path::{Path, PathBuf},
     process::Command as ProcessCommand,
@@ -120,6 +121,47 @@ struct SpriteAssetImportResult {
     copied_path: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct BatchSpriteAssetImportRequest {
+    project_root: String,
+    imports: Vec<BatchSpriteAssetImportItem>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct BatchSpriteAssetImportItem {
+    asset_id: Option<String>,
+    name: Option<String>,
+    source_path: String,
+    target_path: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BatchSpriteAssetImportResult {
+    ok: bool,
+    message: String,
+    imported_count: usize,
+    failed_count: usize,
+    warning_count: usize,
+    results: Vec<BatchSpriteAssetImportItemResult>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BatchSpriteAssetImportItemResult {
+    index: usize,
+    asset_id: String,
+    source_path: String,
+    ok: bool,
+    message: String,
+    warnings: Vec<String>,
+    metadata: Option<SpriteImageMetadata>,
+    registry_entry: Option<AssetRegistryEntry>,
+    copied_path: Option<String>,
+}
+
 #[tauri::command]
 fn preview_sprite_asset_import(request: SpriteAssetImportRequest) -> SpriteAssetImportResult {
     let project_root = sprite_import_project_root(&request);
@@ -198,6 +240,102 @@ fn persist_sprite_asset_import(request: SpriteAssetImportRequest) -> SpriteAsset
             copied_path: None,
         },
     }
+}
+
+#[tauri::command]
+fn persist_batch_sprite_asset_import(
+    request: BatchSpriteAssetImportRequest,
+) -> BatchSpriteAssetImportResult {
+    match persist_batch_sprite_asset_import_to_project(&request) {
+        Ok(result) => result,
+        Err(message) => BatchSpriteAssetImportResult {
+            ok: false,
+            message,
+            imported_count: 0,
+            failed_count: request.imports.len(),
+            warning_count: 0,
+            results: Vec::new(),
+        },
+    }
+}
+
+fn persist_batch_sprite_asset_import_to_project(
+    request: &BatchSpriteAssetImportRequest,
+) -> Result<BatchSpriteAssetImportResult, String> {
+    if request.imports.is_empty() {
+        return Ok(BatchSpriteAssetImportResult {
+            ok: false,
+            message: "No sprite assets were provided for batch import.".to_string(),
+            imported_count: 0,
+            failed_count: 0,
+            warning_count: 0,
+            results: Vec::new(),
+        });
+    }
+
+    let project_root = sprite_import_project_root_from_value(&request.project_root);
+    let project = load_project(&project_root).map_err(|error| {
+        format!(
+            "Cannot import sprite batch because project files could not be loaded from {}: {error}",
+            project_root.display()
+        )
+    })?;
+    let mut reserved_asset_ids: HashSet<String> = project
+        .asset_registry
+        .assets
+        .iter()
+        .map(|asset| asset.id.clone())
+        .collect();
+    let mut results = Vec::with_capacity(request.imports.len());
+
+    for (index, item) in request.imports.iter().enumerate() {
+        let import_request =
+            sprite_batch_item_import_request(&request.project_root, item, &mut reserved_asset_ids);
+        let asset_id = import_request.asset_id.clone();
+        let source_path = import_request.source_path.clone();
+        let result = persist_sprite_asset_import(import_request);
+        let warnings = sprite_import_result_warnings(&result);
+
+        if let Some(entry) = &result.registry_entry {
+            reserved_asset_ids.insert(entry.id.clone());
+        }
+
+        results.push(BatchSpriteAssetImportItemResult {
+            index,
+            asset_id,
+            source_path,
+            ok: result.ok,
+            message: result.message,
+            warnings,
+            metadata: result.metadata,
+            registry_entry: result.registry_entry,
+            copied_path: result.copied_path,
+        });
+    }
+
+    let imported_count = results.iter().filter(|result| result.ok).count();
+    let failed_count = results.len() - imported_count;
+    let warning_count = results
+        .iter()
+        .map(|result| result.warnings.len())
+        .sum::<usize>();
+    let ok = failed_count == 0;
+    let message = if ok {
+        format!("Imported {imported_count} sprite assets into the project registry.")
+    } else {
+        format!(
+            "Imported {imported_count} sprite assets; {failed_count} sprite assets need attention."
+        )
+    };
+
+    Ok(BatchSpriteAssetImportResult {
+        ok,
+        message,
+        imported_count,
+        failed_count,
+        warning_count,
+        results,
+    })
 }
 
 fn persist_sprite_asset_import_to_project(
@@ -298,10 +436,14 @@ fn persist_sprite_asset_import_to_project(
 }
 
 fn sprite_import_project_root(request: &SpriteAssetImportRequest) -> PathBuf {
-    if request.project_root.trim().is_empty() {
+    sprite_import_project_root_from_value(&request.project_root)
+}
+
+fn sprite_import_project_root_from_value(project_root: &str) -> PathBuf {
+    if project_root.trim().is_empty() {
         workspace_root_from_manifest(Path::new(env!("CARGO_MANIFEST_DIR")))
     } else {
-        PathBuf::from(request.project_root.trim())
+        PathBuf::from(project_root.trim())
     }
 }
 
@@ -449,6 +591,107 @@ fn sprite_import_registry_entry(
         }],
     });
     entry
+}
+
+fn sprite_batch_item_import_request(
+    project_root: &str,
+    item: &BatchSpriteAssetImportItem,
+    reserved_asset_ids: &mut HashSet<String>,
+) -> SpriteAssetImportRequest {
+    let asset_id = sprite_batch_item_asset_id(item, reserved_asset_ids);
+    SpriteAssetImportRequest {
+        project_root: project_root.trim().to_string(),
+        name: sprite_batch_item_name(item, &asset_id),
+        asset_id,
+        source_path: item.source_path.trim().to_string(),
+        target_path: item
+            .target_path
+            .as_deref()
+            .map(str::trim)
+            .filter(|path| !path.is_empty())
+            .map(ToOwned::to_owned),
+    }
+}
+
+fn sprite_batch_item_asset_id(
+    item: &BatchSpriteAssetImportItem,
+    reserved_asset_ids: &mut HashSet<String>,
+) -> String {
+    if let Some(asset_id) = item
+        .asset_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|asset_id| !asset_id.is_empty())
+    {
+        return asset_id.to_string();
+    }
+
+    let base_asset_id = sprite_batch_item_base_asset_id(&item.source_path);
+    let mut asset_id = base_asset_id.clone();
+    let mut suffix = 2;
+
+    while reserved_asset_ids.contains(&asset_id) {
+        asset_id = format!("{base_asset_id}.{suffix}");
+        suffix += 1;
+    }
+
+    reserved_asset_ids.insert(asset_id.clone());
+    asset_id
+}
+
+fn sprite_batch_item_base_asset_id(source_path: &str) -> String {
+    let file_stem = Path::new(source_path.trim())
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .unwrap_or("sprite");
+    let sanitized = sanitize_asset_id_for_filename(file_stem);
+
+    format!("sprite.{sanitized}")
+}
+
+fn sprite_batch_item_name(item: &BatchSpriteAssetImportItem, asset_id: &str) -> String {
+    if let Some(name) = item
+        .name
+        .as_deref()
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+    {
+        return name.to_string();
+    }
+
+    Path::new(item.source_path.trim())
+        .file_stem()
+        .and_then(|stem| stem.to_str())
+        .map(|stem| stem.replace(['_', '-', '.'], " "))
+        .filter(|name| !name.trim().is_empty())
+        .unwrap_or_else(|| asset_id.to_string())
+}
+
+fn sprite_import_result_warnings(result: &SpriteAssetImportResult) -> Vec<String> {
+    let Some(entry) = &result.registry_entry else {
+        return Vec::new();
+    };
+    let mut warnings = Vec::new();
+
+    if !matches!(entry.license_status, AssetLicenseStatus::Complete) {
+        warnings.push(
+            "License metadata is incomplete; confirm usage rights before sharing this asset."
+                .to_string(),
+        );
+    }
+
+    if entry
+        .provenance
+        .as_ref()
+        .is_some_and(|provenance| provenance.author.is_none() && provenance.source_url.is_none())
+    {
+        warnings.push(
+            "Provenance author/source URL is incomplete; record where this sprite came from."
+                .to_string(),
+        );
+    }
+
+    warnings
 }
 
 fn sanitize_asset_id_for_filename(asset_id: &str) -> String {
@@ -1071,6 +1314,7 @@ fn main() {
             validate_menu_settings,
             preview_sprite_asset_import,
             persist_sprite_asset_import,
+            persist_batch_sprite_asset_import,
             list_runtime_save_slots,
             save_runtime_snapshot,
             load_runtime_snapshot,
@@ -1378,6 +1622,102 @@ mod tests {
 
         assert!(!result.ok);
         assert!(result.message.contains("already exists"));
+    }
+
+    #[test]
+    fn batch_sprite_import_keeps_successes_when_later_items_fail() {
+        let project_root = temp_workspace_root("sprite-import-batch-partial-project");
+        let source_root = temp_workspace_root("sprite-import-batch-partial-source");
+        let source_path = source_root.join("hero.png");
+        let missing_path = source_root.join("missing.png");
+        let project = tiles_core::TilesProject::starter("test-project", "Test Project");
+        save_project(&project, &project_root).expect("project should save");
+        write_fixture(&source_path, PNG_2X3_HEADER);
+
+        let result = persist_batch_sprite_asset_import(BatchSpriteAssetImportRequest {
+            project_root: project_root.display().to_string(),
+            imports: vec![
+                BatchSpriteAssetImportItem {
+                    asset_id: None,
+                    name: None,
+                    source_path: source_path.display().to_string(),
+                    target_path: Some("assets/sprites/hero.png".to_string()),
+                },
+                BatchSpriteAssetImportItem {
+                    asset_id: Some("sprite.missing".to_string()),
+                    name: Some("Missing".to_string()),
+                    source_path: missing_path.display().to_string(),
+                    target_path: Some("assets/sprites/missing.png".to_string()),
+                },
+            ],
+        });
+        let loaded = load_project(&project_root).expect("project should reload");
+        let _ = fs::remove_dir_all(&project_root);
+        let _ = fs::remove_dir_all(&source_root);
+
+        assert!(!result.ok);
+        assert_eq!(result.imported_count, 1);
+        assert_eq!(result.failed_count, 1);
+        assert!(result.warning_count >= 1);
+        assert_eq!(result.results.len(), 2);
+        assert!(result.results[0].ok, "{}", result.results[0].message);
+        assert_eq!(result.results[0].asset_id, "sprite.hero");
+        assert!(result.results[0]
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("License metadata is incomplete")));
+        assert!(!result.results[1].ok);
+        assert!(result.results[1].message.contains("does not exist"));
+        assert_eq!(loaded.asset_registry.assets.len(), 1);
+        loaded
+            .asset_registry
+            .validate()
+            .expect("partial batch import should leave registry valid");
+        assert_eq!(loaded.asset_registry.assets[0].id, "sprite.hero");
+    }
+
+    #[test]
+    fn batch_sprite_import_generates_unique_ids_against_existing_registry() {
+        let project_root = temp_workspace_root("sprite-import-batch-generated-project");
+        let source_root = temp_workspace_root("sprite-import-batch-generated-source");
+        let source_path = source_root.join("hero.png");
+        let mut project = tiles_core::TilesProject::starter("test-project", "Test Project");
+        project.asset_registry.assets.push(AssetRegistryEntry::new(
+            "sprite.hero",
+            "Existing Hero",
+            AssetKind::Sprite,
+            "assets/sprites/hero.png",
+            Vec::new(),
+        ));
+        save_project(&project, &project_root).expect("project should save");
+        write_fixture(&source_path, PNG_2X3_HEADER);
+
+        let result = persist_batch_sprite_asset_import(BatchSpriteAssetImportRequest {
+            project_root: project_root.display().to_string(),
+            imports: vec![BatchSpriteAssetImportItem {
+                asset_id: None,
+                name: None,
+                source_path: source_path.display().to_string(),
+                target_path: None,
+            }],
+        });
+        let loaded = load_project(&project_root).expect("project should reload");
+        let _ = fs::remove_dir_all(&project_root);
+        let _ = fs::remove_dir_all(&source_root);
+
+        assert!(result.ok, "{}", result.message);
+        assert_eq!(result.imported_count, 1);
+        assert_eq!(result.results[0].asset_id, "sprite.hero.2");
+        assert_eq!(
+            result.results[0].copied_path.as_deref(),
+            Some("assets/sprites/sprite.hero.2.png")
+        );
+        assert_eq!(loaded.asset_registry.assets.len(), 2);
+        assert!(loaded
+            .asset_registry
+            .assets
+            .iter()
+            .any(|asset| asset.id == "sprite.hero.2"));
     }
 
     #[test]
