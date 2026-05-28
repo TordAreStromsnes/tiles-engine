@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 0,
+  "id": "generator-recipe.starter-terrain.village",
+  "name": "Starter Village Terrain Recipe",
+  "generatorId": "tiles-engine.starter.terrain.v0",
+  "generatorVersion": "0",
+  "seed": "starter-village-terrain-001",
+  "target": {
+    "kind": "terrainTileSet",
+    "outputKind": "tileSet"
+  },
+  "tileSize": {
+    "width": 16,
+    "height": 16
+  },
+  "style": {
+    "styleId": "top-down-soft-blockout",
+    "materialType": "terrain",
+    "tags": ["topDown", "terrain", "editablePlaceholder"]
+  },
+  "palette": [
+    {
+      "slotId": "grass",
+      "swatches": ["#5f9f4a", "#8ccf6b", "#2f6b38"]
+    },
+    {
+      "slotId": "dirt",
+      "swatches": ["#8a6841", "#b38a55"]
+    },
+    {
+      "slotId": "water",
+      "swatches": ["#3c7fc4", "#6eb6d9", "#1f4f83"]
+    },
+    {
+      "slotId": "stone",
+      "swatches": ["#707070", "#a0a0a0", "#484848"]
+    }
+  ],
+  "parameters": [
+    {
+      "key": "terrainRoles",
+      "value": ["grass", "dirt", "water", "stone"]
+    },
+    {
+      "key": "variantCountPerRole",
+      "value": 3
+    },
+    {
+      "key": "outline",
+      "value": true
+    },
+    {
+      "key": "noiseScale",
+      "value": 0.35
+    }
+  ],
+  "bakedAssetIds": ["tileset.starter.terrain", "sprite.starter.terrain-source"],
+  "provenance": {
+    "deterministic": true,
+    "createdWithTilesVersion": "0.1.0",
+    "notes": ["Generated locally by Rust; project copies can be edited freely."]
+  }
+}

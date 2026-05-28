@@ -146,6 +146,12 @@ pub struct AssetProvenance {
     pub generator_version: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub seed: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub generator_recipe_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub generator_recipe_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub generator_parameters_hash: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -268,6 +274,20 @@ pub enum ProjectValidationError {
     EmptyAssetContentHash {
         id: String,
     },
+    EmptyAssetProvenanceField {
+        id: String,
+        field: &'static str,
+    },
+    AbsoluteAssetProvenancePath {
+        id: String,
+        field: &'static str,
+        path: String,
+    },
+    AssetProvenancePathEscapesProject {
+        id: String,
+        field: &'static str,
+        path: String,
+    },
     EmptyAssetFilePath {
         id: String,
     },
@@ -362,6 +382,18 @@ impl fmt::Display for ProjectValidationError {
             Self::EmptyAssetContentHash { id } => {
                 write!(formatter, "asset `{id}` content hash must not be empty")
             }
+            Self::EmptyAssetProvenanceField { id, field } => write!(
+                formatter,
+                "asset `{id}` provenance field `{field}` must not be empty"
+            ),
+            Self::AbsoluteAssetProvenancePath { id, field, path } => write!(
+                formatter,
+                "asset `{id}` provenance path `{field}` value `{path}` must be relative to the project folder"
+            ),
+            Self::AssetProvenancePathEscapesProject { id, field, path } => write!(
+                formatter,
+                "asset `{id}` provenance path `{field}` value `{path}` must not contain parent directory components"
+            ),
             Self::EmptyAssetFilePath { id } => {
                 write!(formatter, "asset `{id}` file path must not be empty")
             }
@@ -625,8 +657,69 @@ impl AssetRegistryEntry {
             file.validate(&self.id)?;
         }
 
+        if let Some(provenance) = &self.provenance {
+            provenance.validate(&self.id)?;
+        }
+
         if let Some(sprite_source) = &self.sprite_source {
             sprite_source.validate(&self.id)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl AssetProvenance {
+    fn validate(&self, asset_id: &str) -> Result<(), ProjectValidationError> {
+        validate_optional_provenance_text(asset_id, "author", &self.author)?;
+        validate_optional_provenance_text(asset_id, "sourceUrl", &self.source_url)?;
+        validate_optional_provenance_text(
+            asset_id,
+            "createdWithTilesVersion",
+            &self.created_with_tiles_version,
+        )?;
+        validate_optional_provenance_text(
+            asset_id,
+            "derivedFromAssetId",
+            &self.derived_from_asset_id,
+        )?;
+        validate_optional_provenance_text(
+            asset_id,
+            "derivedFromVersion",
+            &self.derived_from_version,
+        )?;
+        validate_optional_provenance_text(asset_id, "generatedBy", &self.generated_by)?;
+        validate_optional_provenance_text(asset_id, "generatorVersion", &self.generator_version)?;
+        validate_optional_provenance_text(asset_id, "seed", &self.seed)?;
+        validate_optional_provenance_text(
+            asset_id,
+            "generatorRecipeId",
+            &self.generator_recipe_id,
+        )?;
+        validate_optional_provenance_text(
+            asset_id,
+            "generatorParametersHash",
+            &self.generator_parameters_hash,
+        )?;
+
+        if let Some(path) = &self.generator_recipe_path {
+            validate_project_relative_path(
+                path,
+                || ProjectValidationError::EmptyAssetProvenanceField {
+                    id: asset_id.to_string(),
+                    field: "generatorRecipePath",
+                },
+                |path| ProjectValidationError::AbsoluteAssetProvenancePath {
+                    id: asset_id.to_string(),
+                    field: "generatorRecipePath",
+                    path,
+                },
+                |path| ProjectValidationError::AssetProvenancePathEscapesProject {
+                    id: asset_id.to_string(),
+                    field: "generatorRecipePath",
+                    path,
+                },
+            )?;
         }
 
         Ok(())
@@ -825,6 +918,21 @@ fn validate_project_relative_path(
         .any(|component| matches!(component, Component::ParentDir))
     {
         return Err(parent_error(path.to_string()));
+    }
+
+    Ok(())
+}
+
+fn validate_optional_provenance_text(
+    asset_id: &str,
+    field: &'static str,
+    value: &Option<String>,
+) -> Result<(), ProjectValidationError> {
+    if value.as_ref().is_some_and(|text| text.trim().is_empty()) {
+        return Err(ProjectValidationError::EmptyAssetProvenanceField {
+            id: asset_id.to_string(),
+            field,
+        });
     }
 
     Ok(())
@@ -1070,6 +1178,11 @@ mod tests {
             generated_by: Some("tiles-engine-starter-generator".to_string()),
             generator_version: Some("0".to_string()),
             seed: Some("starter-hero".to_string()),
+            generator_recipe_id: Some("generator-recipe.placeholder-hero".to_string()),
+            generator_recipe_path: Some(
+                "generators/placeholder-hero.generator-recipe.json".to_string(),
+            ),
+            generator_parameters_hash: Some("sha256:starter-hero-params".to_string()),
         });
         entry.license = Some(AssetLicenseMetadata {
             id: Some("CC0-1.0".to_string()),
@@ -1119,6 +1232,13 @@ mod tests {
         assert_eq!(loaded.license_status, AssetLicenseStatus::Complete);
         assert_eq!(
             loaded
+                .provenance
+                .as_ref()
+                .and_then(|provenance| provenance.generator_recipe_id.as_deref()),
+            Some("generator-recipe.placeholder-hero")
+        );
+        assert_eq!(
+            loaded
                 .sprite_source
                 .as_ref()
                 .expect("sprite source should exist")
@@ -1149,6 +1269,41 @@ mod tests {
             result,
             Err(ProjectValidationError::AssetFileEscapesProject { id, path })
                 if id == "sprite.hero" && path == "../outside.png"
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_project_escape_generator_recipe_path() {
+        let mut entry = AssetRegistryEntry::new(
+            "sprite.hero",
+            "Hero",
+            AssetKind::Sprite,
+            "assets/sprites/hero.sprite.json",
+            Vec::new(),
+        );
+        entry.provenance = Some(AssetProvenance {
+            author: None,
+            source_url: None,
+            created_with_tiles_version: None,
+            derived_from_asset_id: None,
+            derived_from_version: None,
+            generated_by: Some("tiles-engine.starter.placeholder-character.v0".to_string()),
+            generator_version: Some("0".to_string()),
+            seed: Some("placeholder-hero-001".to_string()),
+            generator_recipe_id: Some("generator-recipe.placeholder-hero".to_string()),
+            generator_recipe_path: Some("../outside.generator-recipe.json".to_string()),
+            generator_parameters_hash: Some("sha256:starter-params".to_string()),
+        });
+
+        let result = entry.validate();
+
+        assert!(matches!(
+            result,
+            Err(ProjectValidationError::AssetProvenancePathEscapesProject {
+                id,
+                field: "generatorRecipePath",
+                path
+            }) if id == "sprite.hero" && path == "../outside.generator-recipe.json"
         ));
     }
 

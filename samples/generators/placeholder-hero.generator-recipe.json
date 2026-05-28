@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 0,
+  "id": "generator-recipe.placeholder-hero",
+  "name": "Placeholder Hero Recipe",
+  "generatorId": "tiles-engine.starter.placeholder-character.v0",
+  "generatorVersion": "0",
+  "seed": "placeholder-hero-001",
+  "target": {
+    "kind": "placeholderCharacter",
+    "outputKind": "spriteSource"
+  },
+  "tileSize": {
+    "width": 32,
+    "height": 48
+  },
+  "style": {
+    "styleId": "five-view-readable-blockout",
+    "materialType": "character",
+    "tags": ["humanoid", "fiveView", "editablePlaceholder"]
+  },
+  "palette": [
+    {
+      "slotId": "skin",
+      "swatches": ["#f0c7a4", "#c78f69"]
+    },
+    {
+      "slotId": "hair",
+      "swatches": ["#5a3523", "#2a1710"]
+    },
+    {
+      "slotId": "clothingPrimary",
+      "swatches": ["#3f74a3", "#254e73"]
+    },
+    {
+      "slotId": "outline",
+      "swatches": ["#25323f"]
+    }
+  ],
+  "parameters": [
+    {
+      "key": "views",
+      "value": ["front", "back", "left", "right", "topDown"]
+    },
+    {
+      "key": "bodyProportion",
+      "value": "medium"
+    },
+    {
+      "key": "includeWalkPlaceholders",
+      "value": true
+    }
+  ],
+  "bakedAssetIds": [
+    "sprite.hero.generated-placeholder",
+    "animation.hero.generated-walk-placeholder"
+  ],
+  "provenance": {
+    "deterministic": true,
+    "createdWithTilesVersion": "0.1.0",
+    "notes": ["This describes placeholder intent, not final art quality."]
+  }
+}
