@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 0,
+  "id": "attachment.shirt.basic",
+  "name": "Basic Shirt",
+  "kind": "clothing",
+  "sourceAssetId": "sprite.part.humanoid.tunic",
+  "compatibleBodyPlanIds": ["humanoid"],
+  "targetSlots": ["clothingTop"],
+  "coveredSlots": ["bodyBase"],
+  "layerOrder": 30,
+  "paletteSlots": ["clothingPrimary", "clothingSecondary"],
+  "directionOffsets": [
+    { "direction": "front", "offset": { "x": 0.0, "y": 0.0 }, "rotationDegrees": 0.0, "zIndexOffset": 0 },
+    { "direction": "back", "offset": { "x": 0.0, "y": 0.0 }, "rotationDegrees": 0.0, "zIndexOffset": 0 },
+    { "direction": "left", "offset": { "x": 0.0, "y": 0.0 }, "rotationDegrees": 0.0, "zIndexOffset": 0 },
+    { "direction": "right", "offset": { "x": 0.0, "y": 0.0 }, "rotationDegrees": 0.0, "zIndexOffset": 0 },
+    { "direction": "topDown", "offset": { "x": 0.0, "y": 0.0 }, "rotationDegrees": 0.0, "zIndexOffset": 0 }
+  ],
+  "compatibilityMode": "warnAndAllow",
+  "warnings": [],
+  "tags": ["clothing", "shirt"]
+}
