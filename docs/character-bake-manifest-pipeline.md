@@ -26,6 +26,7 @@ The manifest contains:
 - baked output targets
 - resolved palette bindings
 - placeholder frame rectangles
+- optional event markers and named boxes copied from animation timelines
 - warnings from forced or incomplete attachment metadata
 
 ## Diagnostics
@@ -37,6 +38,7 @@ compatibility decisions.
 ## Limits
 
 - No real PNG composition.
-- No animation timeline baking.
+- Animation timeline baking is metadata-only for now; runtime consumption of
+  event markers and named boxes lands later.
 - No creature body plans beyond humanoid.
 - No renderer implementation.

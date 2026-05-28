@@ -177,6 +177,18 @@
             "$ref": "#/$defs/paletteEvent"
           }
         },
+        "eventMarkers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/eventMarker"
+          }
+        },
+        "namedBoxes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/namedBox"
+          }
+        },
         "eventIds": {
           "type": "array",
           "items": {
@@ -301,6 +313,74 @@
         "transitionTicks": {
           "type": "integer",
           "minimum": 0
+        }
+      }
+    },
+    "eventMarker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "eventType"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "eventType": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Extensible marker type such as footstep, spawnParticle, playSound, attackWindowStart, attackWindowEnd, or emitInteraction."
+        },
+        "targetId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "payload": true
+      }
+    },
+    "namedBox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "boxType", "rect"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "boxType": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Extensible box type such as bodyHurtbox, weaponHitbox, interactionBox, or footContactArea."
+        },
+        "rect": {
+          "$ref": "#/$defs/rect"
+        },
+        "targetPartId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "rect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "width", "height"],
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number",
+          "exclusiveMinimum": 0.0
+        },
+        "height": {
+          "type": "number",
+          "exclusiveMinimum": 0.0
         }
       }
     },

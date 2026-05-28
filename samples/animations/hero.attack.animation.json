@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 0,
+  "id": "animation.hero.attack",
+  "name": "Hero Attack",
+  "target": {
+    "assetId": "sprite.hero",
+    "bodyPlanId": "humanoid",
+    "rigId": "rig.humanoid.lightweight"
+  },
+  "source": {
+    "sourceType": "custom",
+    "readOnly": false
+  },
+  "frameRate": 12,
+  "loopMode": "once",
+  "tags": ["humanoid", "attack"],
+  "viewTracks": [
+    {
+      "view": "front",
+      "frames": [
+        {
+          "durationTicks": 4,
+          "bodyPartPoses": [
+            {
+              "partId": "body",
+              "translation": { "x": 0.0, "y": 0.0 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            },
+            {
+              "partId": "equipment",
+              "translation": { "x": 3.0, "y": 0.0 },
+              "rotationDegrees": -8.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": 0.0 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [
+            {
+              "attachmentPointId": "hand.right",
+              "translation": { "x": 3.0, "y": -1.0 },
+              "rotationDegrees": -8.0
+            }
+          ],
+          "eventMarkers": [
+            {
+              "id": "attack.window.start",
+              "eventType": "attackWindowStart",
+              "targetId": "weaponHitbox",
+              "payload": { "damageKind": "slash", "priority": 1 }
+            },
+            {
+              "id": "attack.sound.swing",
+              "eventType": "playSound",
+              "payload": { "soundId": "sound.sword.swing" }
+            },
+            {
+              "id": "attack.dust",
+              "eventType": "spawnParticle",
+              "targetId": "footContactArea",
+              "payload": { "emitterId": "particle.dust-puff" }
+            }
+          ],
+          "namedBoxes": [
+            {
+              "id": "bodyHurtbox",
+              "boxType": "bodyHurtbox",
+              "rect": { "x": 8.0, "y": 8.0, "width": 16.0, "height": 34.0 },
+              "targetPartId": "body",
+              "tags": ["damageable"]
+            },
+            {
+              "id": "weaponHitbox",
+              "boxType": "weaponHitbox",
+              "rect": { "x": 22.0, "y": 18.0, "width": 14.0, "height": 10.0 },
+              "targetPartId": "equipment",
+              "tags": ["attack"]
+            },
+            {
+              "id": "interactionBox",
+              "boxType": "interactionBox",
+              "rect": { "x": 18.0, "y": 14.0, "width": 18.0, "height": 18.0 },
+              "targetPartId": "body",
+              "tags": ["interaction"]
+            },
+            {
+              "id": "footContactArea",
+              "boxType": "footContactArea",
+              "rect": { "x": 10.0, "y": 40.0, "width": 12.0, "height": 6.0 },
+              "targetPartId": "body",
+              "tags": ["movement"]
+            }
+          ],
+          "eventIds": ["attack.window.start"]
+        },
+        {
+          "durationTicks": 4,
+          "bodyPartPoses": [
+            {
+              "partId": "body",
+              "translation": { "x": 0.0, "y": -0.25 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "layerPoses": [
+            {
+              "layerId": "body",
+              "translation": { "x": 0.0, "y": -0.25 },
+              "rotationDegrees": 0.0,
+              "scale": { "x": 1.0, "y": 1.0 },
+              "opacity": 1.0
+            }
+          ],
+          "attachmentPoses": [],
+          "eventMarkers": [
+            {
+              "id": "attack.window.end",
+              "eventType": "attackWindowEnd",
+              "targetId": "weaponHitbox"
+            },
+            {
+              "id": "attack.emit.interaction",
+              "eventType": "emitInteraction",
+              "targetId": "interactionBox",
+              "payload": { "interactionId": "interaction.weapon.slash" }
+            }
+          ],
+          "namedBoxes": [
+            {
+              "id": "bodyHurtbox",
+              "boxType": "bodyHurtbox",
+              "rect": { "x": 8.0, "y": 9.0, "width": 16.0, "height": 33.0 },
+              "targetPartId": "body",
+              "tags": ["damageable"]
+            }
+          ],
+          "eventIds": ["attack.window.end"]
+        }
+      ]
+    }
+  ]
+}

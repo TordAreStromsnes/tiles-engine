@@ -1,6 +1,7 @@
 use std::{collections::HashSet, error::Error, fmt};
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::assets::Point2;
 
@@ -92,6 +93,10 @@ pub struct AnimationFrame {
     pub attachment_events: Vec<AttachmentAnimationEvent>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub palette_events: Vec<PaletteAnimationEvent>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub event_markers: Vec<AnimationTimelineEvent>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub named_boxes: Vec<AnimationNamedBox>,
     pub event_ids: Vec<String>,
 }
 
@@ -147,6 +152,49 @@ pub struct PaletteAnimationEvent {
     pub slot_id: String,
     pub swatch: String,
     pub transition_ticks: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnimationTimelineEvent {
+    pub id: String,
+    pub event_type: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub payload: Option<Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnimationNamedBox {
+    pub id: String,
+    pub box_type: String,
+    pub rect: AnimationRect,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_part_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnimationRect {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+}
+
+impl AnimationRect {
+    pub fn is_valid(&self) -> bool {
+        self.x.is_finite()
+            && self.y.is_finite()
+            && self.width.is_finite()
+            && self.height.is_finite()
+            && self.width > 0.0
+            && self.height > 0.0
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -223,6 +271,36 @@ pub enum AnimationClipValidationError {
     EmptyPaletteEventSwatch {
         view: AnimationView,
         slot_id: String,
+    },
+    EmptyEventMarkerId {
+        view: AnimationView,
+    },
+    EmptyEventMarkerType {
+        view: AnimationView,
+        event_id: String,
+    },
+    EmptyEventMarkerTargetId {
+        view: AnimationView,
+        event_id: String,
+    },
+    EmptyNamedBoxId {
+        view: AnimationView,
+    },
+    EmptyNamedBoxType {
+        view: AnimationView,
+        box_id: String,
+    },
+    InvalidNamedBoxRect {
+        view: AnimationView,
+        box_id: String,
+    },
+    EmptyNamedBoxTargetPartId {
+        view: AnimationView,
+        box_id: String,
+    },
+    EmptyNamedBoxTag {
+        view: AnimationView,
+        box_id: String,
     },
     EmptyEventId {
         view: AnimationView,
@@ -304,7 +382,41 @@ impl fmt::Display for AnimationClipValidationError {
                 formatter,
                 "`{view:?}` track palette event `{slot_id}` must provide a swatch"
             ),
-            Self::EmptyEventId { view } => write!(formatter, "`{view:?}` track has an empty event id"),
+            Self::EmptyEventMarkerId { view } => write!(
+                formatter,
+                "`{view:?}` track has an event marker without an id"
+            ),
+            Self::EmptyEventMarkerType { view, event_id } => write!(
+                formatter,
+                "`{view:?}` track event marker `{event_id}` must provide an event type"
+            ),
+            Self::EmptyEventMarkerTargetId { view, event_id } => write!(
+                formatter,
+                "`{view:?}` track event marker `{event_id}` target id must not be empty when present"
+            ),
+            Self::EmptyNamedBoxId { view } => write!(
+                formatter,
+                "`{view:?}` track has a named box without an id"
+            ),
+            Self::EmptyNamedBoxType { view, box_id } => write!(
+                formatter,
+                "`{view:?}` track named box `{box_id}` must provide a box type"
+            ),
+            Self::InvalidNamedBoxRect { view, box_id } => write!(
+                formatter,
+                "`{view:?}` track named box `{box_id}` must have finite coordinates and positive size"
+            ),
+            Self::EmptyNamedBoxTargetPartId { view, box_id } => write!(
+                formatter,
+                "`{view:?}` track named box `{box_id}` target part id must not be empty when present"
+            ),
+            Self::EmptyNamedBoxTag { view, box_id } => write!(
+                formatter,
+                "`{view:?}` track named box `{box_id}` has an empty tag"
+            ),
+            Self::EmptyEventId { view } => {
+                write!(formatter, "`{view:?}` track has an empty event id")
+            }
         }
     }
 }
@@ -407,6 +519,81 @@ pub fn sample_humanoid_walk_clip() -> AnimationClip {
     .with_walk_events()
 }
 
+pub fn sample_humanoid_attack_clip() -> AnimationClip {
+    let mut windup = frame(AnimationView::Front, 4, 0.0, 0.0);
+    windup.event_markers = vec![
+        timeline_event(
+            "attack.window.start",
+            "attackWindowStart",
+            Some("weaponHitbox"),
+            Some(serde_json::json!({ "damageKind": "slash", "priority": 1 })),
+        ),
+        timeline_event(
+            "attack.sound.swing",
+            "playSound",
+            None,
+            Some(serde_json::json!({ "soundId": "sound.sword.swing" })),
+        ),
+        timeline_event(
+            "attack.dust",
+            "spawnParticle",
+            Some("footContactArea"),
+            Some(serde_json::json!({ "emitterId": "particle.dust-puff" })),
+        ),
+    ];
+    windup.named_boxes.push(named_box(
+        "weaponHitbox",
+        "weaponHitbox",
+        22.0,
+        18.0,
+        14.0,
+        10.0,
+        "equipment",
+    ));
+    windup.named_boxes.push(named_box(
+        "interactionBox",
+        "interactionBox",
+        18.0,
+        14.0,
+        18.0,
+        18.0,
+        "body",
+    ));
+    windup.event_ids = vec!["attack.window.start".to_string()];
+
+    let mut recover = frame(AnimationView::Front, 4, 0.0, -0.25);
+    recover.event_markers = vec![
+        timeline_event(
+            "attack.window.end",
+            "attackWindowEnd",
+            Some("weaponHitbox"),
+            None,
+        ),
+        timeline_event(
+            "attack.emit.interaction",
+            "emitInteraction",
+            Some("interactionBox"),
+            Some(serde_json::json!({ "interactionId": "interaction.weapon.slash" })),
+        ),
+    ];
+    recover.event_ids = vec!["attack.window.end".to_string()];
+
+    AnimationClip {
+        schema_version: ANIMATION_CLIP_SCHEMA_VERSION,
+        id: "animation.hero.attack".to_string(),
+        name: "Hero Attack".to_string(),
+        target: humanoid_target(),
+        source: AnimationClipSource::custom(),
+        frame_rate: 12,
+        loop_mode: LoopMode::Once,
+        tags: vec!["humanoid".to_string(), "attack".to_string()],
+        view_tracks: vec![ViewAnimationTrack {
+            view: AnimationView::Front,
+            frames: vec![windup, recover],
+        }],
+    }
+}
+
 impl AnimationClipSource {
     pub fn built_in_template(template_id: impl Into<String>) -> Self {
         Self {
@@ -471,6 +658,12 @@ impl AnimationClip {
                     attachment_id: "attachment.boots.simple".to_string(),
                     action: AttachmentAnimationAction::Trigger,
                 });
+                frame.event_markers.push(AnimationTimelineEvent {
+                    id: "footstep.left".to_string(),
+                    event_type: "footstep".to_string(),
+                    target_id: Some("footContactArea".to_string()),
+                    payload: Some(serde_json::json!({ "foot": "left" })),
+                });
             }
 
             if let Some(frame) = track.frames.get_mut(2) {
@@ -478,6 +671,12 @@ impl AnimationClip {
                     event_id: "footstep.right".to_string(),
                     attachment_id: "attachment.boots.simple".to_string(),
                     action: AttachmentAnimationAction::Trigger,
+                });
+                frame.event_markers.push(AnimationTimelineEvent {
+                    id: "footstep.right".to_string(),
+                    event_type: "footstep".to_string(),
+                    target_id: Some("footContactArea".to_string()),
+                    payload: Some(serde_json::json!({ "foot": "right" })),
                 });
             }
         }
@@ -496,6 +695,20 @@ impl AnimationClip {
         }
 
         self
+    }
+}
+
+fn timeline_event(
+    id: &str,
+    event_type: &str,
+    target_id: Option<&str>,
+    payload: Option<Value>,
+) -> AnimationTimelineEvent {
+    AnimationTimelineEvent {
+        id: id.to_string(),
+        event_type: event_type.to_string(),
+        target_id: target_id.map(str::to_string),
+        payload,
     }
 }
 
@@ -712,6 +925,70 @@ fn validate_frame(
         }
     }
 
+    for event in &frame.event_markers {
+        if event.id.trim().is_empty() {
+            return Err(AnimationClipValidationError::EmptyEventMarkerId { view });
+        }
+
+        if event.event_type.trim().is_empty() {
+            return Err(AnimationClipValidationError::EmptyEventMarkerType {
+                view,
+                event_id: event.id.clone(),
+            });
+        }
+
+        if event
+            .target_id
+            .as_ref()
+            .is_some_and(|target_id| target_id.trim().is_empty())
+        {
+            return Err(AnimationClipValidationError::EmptyEventMarkerTargetId {
+                view,
+                event_id: event.id.clone(),
+            });
+        }
+    }
+
+    for named_box in &frame.named_boxes {
+        if named_box.id.trim().is_empty() {
+            return Err(AnimationClipValidationError::EmptyNamedBoxId { view });
+        }
+
+        if named_box.box_type.trim().is_empty() {
+            return Err(AnimationClipValidationError::EmptyNamedBoxType {
+                view,
+                box_id: named_box.id.clone(),
+            });
+        }
+
+        if !named_box.rect.is_valid() {
+            return Err(AnimationClipValidationError::InvalidNamedBoxRect {
+                view,
+                box_id: named_box.id.clone(),
+            });
+        }
+
+        if named_box
+            .target_part_id
+            .as_ref()
+            .is_some_and(|part_id| part_id.trim().is_empty())
+        {
+            return Err(AnimationClipValidationError::EmptyNamedBoxTargetPartId {
+                view,
+                box_id: named_box.id.clone(),
+            });
+        }
+
+        for tag in &named_box.tags {
+            if tag.trim().is_empty() {
+                return Err(AnimationClipValidationError::EmptyNamedBoxTag {
+                    view,
+                    box_id: named_box.id.clone(),
+                });
+            }
+        }
+    }
+
     for event_id in &frame.event_ids {
         if event_id.trim().is_empty() {
             return Err(AnimationClipValidationError::EmptyEventId { view });
@@ -762,7 +1039,43 @@ fn frame(view: AnimationView, duration_ticks: u32, step_offset: f32, bob: f32) -
         ],
         attachment_events: Vec::new(),
         palette_events: Vec::new(),
+        event_markers: Vec::new(),
+        named_boxes: vec![
+            named_box("bodyHurtbox", "bodyHurtbox", 8.0, 8.0, 16.0, 34.0, "body"),
+            named_box(
+                "footContactArea",
+                "footContactArea",
+                10.0,
+                40.0,
+                12.0,
+                6.0,
+                "body",
+            ),
+        ],
         event_ids: Vec::new(),
+    }
+}
+
+fn named_box(
+    id: &str,
+    box_type: &str,
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    target_part_id: &str,
+) -> AnimationNamedBox {
+    AnimationNamedBox {
+        id: id.to_string(),
+        box_type: box_type.to_string(),
+        rect: AnimationRect {
+            x,
+            y,
+            width,
+            height,
+        },
+        target_part_id: Some(target_part_id.to_string()),
+        tags: Vec::new(),
     }
 }
 
@@ -849,6 +1162,22 @@ mod tests {
             .iter()
             .flat_map(|track| track.frames.iter())
             .any(|frame| !frame.palette_events.is_empty()));
+        assert!(clip
+            .view_tracks
+            .iter()
+            .flat_map(|track| track.frames.iter())
+            .any(|frame| frame
+                .event_markers
+                .iter()
+                .any(|event| event.event_type == "footstep")));
+        assert!(clip
+            .view_tracks
+            .iter()
+            .flat_map(|track| track.frames.iter())
+            .any(|frame| frame
+                .named_boxes
+                .iter()
+                .any(|named_box| named_box.box_type == "footContactArea")));
     }
 
     #[test]
@@ -861,9 +1190,14 @@ mod tests {
             "../../../samples/animations/hero.walk.animation.json"
         ))
         .expect("walk sample should deserialize");
+        let attack: AnimationClip = serde_json::from_str(include_str!(
+            "../../../samples/animations/hero.attack.animation.json"
+        ))
+        .expect("attack sample should deserialize");
 
         idle.validate().expect("idle sample should validate");
         walk.validate().expect("walk sample should validate");
+        attack.validate().expect("attack sample should validate");
         assert_eq!(
             idle.source.source_type,
             AnimationClipSourceType::BuiltInTemplate
@@ -872,6 +1206,10 @@ mod tests {
             walk.source.source_type,
             AnimationClipSourceType::ProjectLocalCopy
         );
+        assert!(attack.view_tracks[0].frames[0]
+            .named_boxes
+            .iter()
+            .any(|named_box| named_box.box_type == "weaponHitbox"));
     }
 
     #[test]
@@ -912,6 +1250,56 @@ mod tests {
         assert_eq!(clip.source.source_type, AnimationClipSourceType::Custom);
         assert!(!clip.source.read_only);
         assert!(cardinal_views_present(&clip));
+    }
+
+    #[test]
+    fn attack_sample_carries_event_markers_and_named_boxes() {
+        let clip = sample_humanoid_attack_clip();
+
+        clip.validate().expect("attack clip should validate");
+        let first_frame = &clip.view_tracks[0].frames[0];
+
+        assert!(first_frame
+            .event_markers
+            .iter()
+            .any(|event| event.event_type == "attackWindowStart"));
+        assert!(first_frame
+            .event_markers
+            .iter()
+            .any(|event| event.event_type == "spawnParticle"));
+        assert!(first_frame
+            .event_markers
+            .iter()
+            .any(|event| event.event_type == "playSound"));
+        assert!(first_frame
+            .named_boxes
+            .iter()
+            .any(|named_box| named_box.box_type == "weaponHitbox"));
+    }
+
+    #[test]
+    fn unsupported_event_marker_types_round_trip() {
+        let mut clip = sample_humanoid_attack_clip();
+        clip.view_tracks[0].frames[0]
+            .event_markers
+            .push(AnimationTimelineEvent {
+                id: "modded.timeline.event".to_string(),
+                event_type: "moddedRuntimeEvent".to_string(),
+                target_id: Some("interactionBox".to_string()),
+                payload: Some(serde_json::json!({ "kept": true })),
+            });
+
+        let json = serde_json::to_string_pretty(&clip).expect("clip should serialize");
+        let loaded: AnimationClip = serde_json::from_str(&json).expect("clip should deserialize");
+
+        loaded
+            .validate()
+            .expect("unknown event type should validate");
+        assert!(loaded.view_tracks[0].frames[0]
+            .event_markers
+            .iter()
+            .any(|event| event.event_type == "moddedRuntimeEvent"
+                && event.payload == Some(serde_json::json!({ "kept": true }))));
     }
 
     #[test]
@@ -988,6 +1376,22 @@ mod tests {
             result,
             Err(AnimationClipValidationError::EmptyBodyPartPoseId {
                 view: AnimationView::Front
+            })
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_invalid_named_box() {
+        let mut clip = sample_humanoid_attack_clip();
+        clip.view_tracks[0].frames[0].named_boxes[0].rect.width = 0.0;
+
+        let result = clip.validate();
+
+        assert!(matches!(
+            result,
+            Err(AnimationClipValidationError::InvalidNamedBoxRect {
+                view: AnimationView::Front,
+                ..
             })
         ));
     }
