@@ -141,6 +141,16 @@
         "seed": {
           "type": "string",
           "minLength": 1
+        },
+        "generatorRecipeId": {
+          "$ref": "#/$defs/id"
+        },
+        "generatorRecipePath": {
+          "$ref": "#/$defs/projectRelativePath"
+        },
+        "generatorParametersHash": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },

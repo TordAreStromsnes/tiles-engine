@@ -565,6 +565,9 @@ fn sprite_import_registry_entry(
         generated_by: None,
         generator_version: None,
         seed: None,
+        generator_recipe_id: None,
+        generator_recipe_path: None,
+        generator_parameters_hash: None,
     });
     entry.license = Some(AssetLicenseMetadata {
         id: None,

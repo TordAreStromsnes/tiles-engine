@@ -26,6 +26,7 @@ pub mod selection;
 pub mod semantic_attachment;
 pub mod semantic_rig;
 pub mod sprite_images;
+pub mod starter_generator;
 pub use animation::*;
 pub use assets::*;
 pub use character_bake::*;
@@ -52,6 +53,7 @@ pub use selection::*;
 pub use semantic_attachment::*;
 pub use semantic_rig::*;
 pub use sprite_images::*;
+pub use starter_generator::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
