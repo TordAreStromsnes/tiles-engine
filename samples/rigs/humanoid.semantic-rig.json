@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 0,
+  "id": "rig.humanoid.lightweight",
+  "name": "Lightweight Humanoid Rig",
+  "bodyPlanId": "humanoid",
+  "bakeCapabilities": {
+    "pixelSafeMvp": true,
+    "supportsTranslation": true,
+    "integerTranslationOnly": true,
+    "supportsUniformScale": true,
+    "supportsNonUniformScale": false,
+    "supportsRotation": false,
+    "supportsSkew": false,
+    "notes": [
+      "MVP baker may translate parts on integer pixels.",
+      "Rotation, skew, and smooth scaling stay in data for later tooling."
+    ]
+  },
+  "parts": [
+    {
+      "partId": "body",
+      "parentPartId": null,
+      "slot": "bodyBase",
+      "pivot": { "x": 16.0, "y": 28.0 },
+      "anchor": { "x": 16.0, "y": 28.0 },
+      "zOrder": 0,
+      "directionOffsets": [
+        { "direction": "front", "offset": { "x": 0.0, "y": 0.0 }, "zOrderOffset": 0 },
+        { "direction": "back", "offset": { "x": 0.0, "y": 0.0 }, "zOrderOffset": 0 },
+        { "direction": "left", "offset": { "x": 0.0, "y": 0.0 }, "zOrderOffset": 0 },
+        { "direction": "right", "offset": { "x": 0.0, "y": 0.0 }, "zOrderOffset": 0 },
+        { "direction": "topDown", "offset": { "x": 0.0, "y": 0.0 }, "zOrderOffset": 0 }
+      ],
+      "transform": {
+        "translation": { "x": 0.0, "y": 0.0 },
+        "scale": { "x": 1.0, "y": 1.0 },
+        "rotationDegrees": 0.0,
+        "skew": { "x": 0.0, "y": 0.0 }
+      },
+      "scaleRule": {
+        "mode": "uniform",
+        "min": { "x": 0.5, "y": 0.5 },
+        "max": { "x": 2.0, "y": 2.0 }
+      }
+    },
+    {
+      "partId": "head",
+      "parentPartId": "body",
+      "slot": "head",
+      "pivot": { "x": 16.0, "y": 10.0 },
+      "anchor": { "x": 16.0, "y": 10.0 },
+      "zOrder": 10,
+      "directionOffsets": [
+        { "direction": "front", "offset": { "x": 0.0, "y": 0.0 }, "zOrderOffset": 0 },
+        { "direction": "back", "offset": { "x": 0.0, "y": 0.0 }, "zOrderOffset": 0 },
+        { "direction": "left", "offset": { "x": 0.0, "y": 0.0 }, "zOrderOffset": 0 },
+        { "direction": "right", "offset": { "x": 0.0, "y": 0.0 }, "zOrderOffset": 0 },
+        { "direction": "topDown", "offset": { "x": 0.0, "y": -2.0 }, "zOrderOffset": 0 }
+      ],
+      "transform": {
+        "translation": { "x": 0.0, "y": 0.0 },
+        "scale": { "x": 1.0, "y": 1.0 },
+        "rotationDegrees": 0.0,
+        "skew": { "x": 0.0, "y": 0.0 }
+      },
+      "scaleRule": {
+        "mode": "uniform",
+        "min": { "x": 0.5, "y": 0.5 },
+        "max": { "x": 2.0, "y": 2.0 }
+      }
+    },
+    {
+      "partId": "equipment",
+      "parentPartId": "body",
+      "slot": "equipment",
+      "pivot": { "x": 22.0, "y": 24.0 },
+      "anchor": { "x": 22.0, "y": 24.0 },
+      "zOrder": 60,
+      "directionOffsets": [
+        { "direction": "front", "offset": { "x": 5.0, "y": 3.0 }, "zOrderOffset": 0 },
+        { "direction": "back", "offset": { "x": -5.0, "y": 3.0 }, "zOrderOffset": -1 },
+        { "direction": "left", "offset": { "x": -8.0, "y": 4.0 }, "zOrderOffset": 0 },
+        { "direction": "right", "offset": { "x": 8.0, "y": 4.0 }, "zOrderOffset": 0 },
+        { "direction": "topDown", "offset": { "x": 6.0, "y": -2.0 }, "zOrderOffset": 1 }
+      ],
+      "transform": {
+        "translation": { "x": 0.0, "y": 0.0 },
+        "scale": { "x": 1.0, "y": 1.0 },
+        "rotationDegrees": 0.0,
+        "skew": { "x": 0.0, "y": 0.0 }
+      },
+      "scaleRule": {
+        "mode": "uniform",
+        "min": { "x": 0.5, "y": 0.5 },
+        "max": { "x": 2.0, "y": 2.0 }
+      }
+    }
+  ],
+  "tags": ["humanoid", "mvp", "pixel-safe"]
+}

@@ -22,6 +22,7 @@ pub mod runtime_save_storage;
 pub mod scene;
 pub mod selection;
 pub mod semantic_attachment;
+pub mod semantic_rig;
 pub mod sprite_images;
 pub use animation::*;
 pub use assets::*;
@@ -45,6 +46,7 @@ pub use runtime_save_storage::*;
 pub use scene::*;
 pub use selection::*;
 pub use semantic_attachment::*;
+pub use semantic_rig::*;
 pub use sprite_images::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
