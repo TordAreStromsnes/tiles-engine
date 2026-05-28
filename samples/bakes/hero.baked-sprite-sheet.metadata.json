@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 0,
+  "outputAssetId": "sprite.hero.baked",
+  "pngPath": "assets/characters/hero.baked.png",
+  "width": 32,
+  "height": 240,
+  "contentHash": "fnv1a64:9cc4cd2c6c59685f",
+  "frames": [
+    {
+      "id": "sprite.hero.front.placeholder.0",
+      "direction": "front",
+      "outputAssetId": "sprite.hero",
+      "rect": { "x": 0, "y": 0, "width": 32, "height": 48 },
+      "partAssetIds": [
+        "sprite.part.humanoid.body.average",
+        "sprite.part.humanoid.head.round",
+        "sprite.part.humanoid.hair.short",
+        "sprite.part.humanoid.eyes.round",
+        "sprite.part.humanoid.tunic",
+        "sprite.part.humanoid.trousers",
+        "sprite.part.humanoid.shoes"
+      ],
+      "attachmentIds": [
+        "attachment.shirt.basic",
+        "attachment.boots.simple",
+        "attachment.item.lantern"
+      ],
+      "placeholder": true
+    },
+    {
+      "id": "sprite.hero.back.placeholder.0",
+      "direction": "back",
+      "outputAssetId": "sprite.hero",
+      "rect": { "x": 0, "y": 48, "width": 32, "height": 48 },
+      "partAssetIds": [
+        "sprite.part.humanoid.body.average",
+        "sprite.part.humanoid.head.round",
+        "sprite.part.humanoid.hair.short",
+        "sprite.part.humanoid.eyes.round",
+        "sprite.part.humanoid.tunic",
+        "sprite.part.humanoid.trousers",
+        "sprite.part.humanoid.shoes"
+      ],
+      "attachmentIds": [
+        "attachment.shirt.basic",
+        "attachment.boots.simple",
+        "attachment.item.lantern"
+      ],
+      "placeholder": true
+    },
+    {
+      "id": "sprite.hero.left.placeholder.0",
+      "direction": "left",
+      "outputAssetId": "sprite.hero",
+      "rect": { "x": 0, "y": 96, "width": 32, "height": 48 },
+      "partAssetIds": [
+        "sprite.part.humanoid.body.average",
+        "sprite.part.humanoid.head.round",
+        "sprite.part.humanoid.hair.short",
+        "sprite.part.humanoid.eyes.round",
+        "sprite.part.humanoid.tunic",
+        "sprite.part.humanoid.trousers",
+        "sprite.part.humanoid.shoes"
+      ],
+      "attachmentIds": [
+        "attachment.shirt.basic",
+        "attachment.boots.simple",
+        "attachment.item.lantern"
+      ],
+      "placeholder": true
+    },
+    {
+      "id": "sprite.hero.right.placeholder.0",
+      "direction": "right",
+      "outputAssetId": "sprite.hero",
+      "rect": { "x": 0, "y": 144, "width": 32, "height": 48 },
+      "partAssetIds": [
+        "sprite.part.humanoid.body.average",
+        "sprite.part.humanoid.head.round",
+        "sprite.part.humanoid.hair.short",
+        "sprite.part.humanoid.eyes.round",
+        "sprite.part.humanoid.tunic",
+        "sprite.part.humanoid.trousers",
+        "sprite.part.humanoid.shoes"
+      ],
+      "attachmentIds": [
+        "attachment.shirt.basic",
+        "attachment.boots.simple",
+        "attachment.item.lantern"
+      ],
+      "placeholder": true
+    },
+    {
+      "id": "sprite.hero.topDown.placeholder.0",
+      "direction": "topDown",
+      "outputAssetId": "sprite.hero",
+      "rect": { "x": 0, "y": 192, "width": 32, "height": 48 },
+      "partAssetIds": [
+        "sprite.part.humanoid.body.average",
+        "sprite.part.humanoid.head.round",
+        "sprite.part.humanoid.hair.short",
+        "sprite.part.humanoid.eyes.round",
+        "sprite.part.humanoid.tunic",
+        "sprite.part.humanoid.trousers",
+        "sprite.part.humanoid.shoes"
+      ],
+      "attachmentIds": [
+        "attachment.shirt.basic",
+        "attachment.boots.simple",
+        "attachment.item.lantern"
+      ],
+      "placeholder": true
+    }
+  ],
+  "warnings": [
+    {
+      "code": "hand-anchor-required",
+      "severity": "warning",
+      "message": "equipment: Held items need a hand attachment point for final animation offsets.",
+      "sourceId": "attachment.item.lantern"
+    }
+  ]
+}

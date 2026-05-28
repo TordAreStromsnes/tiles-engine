@@ -4215,6 +4215,7 @@ dependencies = [
 name = "tiles-core"
 version = "0.1.0"
 dependencies = [
+ "png 0.17.16",
  "serde",
  "serde_json",
  "tiles-renderer",
