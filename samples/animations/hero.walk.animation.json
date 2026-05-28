@@ -4,7 +4,14 @@
   "name": "Hero Walk",
   "target": {
     "assetId": "sprite.hero",
-    "bodyPlanId": "humanoid"
+    "bodyPlanId": "humanoid",
+    "rigId": "rig.humanoid.lightweight"
+  },
+  "source": {
+    "sourceType": "projectLocalCopy",
+    "readOnly": false,
+    "copiedFromTemplateId": "template.humanoid.walk.v0",
+    "copiedFromTemplateVersion": "0"
   },
   "frameRate": 12,
   "loopMode": "loop",

@@ -4,7 +4,14 @@
   "name": "Hero Idle",
   "target": {
     "assetId": "sprite.hero",
-    "bodyPlanId": "humanoid"
+    "bodyPlanId": "humanoid",
+    "rigId": "rig.humanoid.lightweight"
+  },
+  "source": {
+    "sourceType": "builtInTemplate",
+    "readOnly": true,
+    "templateId": "template.humanoid.idle.v0",
+    "notes": ["Copy this template into a project before editing."]
   },
   "frameRate": 8,
   "loopMode": "loop",
