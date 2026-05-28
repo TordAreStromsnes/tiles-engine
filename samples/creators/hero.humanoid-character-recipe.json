@@ -57,6 +57,82 @@
       "swatches": ["#25323f"]
     }
   ],
+  "paletteSystem": {
+    "schemaVersion": 0,
+    "slots": [
+      {
+        "id": "skin.primary",
+        "name": "Skin Primary",
+        "owner": { "kind": "character" },
+        "required": true,
+        "tags": ["skin"]
+      },
+      {
+        "id": "hair.base",
+        "name": "Hair Base",
+        "owner": { "kind": "part", "slot": "hair" },
+        "required": true,
+        "tags": ["hair"]
+      },
+      {
+        "id": "shirt.fabric",
+        "name": "Shirt Fabric",
+        "owner": { "kind": "part", "slot": "clothingTop" },
+        "required": true,
+        "tags": ["clothing", "shirt"]
+      },
+      {
+        "id": "shirt.trim",
+        "name": "Shirt Trim",
+        "owner": { "kind": "part", "slot": "clothingTop" },
+        "required": false,
+        "tags": ["clothing", "trim"]
+      },
+      {
+        "id": "boots.leather",
+        "name": "Boot Leather",
+        "owner": { "kind": "attachment", "attachmentId": "attachment.boots.simple" },
+        "required": false,
+        "tags": ["boots"]
+      },
+      {
+        "id": "lantern.metal",
+        "name": "Lantern Metal",
+        "owner": { "kind": "attachment", "attachmentId": "attachment.item.lantern" },
+        "required": false,
+        "tags": ["equipment", "metal"]
+      }
+    ],
+    "themes": [
+      {
+        "id": "theme.hero.default",
+        "name": "Hero Default",
+        "bindings": [
+          { "slotId": "skin.primary", "swatch": "#f0c7a4" },
+          { "slotId": "hair.base", "swatch": "#5a3523" },
+          { "slotId": "shirt.fabric", "swatch": "#3f74a3" },
+          { "slotId": "shirt.trim", "swatch": "#c84f4f" },
+          { "slotId": "boots.leather", "swatch": "#5f402a" },
+          { "slotId": "lantern.metal", "swatch": "#8b8f96" }
+        ]
+      }
+    ],
+    "attachmentOverrides": [
+      {
+        "attachmentId": "attachment.shirt.basic",
+        "bindings": [
+          { "slotId": "shirt.fabric", "swatch": "#6b8f3a" },
+          { "slotId": "shirt.trim", "swatch": "#f2c14e" }
+        ]
+      },
+      {
+        "attachmentId": "attachment.item.lantern",
+        "bindings": [
+          { "slotId": "lantern.metal", "swatch": "#d0a33f" }
+        ]
+      }
+    ]
+  },
   "parts": [
     {
       "slot": "bodyBase",

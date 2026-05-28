@@ -13,6 +13,7 @@
     "proportions",
     "directions",
     "palettes",
+    "paletteSystem",
     "parts",
     "warnings",
     "bakedOutputs"
@@ -50,6 +51,9 @@
         "$ref": "#/$defs/paletteSelection"
       },
       "uniqueItems": true
+    },
+    "paletteSystem": {
+      "$ref": "https://tiles-engine.dev/schemas/tiles-palette-slot-system.schema.json"
     },
     "parts": {
       "type": "array",

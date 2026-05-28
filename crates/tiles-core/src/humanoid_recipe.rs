@@ -2,7 +2,10 @@ use std::{collections::HashSet, error::Error, fmt, path::Path};
 
 use serde::{Deserialize, Serialize};
 
-use crate::humanoid::{HumanoidPaletteSlot, HumanoidPartSlot, HumanoidProportions};
+use crate::{
+    humanoid::{HumanoidPaletteSlot, HumanoidPartSlot, HumanoidProportions},
+    palette_slots::{sample_palette_slot_system, PaletteSlotSystem},
+};
 
 pub const HUMANOID_CHARACTER_RECIPE_SCHEMA_VERSION: u32 = 0;
 
@@ -17,6 +20,7 @@ pub struct HumanoidCharacterRecipe {
     pub proportions: HumanoidProportions,
     pub directions: Vec<HumanoidRecipeDirection>,
     pub palettes: Vec<HumanoidRecipePaletteSelection>,
+    pub palette_system: PaletteSlotSystem,
     pub parts: Vec<HumanoidRecipePart>,
     pub warnings: Vec<HumanoidRecipeWarning>,
     pub baked_outputs: Vec<HumanoidBakedOutputRef>,
@@ -135,6 +139,9 @@ pub enum HumanoidRecipeValidationError {
         slot: HumanoidPaletteSlot,
         swatch: String,
     },
+    InvalidPaletteSystem {
+        reason: String,
+    },
     MissingRequiredPartSlot {
         slot: HumanoidPartSlot,
     },
@@ -226,6 +233,9 @@ impl fmt::Display for HumanoidRecipeValidationError {
                 "humanoid character recipe palette slot `{}` has invalid swatch `{swatch}`",
                 slot.as_str()
             ),
+            Self::InvalidPaletteSystem { reason } => {
+                write!(formatter, "humanoid character recipe palette system is invalid: {reason}")
+            }
             Self::MissingRequiredPartSlot { slot } => write!(
                 formatter,
                 "humanoid character recipe is missing required part slot `{}`",
@@ -326,6 +336,11 @@ impl HumanoidCharacterRecipe {
         validate_proportions(&self.proportions)?;
         let enabled_directions = validate_directions(&self.directions)?;
         validate_palettes(&self.palettes)?;
+        self.palette_system.validate().map_err(|error| {
+            HumanoidRecipeValidationError::InvalidPaletteSystem {
+                reason: error.to_string(),
+            }
+        })?;
         validate_parts(
             &self.parts,
             &self.body_plan.required_part_slots,
@@ -424,6 +439,7 @@ pub fn sample_humanoid_character_recipe() -> HumanoidCharacterRecipe {
             palette(HumanoidPaletteSlot::Accessory, &["#f2c14e"]),
             palette(HumanoidPaletteSlot::Outline, &["#25323f"]),
         ],
+        palette_system: sample_palette_slot_system(),
         parts: vec![
             recipe_part(
                 HumanoidPartSlot::BodyBase,
