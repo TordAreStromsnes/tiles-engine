@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 0,
+  "assets": [
+    {
+      "id": "sprite.hero.generated-placeholder",
+      "name": "Generated Placeholder Hero",
+      "kind": "spriteSource",
+      "source": "assets/generated/placeholder-hero.png",
+      "tags": ["generated", "character", "humanoid", "placeholder"],
+      "files": [
+        {
+          "path": "assets/generated/placeholder-hero.png",
+          "role": "source"
+        },
+        {
+          "path": "assets/generated/placeholder-hero.metadata.json",
+          "role": "metadata"
+        },
+        {
+          "path": "generators/placeholder-hero.generator-recipe.json",
+          "role": "generatedRecipe"
+        }
+      ],
+      "provenance": {
+        "author": "Tiles Engine",
+        "createdWithTilesVersion": "0.1.0",
+        "generatedBy": "tiles-engine.starter.placeholder-character.v0",
+        "generatorVersion": "0",
+        "seed": "placeholder-hero-001",
+        "generatorRecipeId": "generator-recipe.placeholder-hero",
+        "generatorRecipePath": "generators/placeholder-hero.generator-recipe.json",
+        "generatorParametersHash": "fnv1a64:placeholder"
+      },
+      "spriteSource": {
+        "sourceType": "spriteSheet",
+        "path": "assets/generated/placeholder-hero.png",
+        "width": 160,
+        "height": 48,
+        "frames": [
+          {
+            "id": "front",
+            "rect": { "x": 0, "y": 0, "width": 32, "height": 48 },
+            "tags": ["front", "placeholder"]
+          },
+          {
+            "id": "back",
+            "rect": { "x": 32, "y": 0, "width": 32, "height": 48 },
+            "tags": ["back", "placeholder"]
+          },
+          {
+            "id": "left",
+            "rect": { "x": 64, "y": 0, "width": 32, "height": 48 },
+            "tags": ["left", "placeholder"]
+          },
+          {
+            "id": "right",
+            "rect": { "x": 96, "y": 0, "width": 32, "height": 48 },
+            "tags": ["right", "placeholder"]
+          },
+          {
+            "id": "topDown",
+            "rect": { "x": 128, "y": 0, "width": 32, "height": 48 },
+            "tags": ["topDown", "placeholder"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "sprite.starter.door",
+      "name": "Starter Door",
+      "kind": "sprite",
+      "source": "assets/generated/starter-door.png",
+      "tags": ["generated", "door", "collision:blocking", "interaction:portal"],
+      "files": [
+        { "path": "assets/generated/starter-door.png", "role": "source" },
+        { "path": "assets/generated/starter-door.metadata.json", "role": "metadata" },
+        { "path": "generators/starter-terrain.generator-recipe.json", "role": "generatedRecipe" }
+      ],
+      "provenance": {
+        "author": "Tiles Engine",
+        "createdWithTilesVersion": "0.1.0",
+        "generatedBy": "tiles-engine.starter.terrain.v0",
+        "generatorVersion": "0",
+        "seed": "starter-village-terrain-001",
+        "generatorRecipeId": "generator-recipe.starter-terrain.village",
+        "generatorRecipePath": "generators/starter-terrain.generator-recipe.json",
+        "generatorParametersHash": "fnv1a64:terrain"
+      },
+      "spriteSource": {
+        "sourceType": "singleImage",
+        "path": "assets/generated/starter-door.png",
+        "width": 16,
+        "height": 24,
+        "frames": [
+          {
+            "id": "default",
+            "rect": { "x": 0, "y": 0, "width": 16, "height": 24 },
+            "tags": ["generated", "door", "collision:blocking", "interaction:portal"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "sprite.starter.lamp",
+      "name": "Starter Lamp",
+      "kind": "sprite",
+      "source": "assets/generated/starter-lamp.png",
+      "tags": ["generated", "lamp", "light:point"],
+      "files": [
+        { "path": "assets/generated/starter-lamp.png", "role": "source" },
+        { "path": "assets/generated/starter-lamp.metadata.json", "role": "metadata" },
+        { "path": "generators/starter-terrain.generator-recipe.json", "role": "generatedRecipe" }
+      ],
+      "provenance": {
+        "author": "Tiles Engine",
+        "createdWithTilesVersion": "0.1.0",
+        "generatedBy": "tiles-engine.starter.terrain.v0",
+        "generatorVersion": "0",
+        "seed": "starter-village-terrain-001",
+        "generatorRecipeId": "generator-recipe.starter-terrain.village",
+        "generatorRecipePath": "generators/starter-terrain.generator-recipe.json",
+        "generatorParametersHash": "fnv1a64:terrain"
+      },
+      "spriteSource": {
+        "sourceType": "singleImage",
+        "path": "assets/generated/starter-lamp.png",
+        "width": 16,
+        "height": 24,
+        "frames": [
+          {
+            "id": "default",
+            "rect": { "x": 0, "y": 0, "width": 16, "height": 24 },
+            "tags": ["generated", "lamp", "light:point"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "sprite.starter.sign",
+      "name": "Starter Sign",
+      "kind": "sprite",
+      "source": "assets/generated/starter-sign.png",
+      "tags": ["generated", "sign", "interaction:read"],
+      "files": [
+        { "path": "assets/generated/starter-sign.png", "role": "source" },
+        { "path": "assets/generated/starter-sign.metadata.json", "role": "metadata" },
+        { "path": "generators/starter-terrain.generator-recipe.json", "role": "generatedRecipe" }
+      ],
+      "provenance": {
+        "author": "Tiles Engine",
+        "createdWithTilesVersion": "0.1.0",
+        "generatedBy": "tiles-engine.starter.terrain.v0",
+        "generatorVersion": "0",
+        "seed": "starter-village-terrain-001",
+        "generatorRecipeId": "generator-recipe.starter-terrain.village",
+        "generatorRecipePath": "generators/starter-terrain.generator-recipe.json",
+        "generatorParametersHash": "fnv1a64:terrain"
+      },
+      "spriteSource": {
+        "sourceType": "singleImage",
+        "path": "assets/generated/starter-sign.png",
+        "width": 16,
+        "height": 24,
+        "frames": [
+          {
+            "id": "default",
+            "rect": { "x": 0, "y": 0, "width": 16, "height": 24 },
+            "tags": ["generated", "sign", "interaction:read"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "sprite.starter.terrain-source",
+      "name": "Starter Terrain Source",
+      "kind": "spriteSource",
+      "source": "assets/generated/starter-terrain.png",
+      "tags": ["generated", "terrain", "starter"],
+      "files": [
+        { "path": "assets/generated/starter-terrain.png", "role": "source" },
+        { "path": "assets/generated/starter-terrain.metadata.json", "role": "metadata" },
+        { "path": "generators/starter-terrain.generator-recipe.json", "role": "generatedRecipe" }
+      ],
+      "provenance": {
+        "author": "Tiles Engine",
+        "createdWithTilesVersion": "0.1.0",
+        "generatedBy": "tiles-engine.starter.terrain.v0",
+        "generatorVersion": "0",
+        "seed": "starter-village-terrain-001",
+        "generatorRecipeId": "generator-recipe.starter-terrain.village",
+        "generatorRecipePath": "generators/starter-terrain.generator-recipe.json",
+        "generatorParametersHash": "fnv1a64:terrain"
+      },
+      "spriteSource": {
+        "sourceType": "spriteSheet",
+        "path": "assets/generated/starter-terrain.png",
+        "width": 128,
+        "height": 16,
+        "grid": {
+          "columns": 8,
+          "rows": 1,
+          "cellWidth": 16,
+          "cellHeight": 16
+        },
+        "frames": [
+          { "id": "grass", "rect": { "x": 0, "y": 0, "width": 16, "height": 16 }, "tags": ["terrain", "grass", "walkable"] },
+          { "id": "dirt", "rect": { "x": 16, "y": 0, "width": 16, "height": 16 }, "tags": ["terrain", "dirt", "walkable"] },
+          { "id": "stone", "rect": { "x": 32, "y": 0, "width": 16, "height": 16 }, "tags": ["terrain", "stone", "blockingCandidate"] },
+          { "id": "water", "rect": { "x": 48, "y": 0, "width": 16, "height": 16 }, "tags": ["terrain", "water", "liquid"] },
+          { "id": "path", "rect": { "x": 64, "y": 0, "width": 16, "height": 16 }, "tags": ["terrain", "path", "walkable"] },
+          { "id": "wall", "rect": { "x": 80, "y": 0, "width": 16, "height": 16 }, "tags": ["structure", "wall", "blocking"] },
+          { "id": "roof", "rect": { "x": 96, "y": 0, "width": 16, "height": 16 }, "tags": ["structure", "roof", "overlay"] },
+          { "id": "floor", "rect": { "x": 112, "y": 0, "width": 16, "height": 16 }, "tags": ["terrain", "floor", "walkable", "interior"] }
+        ]
+      }
+    },
+    {
+      "id": "tileset.starter.terrain",
+      "name": "Starter Terrain Tiles",
+      "kind": "tileSet",
+      "source": "assets/generated/starter-terrain.metadata.json",
+      "tags": ["generated", "terrain", "starter"],
+      "files": [
+        { "path": "assets/generated/starter-terrain.metadata.json", "role": "metadata" },
+        { "path": "assets/generated/starter-terrain.png", "role": "source" },
+        { "path": "generators/starter-terrain.generator-recipe.json", "role": "generatedRecipe" }
+      ],
+      "provenance": {
+        "author": "Tiles Engine",
+        "createdWithTilesVersion": "0.1.0",
+        "generatedBy": "tiles-engine.starter.terrain.v0",
+        "generatorVersion": "0",
+        "seed": "starter-village-terrain-001",
+        "generatorRecipeId": "generator-recipe.starter-terrain.village",
+        "generatorRecipePath": "generators/starter-terrain.generator-recipe.json",
+        "generatorParametersHash": "fnv1a64:terrain"
+      }
+    }
+  ]
+}
