@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-semantic-rig.schema.json",
+  "title": "Tiles Engine Semantic Rig",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "bodyPlanId",
+    "bakeCapabilities",
+    "parts",
+    "tags"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 0 },
+    "id": { "type": "string", "minLength": 1, "pattern": "^[a-zA-Z0-9._-]+$" },
+    "name": { "type": "string", "minLength": 1 },
+    "bodyPlanId": { "type": "string", "minLength": 1 },
+    "bakeCapabilities": { "$ref": "#/$defs/bakeCapabilities" },
+    "parts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/part" },
+      "uniqueItems": true
+    },
+    "tags": { "$ref": "#/$defs/tags" }
+  },
+  "$defs": {
+    "bakeCapabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pixelSafeMvp",
+        "supportsTranslation",
+        "integerTranslationOnly",
+        "supportsUniformScale",
+        "supportsNonUniformScale",
+        "supportsRotation",
+        "supportsSkew",
+        "notes"
+      ],
+      "properties": {
+        "pixelSafeMvp": { "type": "boolean" },
+        "supportsTranslation": { "type": "boolean" },
+        "integerTranslationOnly": { "type": "boolean" },
+        "supportsUniformScale": { "type": "boolean" },
+        "supportsNonUniformScale": { "type": "boolean" },
+        "supportsRotation": { "type": "boolean" },
+        "supportsSkew": { "type": "boolean" },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "part": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "partId",
+        "parentPartId",
+        "slot",
+        "pivot",
+        "anchor",
+        "zOrder",
+        "directionOffsets",
+        "transform",
+        "scaleRule"
+      ],
+      "properties": {
+        "partId": { "type": "string", "minLength": 1 },
+        "parentPartId": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "minLength": 1 }
+          ]
+        },
+        "slot": { "$ref": "#/$defs/partSlot" },
+        "pivot": { "$ref": "#/$defs/point2" },
+        "anchor": { "$ref": "#/$defs/point2" },
+        "zOrder": { "type": "integer" },
+        "directionOffsets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/directionOffset" },
+          "uniqueItems": true
+        },
+        "transform": { "$ref": "#/$defs/transform" },
+        "scaleRule": { "$ref": "#/$defs/scaleRule" }
+      }
+    },
+    "directionOffset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["direction", "offset", "zOrderOffset"],
+      "properties": {
+        "direction": { "$ref": "#/$defs/direction" },
+        "offset": { "$ref": "#/$defs/point2" },
+        "zOrderOffset": { "type": "integer" }
+      }
+    },
+    "transform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["translation", "scale", "rotationDegrees", "skew"],
+      "properties": {
+        "translation": { "$ref": "#/$defs/point2" },
+        "scale": { "$ref": "#/$defs/positivePoint2" },
+        "rotationDegrees": { "type": "number" },
+        "skew": { "$ref": "#/$defs/point2" }
+      }
+    },
+    "scaleRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "min", "max"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["locked", "uniform", "free"] },
+        "min": { "$ref": "#/$defs/positivePoint2" },
+        "max": { "$ref": "#/$defs/positivePoint2" }
+      }
+    },
+    "direction": {
+      "type": "string",
+      "enum": ["front", "back", "left", "right", "topDown"]
+    },
+    "partSlot": {
+      "type": "string",
+      "enum": [
+        "bodyBase",
+        "head",
+        "hair",
+        "eyes",
+        "clothingTop",
+        "clothingBottom",
+        "shoesFeet",
+        "accessory",
+        "equipment"
+      ]
+    },
+    "point2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      }
+    },
+    "positivePoint2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number", "exclusiveMinimum": 0 },
+        "y": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    }
+  }
+}
