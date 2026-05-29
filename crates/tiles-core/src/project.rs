@@ -103,6 +103,9 @@ pub enum AssetKind {
     AnimationClip,
     Map,
     Scene,
+    World,
+    Dialogue,
+    TriggerActions,
     Rule,
     AssetPack,
 }

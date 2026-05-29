@@ -41,6 +41,9 @@
             "animationClip",
             "map",
             "scene",
+            "world",
+            "dialogue",
+            "triggerActions",
             "rule",
             "assetPack"
           ]
