@@ -424,16 +424,30 @@ pub fn sample_village_scene() -> SceneDocument {
                     z: 1.0,
                 },
                 facing: FacingDirection::West,
-                tags: vec!["npc".to_string()],
-                components: vec![SceneComponent::NpcBehavior(NpcBehaviorComponent {
-                    behavior: NpcBehaviorKind::BoundedWander,
-                    home_position: Some(ScenePosition {
-                        x: 8.0,
-                        y: 6.0,
-                        z: 1.0,
+                tags: vec!["npc".to_string(), "interaction".to_string()],
+                components: vec![
+                    SceneComponent::NpcBehavior(NpcBehaviorComponent {
+                        behavior: NpcBehaviorKind::BoundedWander,
+                        home_position: Some(ScenePosition {
+                            x: 8.0,
+                            y: 6.0,
+                            z: 1.0,
+                        }),
+                        wander_radius: Some(3.0),
                     }),
-                    wander_radius: Some(3.0),
-                })],
+                    SceneComponent::InteractionTrigger(InteractionTriggerComponent {
+                        trigger_id: "trigger.guide".to_string(),
+                        name: "Guide Dialogue Trigger".to_string(),
+                        prompt_id: Some("prompt.guide.talk".to_string()),
+                        event_id: Some("event.guide.dialogue".to_string()),
+                        target_entity_id: Some("entity.player".to_string()),
+                        activation: InteractionActivation {
+                            shape: InteractionTriggerShape::Circle { radius: 1.25 },
+                        },
+                        repeatable: true,
+                        tags: vec!["interaction".to_string(), "dialogue".to_string()],
+                    }),
+                ],
             },
             SceneEntity {
                 id: "entity.sign.welcome".to_string(),

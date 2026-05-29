@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 0,
+  "id": "dialogue.guide.intro",
+  "name": "Guide Intro",
+  "startNodeId": "node.greeting",
+  "nodes": [
+    {
+      "id": "node.greeting",
+      "speaker": {
+        "entityId": "entity.npc.guide",
+        "displayName": "Village Guide"
+      },
+      "pages": [
+        {
+          "id": "page.greeting.01",
+          "text": "Welcome to the village. The old house is north of here.",
+          "actionIds": [],
+          "tags": []
+        }
+      ],
+      "choices": [],
+      "nextNodeId": "node.directions",
+      "actionIds": [],
+      "tags": ["linear"]
+    },
+    {
+      "id": "node.directions",
+      "speaker": {
+        "entityId": "entity.npc.guide",
+        "displayName": "Village Guide"
+      },
+      "pages": [
+        {
+          "id": "page.directions.01",
+          "text": "Walk up to the door and interact with it. I will remember that we talked.",
+          "actionIds": [],
+          "tags": []
+        }
+      ],
+      "choices": [],
+      "nextNodeId": "node.end",
+      "actionIds": [],
+      "tags": ["linear"]
+    },
+    {
+      "id": "node.end",
+      "speaker": {
+        "entityId": "entity.npc.guide",
+        "displayName": "Village Guide"
+      },
+      "pages": [
+        {
+          "id": "page.end.01",
+          "text": "Good luck out there.",
+          "actionIds": ["action.flag.metGuide"],
+          "tags": []
+        }
+      ],
+      "choices": [],
+      "nextNodeId": null,
+      "actionIds": [],
+      "tags": ["end"]
+    }
+  ],
+  "tags": ["starter", "linear-mvp"]
+}

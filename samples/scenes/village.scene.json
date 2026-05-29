@@ -60,7 +60,7 @@
         "z": 1.0
       },
       "facing": "west",
-      "tags": ["npc"],
+      "tags": ["npc", "interaction"],
       "components": [
         {
           "kind": "npcBehavior",
@@ -72,6 +72,26 @@
               "z": 1.0
             },
             "wanderRadius": 3.0
+          }
+        },
+        {
+          "kind": "interactionTrigger",
+          "data": {
+            "triggerId": "trigger.guide",
+            "name": "Guide Dialogue Trigger",
+            "promptId": "prompt.guide.talk",
+            "eventId": "event.guide.dialogue",
+            "targetEntityId": "entity.player",
+            "activation": {
+              "shape": {
+                "kind": "circle",
+                "data": {
+                  "radius": 1.25
+                }
+              }
+            },
+            "repeatable": true,
+            "tags": ["interaction", "dialogue"]
           }
         }
       ]
