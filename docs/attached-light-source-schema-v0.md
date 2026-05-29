@@ -6,6 +6,7 @@ Samples:
 
 - [../samples/lights/street-lamp.light.json](../samples/lights/street-lamp.light.json)
 - [../samples/lights/player-torch.light.json](../samples/lights/player-torch.light.json)
+- [../samples/lights/player-flashlight.light.json](../samples/lights/player-flashlight.light.json)
 
 Attached light sources describe where a light lives and how it should follow
 that target. They do not implement renderer lighting yet; they define the data
@@ -66,7 +67,8 @@ Rust validation currently checks:
 ## Current Limits
 
 - No renderer light pass.
-- No shadows or occlusion.
+- No visual shadows in the renderer yet; runtime query occlusion is tracked in
+  [runtime-lighting-query-mvp.md](runtime-lighting-query-mvp.md).
 - No light blending contract.
 - No scene-level reference validation against actual entities, maps, regions, or
   attachment points yet.

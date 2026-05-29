@@ -4,11 +4,12 @@ use std::{
     fmt,
 };
 
+use serde::{Deserialize, Serialize};
 use tiles_core::{
     sample_burn_complete_rule, sample_ignite_flammable_rule, sample_particle_emitter_presets,
     sample_player_torch_light_source, sample_water_extinguish_rule, AssetVariantSwitch,
     AttachedLightSourceDefinition, AttachedLightSourceValidationError, LightAttachmentTarget,
-    LightColor, LightDirection, ParticleEmitterPresetDefinition,
+    LightColor, LightDirection, LightFalloff, ParticleEmitterPresetDefinition,
     ParticleEmitterPresetValidationError, QualifiedTag, ReactionOutputTiming,
     ReactionRuleDefinition, ReactionRuleValidationError, ScenePosition, TriggeredEffect,
 };
@@ -43,14 +44,17 @@ pub struct RuntimeParticleEvent {
     pub when: ReactionOutputTiming,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RuntimeResolvedLight {
     pub light_id: String,
     pub position: ScenePosition,
     pub direction_degrees: Option<f32>,
+    pub cone_angle_degrees: Option<f32>,
     pub color: LightColor,
     pub intensity: f32,
     pub radius: f32,
+    pub falloff: LightFalloff,
     pub enabled: bool,
 }
 
@@ -434,25 +438,30 @@ impl GenericInteractionRuntime {
             ),
         };
 
-        let direction_degrees = match light.direction {
-            LightDirection::Omnidirectional => None,
+        let (direction_degrees, cone_angle_degrees) = match light.direction {
+            LightDirection::Omnidirectional => (None, None),
             LightDirection::Cone {
+                cone_angle_degrees,
                 facing_offset_degrees,
-                ..
-            } => Some(if light.follow_facing {
-                facing_degrees + facing_offset_degrees
-            } else {
-                facing_offset_degrees
-            }),
+            } => (
+                Some(if light.follow_facing {
+                    facing_degrees + facing_offset_degrees
+                } else {
+                    facing_offset_degrees
+                }),
+                Some(cone_angle_degrees),
+            ),
         };
 
         Ok(RuntimeResolvedLight {
             light_id: light.id.clone(),
             position,
             direction_degrees,
+            cone_angle_degrees,
             color: light.color,
             intensity: light.intensity,
             radius: light.radius,
+            falloff: light.falloff,
             enabled: light.enabled,
         })
     }
@@ -662,6 +671,8 @@ mod tests {
         assert_eq!(light.position.x, 4.35);
         assert_eq!(light.position.y, 4.85);
         assert_eq!(light.direction_degrees, Some(90.0));
+        assert_eq!(light.cone_angle_degrees, Some(70.0));
+        assert_eq!(light.falloff, LightFalloff::InverseSquared);
 
         let player = runtime
             .entity_mut("entity.player")
