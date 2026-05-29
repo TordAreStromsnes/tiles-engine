@@ -69,6 +69,55 @@
           "minLength": 1
         }
       }
+    },
+    "template": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "templateId",
+        "templateVersion",
+        "generatorId",
+        "generatedWithTilesVersion",
+        "starterContent",
+        "movementModel",
+        "safetyBudgetProfileId"
+      ],
+      "properties": {
+        "templateId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "templateVersion": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "generatorId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generatedWithTilesVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "starterContent": {
+          "type": "boolean"
+        },
+        "movementModel": {
+          "type": "string",
+          "enum": ["gridFourWay"]
+        },
+        "safetyBudgetProfileId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
     }
   }
 }

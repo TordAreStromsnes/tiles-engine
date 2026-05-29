@@ -355,6 +355,9 @@ type AssetRegistryEntry = {
     | "animationClip"
     | "map"
     | "scene"
+    | "world"
+    | "dialogue"
+    | "triggerActions"
     | "rule"
     | "assetPack";
   source: string;
@@ -427,6 +430,40 @@ type SpriteAssetImportResult = {
   copiedPath: string | null;
 };
 
+type ProjectTemplateMetadata = {
+  schemaVersion: number;
+  id: string;
+  name: string;
+  description: string;
+  isDefault: boolean;
+  starterContent: boolean;
+  gameTypeTargets: Array<"topDown" | "sideScroller" | "isometricPlanned" | "twoPointFiveDPlanned">;
+  movementModel: "gridFourWay";
+  characterViews: string[];
+  spriteImageFormat: "png";
+  safetyBudgetProfileId: string;
+  projectLocalAssets: boolean;
+  notes: string[];
+};
+
+type ProjectTemplateCreateRequest = {
+  projectRoot: string;
+  projectId: string;
+  projectName: string;
+  templateId: string;
+};
+
+type ProjectTemplateCreateResult = {
+  ok: boolean;
+  message: string;
+  projectRoot: string;
+  projectId: string;
+  templateId: string;
+  fileCount: number;
+  assetCount: number;
+  createdPaths: string[];
+};
+
 const fallbackStatus: EngineStatus = {
   engineName: "Tiles Engine",
   stack: {
@@ -444,10 +481,11 @@ const fallbackStatus: EngineStatus = {
   nextSpike: "Project format V0",
 };
 
-const panels = ["Assets", "Animation", "Maps", "Scene", "Menus", "Saves", "Systems"] as const;
+const panels = ["Project", "Assets", "Animation", "Maps", "Scene", "Menus", "Saves", "Systems"] as const;
 type ShellState = "checking" | "desktop" | "web" | "bridge-error";
 type PreviewLaunchState = "idle" | "launching" | "launched" | "error";
 type SaveWorkflowState = "idle" | "refreshing" | "saving" | "loading" | "saved" | "loaded" | "error";
+type ProjectTemplateWorkflowState = "idle" | "creating" | "created" | "error";
 
 const fallbackScene: SceneDocument = {
   schemaVersion: 0,
@@ -829,6 +867,66 @@ const fallbackSpriteImportResult: SpriteAssetImportResult = {
   copiedPath: null,
 };
 
+const topDownStarterTemplateId = "template.project.top-down-adventure.starter.v0";
+const topDownEmptyTemplateId = "template.project.top-down-adventure.empty.v0";
+
+const fallbackProjectTemplates: ProjectTemplateMetadata[] = [
+  {
+    schemaVersion: 0,
+    id: topDownStarterTemplateId,
+    name: "Top-Down RPG Adventure",
+    description: "Starter terrain, hero, NPC, house, cave, dialogue, and trigger wiring.",
+    isDefault: true,
+    starterContent: true,
+    gameTypeTargets: ["topDown"],
+    movementModel: "gridFourWay",
+    characterViews: ["front", "back", "left", "right", "topDown"],
+    spriteImageFormat: "png",
+    safetyBudgetProfileId: "safety.top-down-rpg.standard.v0",
+    projectLocalAssets: true,
+    notes: [
+      "Generated assets are normal project-local PNG and JSON files.",
+      "Side-scroller starts as a later template, not this template's runtime mode.",
+    ],
+  },
+  {
+    schemaVersion: 0,
+    id: topDownEmptyTemplateId,
+    name: "Top-Down RPG Adventure Empty",
+    description: "Project folders, manifest, registry, and top-down defaults only.",
+    isDefault: false,
+    starterContent: false,
+    gameTypeTargets: ["topDown"],
+    movementModel: "gridFourWay",
+    characterViews: ["front", "back", "left", "right", "topDown"],
+    spriteImageFormat: "png",
+    safetyBudgetProfileId: "safety.top-down-rpg.standard.v0",
+    projectLocalAssets: true,
+    notes: [
+      "No starter world or asset files are generated.",
+      "Side-scroller starts as a later template, not this template's runtime mode.",
+    ],
+  },
+];
+
+const fallbackProjectTemplateRequest: ProjectTemplateCreateRequest = {
+  projectRoot: "",
+  projectId: "top-down-adventure",
+  projectName: "Top-Down Adventure",
+  templateId: topDownStarterTemplateId,
+};
+
+const fallbackProjectTemplateResult: ProjectTemplateCreateResult = {
+  ok: false,
+  message: "Choose a desktop project folder before creating a project.",
+  projectRoot: "",
+  projectId: "",
+  templateId: topDownStarterTemplateId,
+  fileCount: 0,
+  assetCount: 0,
+  createdPaths: [],
+};
+
 const fallbackAssetLibraryAssets: AssetRegistryEntry[] = [
   {
     id: "sprite.hero",
@@ -879,7 +977,15 @@ export function App() {
   const [previewLaunchMessage, setPreviewLaunchMessage] = useState(
     "Native preview launches from the desktop shell when connected.",
   );
-  const [activePanel, setActivePanel] = useState<(typeof panels)[number]>("Assets");
+  const [activePanel, setActivePanel] = useState<(typeof panels)[number]>("Project");
+  const [projectTemplates, setProjectTemplates] =
+    useState<ProjectTemplateMetadata[]>(fallbackProjectTemplates);
+  const [projectTemplateRequest, setProjectTemplateRequest] =
+    useState<ProjectTemplateCreateRequest>(fallbackProjectTemplateRequest);
+  const [projectTemplateResult, setProjectTemplateResult] =
+    useState<ProjectTemplateCreateResult>(fallbackProjectTemplateResult);
+  const [projectTemplateWorkflowState, setProjectTemplateWorkflowState] =
+    useState<ProjectTemplateWorkflowState>("idle");
   const [scene, setScene] = useState<SceneDocument>(fallbackScene);
   const [selectedEntityId, setSelectedEntityId] = useState(fallbackScene.entities[0].id);
   const [sceneValidation, setSceneValidation] = useState<SceneValidation>(fallbackSceneValidation);
@@ -931,6 +1037,25 @@ export function App() {
       .catch(() => {
         setShellState("bridge-error");
       });
+  }, []);
+
+  useEffect(() => {
+    if (!isTauri()) return;
+
+    invoke<ProjectTemplateMetadata[]>("list_project_templates")
+      .then((templates) => {
+        setProjectTemplates(templates);
+        const defaultTemplate =
+          templates.find((template) => template.isDefault) ?? templates[0];
+
+        if (defaultTemplate) {
+          setProjectTemplateRequest((currentRequest) => ({
+            ...currentRequest,
+            templateId: defaultTemplate.id,
+          }));
+        }
+      })
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -1152,6 +1277,13 @@ export function App() {
     return frames[Math.min(selectedAnimationFrameIndex, Math.max(frames.length - 1, 0))];
   }, [selectedAnimationFrameIndex, selectedAnimationTrack]);
 
+  const selectedProjectTemplate = useMemo(
+    () =>
+      projectTemplates.find((template) => template.id === projectTemplateRequest.templateId) ??
+      projectTemplates[0],
+    [projectTemplateRequest.templateId, projectTemplates],
+  );
+
   const selectedAsset = useMemo(
     () =>
       assetLibraryAssets.find((asset) => asset.id === selectedAssetId) ?? assetLibraryAssets[0],
@@ -1360,6 +1492,52 @@ export function App() {
     setSpriteImportRequest((currentRequest) => ({ ...currentRequest, ...changes }));
   };
 
+  const updateProjectTemplateRequest = (changes: Partial<ProjectTemplateCreateRequest>) => {
+    setProjectTemplateRequest((currentRequest) => ({ ...currentRequest, ...changes }));
+  };
+
+  const runProjectTemplateCreation = () => {
+    if (!isTauri()) {
+      setProjectTemplateWorkflowState("error");
+      setProjectTemplateResult({
+        ...fallbackProjectTemplateResult,
+        message: "Open the desktop shell before creating a local project.",
+        templateId: projectTemplateRequest.templateId,
+      });
+      return;
+    }
+
+    setProjectTemplateWorkflowState("creating");
+    setProjectTemplateResult((currentResult) => ({
+      ...currentResult,
+      ok: false,
+      message: "Creating project files...",
+    }));
+
+    invoke<ProjectTemplateCreateResult>("create_project_from_template", {
+      request: projectTemplateRequest,
+    })
+      .then((response) => {
+        setProjectTemplateResult(response);
+        setProjectTemplateWorkflowState(response.ok ? "created" : "error");
+
+        if (response.ok) {
+          setSpriteImportRequest((currentRequest) => ({
+            ...currentRequest,
+            projectRoot: response.projectRoot,
+          }));
+        }
+      })
+      .catch((error) => {
+        setProjectTemplateWorkflowState("error");
+        setProjectTemplateResult({
+          ...fallbackProjectTemplateResult,
+          message: String(error),
+          templateId: projectTemplateRequest.templateId,
+        });
+      });
+  };
+
   const runSpriteAssetImport = (addToRegistry: boolean) => {
     setSpriteImportBusy(true);
 
@@ -1446,7 +1624,14 @@ export function App() {
         <section className="workbench">
           <div className="viewport" aria-label={`${activePanel} preview`}>
             <div className="tile-grid" />
-            {activePanel === "Assets" ? (
+            {activePanel === "Project" ? (
+              <ProjectTemplateViewport
+                result={projectTemplateResult}
+                selectedTemplateId={projectTemplateRequest.templateId}
+                templates={projectTemplates}
+                onSelectTemplate={(templateId) => updateProjectTemplateRequest({ templateId })}
+              />
+            ) : activePanel === "Assets" ? (
               <AssetImportViewport
                 assets={assetLibraryAssets}
                 searchQuery={assetSearchQuery}
@@ -1490,7 +1675,17 @@ export function App() {
           <aside className="inspector" aria-label="Inspector">
             <span className="eyebrow">Active Panel</span>
             <h2>{activePanel}</h2>
-            {activePanel === "Assets" ? (
+            {activePanel === "Project" ? (
+              <ProjectTemplateInspector
+                busy={projectTemplateWorkflowState === "creating"}
+                request={projectTemplateRequest}
+                result={projectTemplateResult}
+                selectedTemplate={selectedProjectTemplate}
+                templates={projectTemplates}
+                onCreate={runProjectTemplateCreation}
+                onUpdateRequest={updateProjectTemplateRequest}
+              />
+            ) : activePanel === "Assets" ? (
               <AssetImportInspector
                 assets={assetLibraryAssets}
                 busy={spriteImportBusy}
@@ -1594,6 +1789,83 @@ function SaveSlotsViewport({ slots, selectedSlotId }: SaveSlotsViewportProps) {
           <small>{slot.exists ? slot.activeMapId ?? slot.invalidReason : "No save data"}</small>
         </div>
       ))}
+    </div>
+  );
+}
+
+type ProjectTemplateViewportProps = {
+  result: ProjectTemplateCreateResult;
+  selectedTemplateId: string;
+  templates: ProjectTemplateMetadata[];
+  onSelectTemplate: (templateId: string) => void;
+};
+
+function ProjectTemplateViewport({
+  result,
+  selectedTemplateId,
+  templates,
+  onSelectTemplate,
+}: ProjectTemplateViewportProps) {
+  return (
+    <div className="asset-library-canvas" aria-label="Project template browser">
+      <div className="asset-library-shell">
+        <div className="asset-library-toolbar">
+          <div className="project-template-heading">
+            <span>Mode</span>
+            <strong>Top-down RPG adventure</strong>
+          </div>
+          <div className="asset-library-count">
+            <strong>{templates.length}</strong>
+            <span>choices</span>
+          </div>
+        </div>
+
+        <div className="asset-library-groups" aria-label="Project templates">
+          <section className="asset-library-group">
+            <div className="asset-library-group-heading">
+              <strong>Templates</strong>
+              <span>{templates.length}</span>
+            </div>
+            <div className="asset-library-list">
+              {templates.map((template) => (
+                <button
+                  className={
+                    template.id === selectedTemplateId
+                      ? "asset-library-row project-template-row asset-library-row-active"
+                      : "asset-library-row project-template-row"
+                  }
+                  key={template.id}
+                  onClick={() => onSelectTemplate(template.id)}
+                  type="button"
+                >
+                  <span className="asset-thumbnail-placeholder" aria-hidden="true">
+                    {template.starterContent ? "ST" : "EM"}
+                  </span>
+                  <span className="asset-library-row-main">
+                    <strong>{template.name}</strong>
+                    <span>{template.id}</span>
+                    <small>{template.description}</small>
+                  </span>
+                  <span className="asset-license-pill">
+                    {template.starterContent ? "Starter" : "Empty"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <div
+          className={
+            result.ok
+              ? "asset-library-import-status"
+              : "asset-library-import-status asset-library-import-status-error"
+          }
+        >
+          <strong>{result.ok ? "Project created" : "Project status"}</strong>
+          <span>{result.message}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2283,6 +2555,120 @@ type AssetImportInspectorProps = {
   onValidate: () => void;
   onAdd: () => void;
 };
+
+type ProjectTemplateInspectorProps = {
+  busy: boolean;
+  request: ProjectTemplateCreateRequest;
+  result: ProjectTemplateCreateResult;
+  selectedTemplate?: ProjectTemplateMetadata;
+  templates: ProjectTemplateMetadata[];
+  onCreate: () => void;
+  onUpdateRequest: (changes: Partial<ProjectTemplateCreateRequest>) => void;
+};
+
+function ProjectTemplateInspector({
+  busy,
+  request,
+  result,
+  selectedTemplate,
+  templates,
+  onCreate,
+  onUpdateRequest,
+}: ProjectTemplateInspectorProps) {
+  return (
+    <div className="project-template-inspector">
+      <div className={result.ok ? "validation validation-valid" : "validation validation-error"}>
+        <strong>{result.ok ? "Project ready" : "Project template"}</strong>
+        <span>{result.message}</span>
+      </div>
+
+      <label className="field">
+        <span>Template</span>
+        <select
+          value={request.templateId}
+          onChange={(event) => onUpdateRequest({ templateId: event.target.value })}
+        >
+          {templates.map((template) => (
+            <option key={template.id} value={template.id}>
+              {template.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="field">
+        <span>Project root</span>
+        <input
+          value={request.projectRoot}
+          onChange={(event) => onUpdateRequest({ projectRoot: event.target.value })}
+          placeholder="C:\\Projects\\my-game.tilesproj"
+        />
+      </label>
+
+      <label className="field">
+        <span>Project id</span>
+        <input
+          value={request.projectId}
+          onChange={(event) => onUpdateRequest({ projectId: event.target.value })}
+        />
+      </label>
+
+      <label className="field">
+        <span>Name</span>
+        <input
+          value={request.projectName}
+          onChange={(event) => onUpdateRequest({ projectName: event.target.value })}
+        />
+      </label>
+
+      <button
+        className="project-template-create-button"
+        disabled={busy}
+        onClick={onCreate}
+        type="button"
+      >
+        {busy ? "Creating..." : "Create Project"}
+      </button>
+
+      {selectedTemplate ? (
+        <dl className="project-template-details">
+          <div>
+            <dt>Content</dt>
+            <dd>{selectedTemplate.starterContent ? "Starter" : "Empty"}</dd>
+          </div>
+          <div>
+            <dt>Movement</dt>
+            <dd>{selectedTemplate.movementModel}</dd>
+          </div>
+          <div>
+            <dt>Sprites</dt>
+            <dd>{selectedTemplate.spriteImageFormat.toUpperCase()}</dd>
+          </div>
+          <div>
+            <dt>Views</dt>
+            <dd>{selectedTemplate.characterViews.join(", ")}</dd>
+          </div>
+          <div>
+            <dt>Safety</dt>
+            <dd>{selectedTemplate.safetyBudgetProfileId}</dd>
+          </div>
+          {result.ok ? (
+            <>
+              <div>
+                <dt>Files</dt>
+                <dd>{result.fileCount}</dd>
+              </div>
+              <div>
+                <dt>Assets</dt>
+                <dd>{result.assetCount}</dd>
+              </div>
+            </>
+          ) : null}
+        </dl>
+      ) : null}
+    </div>
+  );
+}
 
 function AssetImportInspector({
   assets,
@@ -3492,6 +3878,9 @@ function groupAssetsByKind(assets: AssetRegistryEntry[]) {
     "animationClip",
     "map",
     "scene",
+    "world",
+    "dialogue",
+    "triggerActions",
     "rule",
     "assetPack",
   ];
@@ -3517,6 +3906,12 @@ function assetKindLabel(kind: AssetRegistryEntry["kind"]) {
       return "Maps";
     case "scene":
       return "Scenes";
+    case "world":
+      return "Worlds";
+    case "dialogue":
+      return "Dialogue";
+    case "triggerActions":
+      return "Trigger Actions";
     case "rule":
       return "Rules";
     case "assetPack":
@@ -3540,6 +3935,12 @@ function assetKindInitials(kind: AssetRegistryEntry["kind"]) {
       return "MP";
     case "scene":
       return "SC";
+    case "world":
+      return "WD";
+    case "dialogue":
+      return "DG";
+    case "triggerActions":
+      return "TA";
     case "rule":
       return "RL";
     case "assetPack":

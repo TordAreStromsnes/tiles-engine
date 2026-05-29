@@ -1,0 +1,38 @@
+[
+  {
+    "schemaVersion": 0,
+    "id": "template.project.top-down-adventure.starter.v0",
+    "name": "Top-Down RPG Adventure",
+    "description": "Starter terrain, hero, NPC, house, cave, dialogue, and trigger wiring.",
+    "isDefault": true,
+    "starterContent": true,
+    "gameTypeTargets": ["topDown"],
+    "movementModel": "gridFourWay",
+    "characterViews": ["front", "back", "left", "right", "topDown"],
+    "spriteImageFormat": "png",
+    "safetyBudgetProfileId": "safety.top-down-rpg.standard.v0",
+    "projectLocalAssets": true,
+    "notes": [
+      "Generated assets are normal project-local PNG and JSON files.",
+      "Side-scroller starts as a later template, not this template's runtime mode."
+    ]
+  },
+  {
+    "schemaVersion": 0,
+    "id": "template.project.top-down-adventure.empty.v0",
+    "name": "Top-Down RPG Adventure Empty",
+    "description": "Project folders, manifest, registry, and top-down defaults only.",
+    "isDefault": false,
+    "starterContent": false,
+    "gameTypeTargets": ["topDown"],
+    "movementModel": "gridFourWay",
+    "characterViews": ["front", "back", "left", "right", "topDown"],
+    "spriteImageFormat": "png",
+    "safetyBudgetProfileId": "safety.top-down-rpg.standard.v0",
+    "projectLocalAssets": true,
+    "notes": [
+      "No starter world or asset files are generated.",
+      "Side-scroller starts as a later template, not this template's runtime mode."
+    ]
+  }
+]
