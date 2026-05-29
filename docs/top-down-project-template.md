@@ -23,7 +23,8 @@ Both templates use:
 - five character view assumptions: front, back, left, right, and top-down
 - project-local editable assets
 - PNG as the pixel sprite image format
-- `safety.top-down-rpg.standard.v0` as the initial safety budget profile marker
+- `safety.top-down-rpg.standard.v0` as the initial
+  [runtime safety budget](runtime-safety-budget-schema-v0.md)
 
 Side-scroller support remains a future template instead of being mixed into the
 top-down starter. This keeps the first project path focused while preserving the

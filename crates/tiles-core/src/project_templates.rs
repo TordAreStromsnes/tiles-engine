@@ -7,6 +7,7 @@ use crate::{
         AssetFileRole, GameTypeTarget, ProjectTemplateProvenance, ProjectValidationError,
         TilesProject, ASSET_REGISTRY_FILE, MANIFEST_FILE,
     },
+    safety_budget::STANDARD_RUNTIME_SAFETY_BUDGET_PROFILE_ID,
     starter_assets::{sample_starter_asset_generation_request, GeneratedStarterAssetFile},
     starter_world::{
         generate_top_down_starter_world_project, TopDownStarterWorldGenerationError,
@@ -20,7 +21,8 @@ pub const TOP_DOWN_ADVENTURE_STARTER_TEMPLATE_ID: &str =
     "template.project.top-down-adventure.starter.v0";
 pub const TOP_DOWN_ADVENTURE_EMPTY_TEMPLATE_ID: &str =
     "template.project.top-down-adventure.empty.v0";
-pub const STANDARD_TOP_DOWN_SAFETY_BUDGET_PROFILE_ID: &str = "safety.top-down-rpg.standard.v0";
+pub const STANDARD_TOP_DOWN_SAFETY_BUDGET_PROFILE_ID: &str =
+    STANDARD_RUNTIME_SAFETY_BUDGET_PROFILE_ID;
 pub const TOP_DOWN_GRID_FOUR_WAY_MOVEMENT_MODEL: &str = "gridFourWay";
 pub const PNG_SPRITE_IMAGE_FORMAT: &str = "png";
 

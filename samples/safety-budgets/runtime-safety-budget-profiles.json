@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 0,
+  "profiles": [
+    {
+      "schemaVersion": 0,
+      "id": "safety.tiny.v0",
+      "name": "Tiny",
+      "kind": "tiny",
+      "limits": {
+        "maxTextureDimensionPx": 1024,
+        "maxAtlasDimensionPx": 2048,
+        "maxMapCells": 4096,
+        "maxEntitiesPerMap": 128,
+        "maxActiveParticles": 512,
+        "maxMemoryEstimateMb": 256,
+        "maxLightEmitters": 64,
+        "maxRuleEvaluationsPerTick": 1000
+      }
+    },
+    {
+      "schemaVersion": 0,
+      "id": "safety.top-down-rpg.standard.v0",
+      "name": "Standard Top-Down RPG",
+      "kind": "standard",
+      "limits": {
+        "maxTextureDimensionPx": 2048,
+        "maxAtlasDimensionPx": 4096,
+        "maxMapCells": 65536,
+        "maxEntitiesPerMap": 1024,
+        "maxActiveParticles": 4096,
+        "maxMemoryEstimateMb": 1024,
+        "maxLightEmitters": 256,
+        "maxRuleEvaluationsPerTick": 10000
+      }
+    },
+    {
+      "schemaVersion": 0,
+      "id": "safety.large.v0",
+      "name": "Large",
+      "kind": "large",
+      "limits": {
+        "maxTextureDimensionPx": 4096,
+        "maxAtlasDimensionPx": 8192,
+        "maxMapCells": 262144,
+        "maxEntitiesPerMap": 4096,
+        "maxActiveParticles": 16384,
+        "maxMemoryEstimateMb": 4096,
+        "maxLightEmitters": 1024,
+        "maxRuleEvaluationsPerTick": 50000
+      }
+    },
+    {
+      "schemaVersion": 0,
+      "id": "safety.experimental.v0",
+      "name": "Experimental",
+      "kind": "experimental",
+      "limits": {
+        "maxTextureDimensionPx": 8192,
+        "maxAtlasDimensionPx": 16384,
+        "maxMapCells": 1048576,
+        "maxEntitiesPerMap": 16384,
+        "maxActiveParticles": 65536,
+        "maxMemoryEstimateMb": 8192,
+        "maxLightEmitters": 4096,
+        "maxRuleEvaluationsPerTick": 250000
+      },
+      "warnings": [
+        {
+          "code": "experimentalMayOverloadHardware",
+          "message": "Experimental budgets can exceed comfortable limits on modest hardware."
+        }
+      ]
+    }
+  ]
+}
