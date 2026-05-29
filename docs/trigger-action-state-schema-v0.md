@@ -64,6 +64,7 @@ V0 covers the MVP primitives:
 - `showDialogue`
 - `setAnimation`
 - `spawnParticle`
+- `giveItem`
 - `setLight`
 - `setVariable`
 - `setLayerVisibility`
@@ -73,6 +74,10 @@ Layer actions are included because gameplay triggers and editor settings both
 need to affect map layers. The roof opacity sample represents the top-down use
 case where entering a building area can fade a roof layer instead of switching
 maps.
+
+`giveItem` is intentionally a placeholder action until inventory exists. The
+runtime evaluator preserves it as a structured output and diagnostic instead of
+discarding it or inventing a full item system early.
 
 ## Current Limits
 
