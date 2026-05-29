@@ -7,8 +7,8 @@ use std::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    GridPoint, GridSize, MapLayerKind, MapPlacement, TerrainAutoTileRuleCatalog,
-    TerrainNeighborSample, TileGrid, TileMap,
+    GridPoint, GridSize, MapPlacement, TerrainAutoTileRuleCatalog, TerrainNeighborSample, TileGrid,
+    TileMap,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -205,7 +205,7 @@ fn validate_stroke(
         });
     };
 
-    if layer.kind != MapLayerKind::Terrain {
+    if !layer.role.is_paintable_terrain() {
         return Err(AutoTilePaintError::NonTerrainLayer {
             layer_id: stroke.layer_id.clone(),
         });
@@ -511,8 +511,8 @@ fn offset_point(
 #[cfg(test)]
 mod tests {
     use crate::{
-        sample_starter_terrain_auto_tile_rules, CellSize, MapLayer, TerrainTileVariantKind,
-        TILE_MAP_SCHEMA_VERSION,
+        sample_starter_terrain_auto_tile_rules, CellSize, MapLayer, MapLayerMetadata, MapLayerRole,
+        TerrainTileVariantKind, TILE_MAP_SCHEMA_VERSION,
     };
 
     use super::*;
@@ -658,16 +658,22 @@ mod tests {
                 MapLayer {
                     id: "terrain".to_string(),
                     name: "Terrain".to_string(),
-                    kind: MapLayerKind::Terrain,
-                    z_index: 0,
+                    role: MapLayerRole::Ground,
+                    order: 0,
                     visible_by_default: true,
+                    locked_by_default: false,
+                    opacity: 1.0,
+                    metadata: MapLayerMetadata::default(),
                 },
                 MapLayer {
                     id: "objects".to_string(),
                     name: "Objects".to_string(),
-                    kind: MapLayerKind::Object,
-                    z_index: 10,
+                    role: MapLayerRole::Objects,
+                    order: 10,
                     visible_by_default: true,
+                    locked_by_default: false,
+                    opacity: 1.0,
+                    metadata: MapLayerMetadata::default(),
                 },
             ],
             placements: vec![MapPlacement {

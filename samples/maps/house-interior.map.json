@@ -13,24 +13,73 @@
   "layers": [
     {
       "id": "terrain",
-      "name": "Terrain",
-      "kind": "terrain",
-      "zIndex": 0,
-      "visibleByDefault": true
+      "name": "Ground",
+      "role": "ground",
+      "order": 0,
+      "visibleByDefault": true,
+      "lockedByDefault": false,
+      "opacity": 1.0,
+      "metadata": { "tags": ["ground"] }
+    },
+    {
+      "id": "decor",
+      "name": "Decor",
+      "role": "decor",
+      "order": 10,
+      "visibleByDefault": true,
+      "lockedByDefault": false,
+      "opacity": 1.0,
+      "metadata": { "tags": ["decor"] }
     },
     {
       "id": "objects",
       "name": "Objects",
-      "kind": "object",
-      "zIndex": 10,
-      "visibleByDefault": true
+      "role": "objects",
+      "order": 20,
+      "visibleByDefault": true,
+      "lockedByDefault": false,
+      "opacity": 1.0,
+      "metadata": { "tags": ["objects"] }
+    },
+    {
+      "id": "collision",
+      "name": "Collision",
+      "role": "collision",
+      "order": 30,
+      "visibleByDefault": false,
+      "lockedByDefault": true,
+      "opacity": 0.35,
+      "metadata": { "tags": ["collision"] }
+    },
+    {
+      "id": "triggers",
+      "name": "Triggers",
+      "role": "triggers",
+      "order": 40,
+      "visibleByDefault": true,
+      "lockedByDefault": false,
+      "opacity": 0.5,
+      "metadata": { "tags": ["triggers"] }
+    },
+    {
+      "id": "lighting",
+      "name": "Lighting",
+      "role": "lighting",
+      "order": 50,
+      "visibleByDefault": true,
+      "lockedByDefault": false,
+      "opacity": 1.0,
+      "metadata": { "tags": ["lighting"] }
     },
     {
       "id": "overlays",
       "name": "Overlays",
-      "kind": "overlay",
-      "zIndex": 20,
-      "visibleByDefault": true
+      "role": "overlay",
+      "order": 60,
+      "visibleByDefault": true,
+      "lockedByDefault": false,
+      "opacity": 1.0,
+      "metadata": { "tags": ["overlay"] }
     }
   ],
   "placements": [

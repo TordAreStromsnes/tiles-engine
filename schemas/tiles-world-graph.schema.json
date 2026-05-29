@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-world-graph.schema.json",
+  "title": "Tiles Engine World Graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "name", "gameMode", "maps", "transitions"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "gameMode": {
+      "$ref": "#/$defs/gameMode"
+    },
+    "maps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/mapNode"
+      },
+      "uniqueItems": true
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/transition"
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "gameModeName": {
+      "enum": ["topDown", "sideScrollerPlanned"]
+    },
+    "gameMode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary", "supported", "topDown", "sideScroller"],
+      "properties": {
+        "primary": {
+          "$ref": "#/$defs/gameModeName"
+        },
+        "supported": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/gameModeName"
+          },
+          "uniqueItems": true
+        },
+        "topDown": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/topDownConfig" }
+          ]
+        },
+        "sideScroller": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/sideScrollerConfig" }
+          ]
+        }
+      }
+    },
+    "topDownConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["movementPlane", "gravityEnabled", "supportsLayerOpacity"],
+      "properties": {
+        "movementPlane": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gravityEnabled": {
+          "type": "boolean"
+        },
+        "supportsLayerOpacity": {
+          "type": "boolean"
+        }
+      }
+    },
+    "sideScrollerConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["planned", "gravityAxis", "supportsOneWayPlatforms"],
+      "properties": {
+        "planned": {
+          "type": "boolean"
+        },
+        "gravityAxis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "supportsOneWayPlatforms": {
+          "type": "boolean"
+        }
+      }
+    },
+    "mapNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mapId", "name", "path", "defaultSpawnId", "spawns", "tags"],
+      "properties": {
+        "mapId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "defaultSpawnId": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "minLength": 1 }
+          ]
+        },
+        "spawns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/spawn"
+          },
+          "uniqueItems": true
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "spawn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "position", "facing", "tags"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "position": {
+          "$ref": "#/$defs/gridPoint"
+        },
+        "facing": {
+          "$ref": "#/$defs/facing"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "from", "to", "tags"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "from": {
+          "$ref": "#/$defs/endpoint"
+        },
+        "to": {
+          "$ref": "#/$defs/endpoint"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mapId", "portalId", "spawnId"],
+      "properties": {
+        "mapId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "portalId": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "minLength": 1 }
+          ]
+        },
+        "spawnId": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "minLength": 1 }
+          ]
+        }
+      }
+    },
+    "gridPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["column", "row"],
+      "properties": {
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "facing": {
+      "enum": ["north", "south", "east", "west"]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}

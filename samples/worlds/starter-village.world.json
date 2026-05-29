@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 0,
+  "id": "world.starter-village",
+  "name": "Starter Village World",
+  "gameMode": {
+    "primary": "topDown",
+    "supported": ["topDown", "sideScrollerPlanned"],
+    "topDown": {
+      "movementPlane": "xy",
+      "gravityEnabled": false,
+      "supportsLayerOpacity": true
+    },
+    "sideScroller": {
+      "planned": true,
+      "gravityAxis": "y",
+      "supportsOneWayPlatforms": true
+    }
+  },
+  "maps": [
+    {
+      "mapId": "map.village",
+      "name": "Village",
+      "path": "maps/village.map.json",
+      "defaultSpawnId": "spawn.village.start",
+      "spawns": [
+        {
+          "id": "spawn.village.start",
+          "position": { "column": 4, "row": 5 },
+          "facing": "south",
+          "tags": ["player", "outdoor"]
+        }
+      ],
+      "tags": ["outdoor", "starter"]
+    },
+    {
+      "mapId": "map.house-interior",
+      "name": "House Interior",
+      "path": "maps/house-interior.map.json",
+      "defaultSpawnId": "spawn.house.entry",
+      "spawns": [
+        {
+          "id": "spawn.house.entry",
+          "position": { "column": 5, "row": 6 },
+          "facing": "north",
+          "tags": ["player", "interior"]
+        }
+      ],
+      "tags": ["interior", "starter"]
+    }
+  ],
+  "transitions": [
+    {
+      "id": "transition.village-to-house",
+      "name": "Village Door To House",
+      "from": {
+        "mapId": "map.village",
+        "portalId": "portal.house.front-door",
+        "spawnId": null
+      },
+      "to": {
+        "mapId": "map.house-interior",
+        "portalId": "portal.house.exit",
+        "spawnId": "spawn.house.entry"
+      },
+      "tags": ["door", "interior"]
+    },
+    {
+      "id": "transition.house-to-village",
+      "name": "House Exit To Village",
+      "from": {
+        "mapId": "map.house-interior",
+        "portalId": "portal.house.exit",
+        "spawnId": null
+      },
+      "to": {
+        "mapId": "map.village",
+        "portalId": "portal.house.front-door",
+        "spawnId": "spawn.village.start"
+      },
+      "tags": ["door", "exterior"]
+    }
+  ]
+}
