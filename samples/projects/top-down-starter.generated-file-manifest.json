@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 0,
+  "projectId": "starter-generated",
+  "worldId": "world.top-down-starter",
+  "sceneId": "scene.top-down-starter",
+  "mapIds": [
+    "map.town-start",
+    "map.house-01-interior",
+    "map.cave-room"
+  ],
+  "filePaths": [
+    "asset-registry.json",
+    "assets/generated/placeholder-hero.metadata.json",
+    "assets/generated/placeholder-hero.png",
+    "assets/generated/starter-door.metadata.json",
+    "assets/generated/starter-door.png",
+    "assets/generated/starter-lamp.metadata.json",
+    "assets/generated/starter-lamp.png",
+    "assets/generated/starter-sign.metadata.json",
+    "assets/generated/starter-sign.png",
+    "assets/generated/starter-terrain.metadata.json",
+    "assets/generated/starter-terrain.png",
+    "dialogue/guide-intro.dialogue.json",
+    "generators/placeholder-hero.generator-recipe.json",
+    "generators/starter-terrain.generator-recipe.json",
+    "manifest.json",
+    "maps/cave-room.map.json",
+    "maps/house-01-interior.map.json",
+    "maps/town-start.map.json",
+    "rules/starter-terrain.auto-tile-rules.json",
+    "rules/top-down-starter.trigger-actions.json",
+    "scenes/top-down-starter.scene.json",
+    "worlds/top-down-starter.world.json"
+  ]
+}

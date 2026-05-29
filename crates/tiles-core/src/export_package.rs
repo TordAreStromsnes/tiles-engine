@@ -259,7 +259,9 @@ fn export_bundle_kind(kind: &AssetKind) -> ExportAssetBundleKind {
         AssetKind::AnimationClip => ExportAssetBundleKind::AnimationClips,
         AssetKind::Map => ExportAssetBundleKind::Map,
         AssetKind::Scene => ExportAssetBundleKind::Scene,
-        AssetKind::Rule => ExportAssetBundleKind::Rules,
+        AssetKind::World | AssetKind::Dialogue | AssetKind::TriggerActions | AssetKind::Rule => {
+            ExportAssetBundleKind::Rules
+        }
     }
 }
 

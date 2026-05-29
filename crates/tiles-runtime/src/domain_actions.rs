@@ -597,6 +597,7 @@ fn layer_action_diagnostic(
 #[cfg(test)]
 mod tests {
     use tiles_core::{
+        generate_top_down_starter_world_project, sample_top_down_starter_world_generation_request,
         ActionBoundaryMetadata, TriggerActionDefinition, TriggerEventDefinition, VariableReference,
     };
 
@@ -869,5 +870,61 @@ mod tests {
             result,
             Err(RuntimeDomainActionError::InvalidActionDocument { .. })
         ));
+    }
+
+    #[test]
+    fn generated_top_down_starter_world_loads_playtest_and_actions() {
+        let generated = generate_top_down_starter_world_project(
+            &sample_top_down_starter_world_generation_request(),
+        )
+        .expect("starter world should generate");
+        let mut runtime = RuntimePreview::new(generated.scene.clone(), generated.maps.clone())
+            .expect("generated starter scene should load");
+        let mut evaluator =
+            RuntimeDomainActionEvaluator::new(generated.actions.clone(), Some(generated.world))
+                .expect("generated starter actions should load");
+
+        runtime.state.player.position = ScenePosition {
+            x: 7.0,
+            y: 9.0,
+            z: 1.0,
+        };
+        let guide_interaction = runtime
+            .activate_interaction()
+            .expect("guide interaction should activate");
+        let guide_evaluation = evaluator.evaluate_interaction(&mut runtime, &guide_interaction);
+
+        assert!(guide_evaluation.outputs.iter().any(|output| matches!(
+            output,
+            RuntimeDomainActionOutput::ShowDialogue { dialogue_id, .. }
+                if dialogue_id == "dialogue.guide.intro"
+        )));
+        assert!(guide_evaluation.outputs.iter().any(|output| matches!(
+            output,
+            RuntimeDomainActionOutput::GiveItemPlaceholder {
+                item_id,
+                quantity,
+                ..
+            } if item_id == "item.starter.herb" && *quantity == 1
+        )));
+
+        runtime.state.player.position = ScenePosition {
+            x: 12.0,
+            y: 7.0,
+            z: 1.0,
+        };
+        let door_interaction = runtime
+            .activate_interaction()
+            .expect("house door interaction should activate");
+        let door_evaluation = evaluator.evaluate_interaction(&mut runtime, &door_interaction);
+
+        assert!(matches!(
+            door_evaluation.outputs.first(),
+            Some(RuntimeDomainActionOutput::SwitchMap(switch))
+                if switch.to_map_id == "map.house-01-interior"
+                    && switch.spawn_id.as_deref() == Some("spawn.house.entry")
+                    && switch.spawn_applied
+        ));
+        assert_eq!(runtime.state().active_map_id, "map.house-01-interior");
     }
 }
