@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 0,
+  "id": "logic.starter-village",
+  "name": "Starter Village Trigger Actions",
+  "variables": [
+    {
+      "id": "flag.metGuide",
+      "name": "Met Guide",
+      "scope": {
+        "kind": "player"
+      },
+      "valueType": "boolean",
+      "defaultValue": {
+        "kind": "boolean",
+        "data": {
+          "value": false
+        }
+      },
+      "quickCreate": null,
+      "tags": []
+    },
+    {
+      "id": "flag.doorUnlocked",
+      "name": "Door Unlocked",
+      "scope": {
+        "kind": "map",
+        "data": {
+          "mapId": "map.village"
+        }
+      },
+      "valueType": "boolean",
+      "defaultValue": {
+        "kind": "boolean",
+        "data": {
+          "value": false
+        }
+      },
+      "quickCreate": null,
+      "tags": []
+    },
+    {
+      "id": "count.herbs",
+      "name": "Herbs Collected",
+      "scope": {
+        "kind": "player"
+      },
+      "valueType": "number",
+      "defaultValue": {
+        "kind": "number",
+        "data": {
+          "value": 0.0
+        }
+      },
+      "quickCreate": null,
+      "tags": []
+    }
+  ],
+  "events": [
+    {
+      "id": "event.door.interact",
+      "name": "Use House Door",
+      "event": {
+        "kind": "interact",
+        "data": {
+          "triggerId": "trigger.house-door"
+        }
+      },
+      "actionIds": ["action.house.enter"],
+      "tags": []
+    },
+    {
+      "id": "event.guide.dialogue",
+      "name": "Talk To Guide",
+      "event": {
+        "kind": "interact",
+        "data": {
+          "triggerId": "trigger.guide"
+        }
+      },
+      "actionIds": ["action.dialogue.guide", "action.flag.metGuide"],
+      "tags": []
+    },
+    {
+      "id": "event.herb.pickup",
+      "name": "Pick Up Herb",
+      "event": {
+        "kind": "enterArea",
+        "data": {
+          "areaId": "area.herb.01"
+        }
+      },
+      "actionIds": ["action.item.herbCount", "action.fx.herbPickup"],
+      "tags": []
+    },
+    {
+      "id": "event.roof.enter",
+      "name": "Enter Roofed Area",
+      "event": {
+        "kind": "enterArea",
+        "data": {
+          "areaId": "area.house-roof"
+        }
+      },
+      "actionIds": ["action.layer.roofOpacity"],
+      "tags": []
+    }
+  ],
+  "actions": [
+    {
+      "id": "action.house.enter",
+      "name": "Enter House",
+      "action": {
+        "kind": "switchMap",
+        "data": {
+          "mapId": "map.house-interior",
+          "spawnId": "spawn.house.entry"
+        }
+      },
+      "metadata": {
+        "reversible": true,
+        "persistence": "session",
+        "undoGroupId": "logic.starter-village",
+        "historyLabel": "Enter House"
+      },
+      "tags": []
+    },
+    {
+      "id": "action.dialogue.guide",
+      "name": "Show Guide Dialogue",
+      "action": {
+        "kind": "showDialogue",
+        "data": {
+          "dialogueId": "dialogue.guide.intro"
+        }
+      },
+      "metadata": {
+        "reversible": true,
+        "persistence": "session",
+        "undoGroupId": "logic.starter-village",
+        "historyLabel": "Show Guide Dialogue"
+      },
+      "tags": []
+    },
+    {
+      "id": "action.flag.metGuide",
+      "name": "Remember Guide Met",
+      "action": {
+        "kind": "setVariable",
+        "data": {
+          "variable": {
+            "scope": {
+              "kind": "player"
+            },
+            "variableId": "flag.metGuide",
+            "quickCreate": null
+          },
+          "value": {
+            "kind": "boolean",
+            "data": {
+              "value": true
+            }
+          }
+        }
+      },
+      "metadata": {
+        "reversible": true,
+        "persistence": "persistent",
+        "undoGroupId": "logic.starter-village",
+        "historyLabel": "Remember Guide Met"
+      },
+      "tags": []
+    },
+    {
+      "id": "action.item.herbCount",
+      "name": "Set Herb Count",
+      "action": {
+        "kind": "setVariable",
+        "data": {
+          "variable": {
+            "scope": {
+              "kind": "player"
+            },
+            "variableId": "count.herbs",
+            "quickCreate": null
+          },
+          "value": {
+            "kind": "number",
+            "data": {
+              "value": 1.0
+            }
+          }
+        }
+      },
+      "metadata": {
+        "reversible": true,
+        "persistence": "persistent",
+        "undoGroupId": "logic.starter-village",
+        "historyLabel": "Set Herb Count"
+      },
+      "tags": []
+    },
+    {
+      "id": "action.fx.herbPickup",
+      "name": "Spawn Herb Pickup Sparkle",
+      "action": {
+        "kind": "spawnParticle",
+        "data": {
+          "emitterId": "effect.magic.sparkle",
+          "targetId": "entity.player"
+        }
+      },
+      "metadata": {
+        "reversible": true,
+        "persistence": "temporary",
+        "undoGroupId": "logic.starter-village",
+        "historyLabel": "Spawn Herb Pickup Sparkle"
+      },
+      "tags": []
+    },
+    {
+      "id": "action.layer.roofOpacity",
+      "name": "Fade Roof Layer",
+      "action": {
+        "kind": "setLayerOpacity",
+        "data": {
+          "mapId": "map.village",
+          "layerId": "decor",
+          "opacity": 0.25
+        }
+      },
+      "metadata": {
+        "reversible": true,
+        "persistence": "temporary",
+        "undoGroupId": "logic.starter-village",
+        "historyLabel": "Fade Roof Layer"
+      },
+      "tags": []
+    }
+  ],
+  "tags": ["starter", "no-scripts"]
+}

@@ -30,6 +30,7 @@ pub mod sprite_images;
 pub mod starter_assets;
 pub mod starter_generator;
 pub mod terrain_rules;
+pub mod trigger_actions;
 pub mod world;
 pub use animation::*;
 pub use assets::*;
@@ -61,6 +62,7 @@ pub use sprite_images::*;
 pub use starter_assets::*;
 pub use starter_generator::*;
 pub use terrain_rules::*;
+pub use trigger_actions::*;
 pub use world::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
