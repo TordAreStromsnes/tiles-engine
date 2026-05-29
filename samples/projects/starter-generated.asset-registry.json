@@ -2,6 +2,29 @@
   "schemaVersion": 0,
   "assets": [
     {
+      "id": "rule.starter.terrain-auto-tiles",
+      "name": "Starter Terrain Auto-Tile Rules",
+      "kind": "rule",
+      "source": "rules/starter-terrain.auto-tile-rules.json",
+      "tags": ["generated", "terrain", "autoTile", "starter"],
+      "sourceSchemaVersion": 0,
+      "files": [
+        { "path": "rules/starter-terrain.auto-tile-rules.json", "role": "metadata" },
+        { "path": "assets/generated/starter-terrain.png", "role": "source" },
+        { "path": "generators/starter-terrain.generator-recipe.json", "role": "generatedRecipe" }
+      ],
+      "provenance": {
+        "author": "Tiles Engine",
+        "createdWithTilesVersion": "0.1.0",
+        "generatedBy": "tiles-engine.starter.terrain.v0",
+        "generatorVersion": "0",
+        "seed": "starter-village-terrain-001",
+        "generatorRecipeId": "generator-recipe.starter-terrain.village",
+        "generatorRecipePath": "generators/starter-terrain.generator-recipe.json",
+        "generatorParametersHash": "fnv1a64:terrain"
+      }
+    },
+    {
       "id": "sprite.hero.generated-placeholder",
       "name": "Generated Placeholder Hero",
       "kind": "spriteSource",
@@ -179,6 +202,7 @@
       "files": [
         { "path": "assets/generated/starter-terrain.png", "role": "source" },
         { "path": "assets/generated/starter-terrain.metadata.json", "role": "metadata" },
+        { "path": "rules/starter-terrain.auto-tile-rules.json", "role": "metadata" },
         { "path": "generators/starter-terrain.generator-recipe.json", "role": "generatedRecipe" }
       ],
       "provenance": {
@@ -222,6 +246,7 @@
       "tags": ["generated", "terrain", "starter"],
       "files": [
         { "path": "assets/generated/starter-terrain.metadata.json", "role": "metadata" },
+        { "path": "rules/starter-terrain.auto-tile-rules.json", "role": "metadata" },
         { "path": "assets/generated/starter-terrain.png", "role": "source" },
         { "path": "generators/starter-terrain.generator-recipe.json", "role": "generatedRecipe" }
       ],

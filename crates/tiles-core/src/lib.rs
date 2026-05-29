@@ -28,6 +28,7 @@ pub mod semantic_rig;
 pub mod sprite_images;
 pub mod starter_assets;
 pub mod starter_generator;
+pub mod terrain_rules;
 pub use animation::*;
 pub use assets::*;
 pub use character_bake::*;
@@ -56,6 +57,7 @@ pub use semantic_rig::*;
 pub use sprite_images::*;
 pub use starter_assets::*;
 pub use starter_generator::*;
+pub use terrain_rules::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
