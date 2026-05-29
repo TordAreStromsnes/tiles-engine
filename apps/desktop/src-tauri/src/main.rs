@@ -1,6 +1,6 @@
 use std::{
     collections::HashSet,
-    fmt, fs,
+    fmt, fs, io,
     path::{Path, PathBuf},
     process::Command as ProcessCommand,
     time::{SystemTime, UNIX_EPOCH},
@@ -23,6 +23,9 @@ use tiles_renderer::{default_preview_scene, preview_snapshot, PreviewSnapshot};
 
 const NATIVE_PREVIEW_SIDECAR_NAME: &str = "tiles-native-preview";
 const NATIVE_PREVIEW_SIDECAR_EXTERNAL_BIN: &str = "binaries/tiles-native-preview";
+const PLAYTEST_SNAPSHOT_FILE_NAME: &str = "preview-snapshot.json";
+const PLAYTEST_LAUNCH_MARKER_FILE_NAME: &str = "launch-ok.json";
+const PLAYTEST_SUCCESSFUL_SNAPSHOT_RETAIN_COUNT: usize = 5;
 
 #[tauri::command]
 fn engine_status() -> tiles_core::EngineStatus {
@@ -1055,8 +1058,11 @@ struct PreviewLaunch {
     launched: bool,
     process_id: u32,
     command: String,
+    snapshot_root: String,
     snapshot_path: String,
     snapshot_schema_version: u32,
+    snapshot_is_temporary: bool,
+    cleaned_snapshot_count: usize,
     message: String,
 }
 
@@ -1079,16 +1085,16 @@ impl fmt::Display for PreviewLaunchError {
                 path.display()
             ),
             Self::SceneInvalid { reason } => {
-                write!(formatter, "Cannot launch native preview: scene is invalid: {reason}")
+                write!(formatter, "Cannot launch native playtest: scene is invalid: {reason}")
             }
             Self::SnapshotWriteFailed { path, reason } => write!(
                 formatter,
-                "Failed to write native preview snapshot at {}: {reason}",
+                "Failed to write native playtest snapshot at {}: {reason}",
                 path.display()
             ),
             Self::SpawnFailed { path, reason } => write!(
                 formatter,
-                "Failed to launch native preview at {}: {reason}",
+                "Failed to launch native playtest at {}: {reason}",
                 path.display()
             ),
             Self::SidecarUnavailable { name, reason } => write!(
@@ -1106,6 +1112,14 @@ impl fmt::Display for PreviewLaunchError {
 
 #[tauri::command]
 fn launch_native_preview(
+    app: tauri::AppHandle,
+    scene: SceneDocument,
+) -> Result<PreviewLaunch, String> {
+    launch_native_playtest(app, scene)
+}
+
+#[tauri::command]
+fn launch_native_playtest(
     app: tauri::AppHandle,
     scene: SceneDocument,
 ) -> Result<PreviewLaunch, String> {
@@ -1173,29 +1187,34 @@ fn launch_native_preview_from_debug_binary(
     }
 
     let snapshot = preview_snapshot_for_launch(scene_document);
-    let snapshot_path = write_preview_snapshot(workspace_root, &snapshot)?;
+    let snapshot_files = write_playtest_snapshot(&snapshot)?;
     let child = ProcessCommand::new(&binary_path)
         .current_dir(workspace_root)
         .arg("--snapshot")
-        .arg(&snapshot_path)
+        .arg(&snapshot_files.snapshot_path)
         .spawn()
         .map_err(|error| PreviewLaunchError::SpawnFailed {
             path: binary_path.clone(),
             reason: error.to_string(),
         })?;
+    let cleaned_snapshot_count =
+        mark_and_cleanup_successful_playtest_snapshot(&snapshot_files.snapshot_root);
     let command = format!(
         "{} --snapshot {}",
         binary_path.display(),
-        snapshot_path.display()
+        snapshot_files.snapshot_path.display()
     );
 
     Ok(PreviewLaunch {
         launched: true,
         process_id: child.id(),
         command,
-        snapshot_path: snapshot_path.display().to_string(),
+        snapshot_root: snapshot_files.snapshot_root.display().to_string(),
+        snapshot_path: snapshot_files.snapshot_path.display().to_string(),
         snapshot_schema_version: snapshot.schema_version,
-        message: "Native preview launched with a scene snapshot.".to_string(),
+        snapshot_is_temporary: true,
+        cleaned_snapshot_count,
+        message: "Native playtest launched with a temporary scene snapshot.".to_string(),
     })
 }
 
@@ -1205,8 +1224,8 @@ fn launch_native_preview_from_sidecar(
     scene_document: &SceneDocument,
 ) -> Result<PreviewLaunch, PreviewLaunchError> {
     let snapshot = preview_snapshot_for_launch(scene_document);
-    let snapshot_path = write_preview_snapshot(workspace_root, &snapshot)?;
-    let snapshot_arg = snapshot_path.display().to_string();
+    let snapshot_files = write_playtest_snapshot(&snapshot)?;
+    let snapshot_arg = snapshot_files.snapshot_path.display().to_string();
     let sidecar_name = native_preview_sidecar_name();
     let sidecar_command = app
         .shell()
@@ -1224,15 +1243,24 @@ fn launch_native_preview_from_sidecar(
                 name: sidecar_name.to_string(),
                 reason: error.to_string(),
             })?;
-    let command = format!("{sidecar_name} --snapshot {}", snapshot_path.display());
+    let cleaned_snapshot_count =
+        mark_and_cleanup_successful_playtest_snapshot(&snapshot_files.snapshot_root);
+    let command = format!(
+        "{sidecar_name} --snapshot {}",
+        snapshot_files.snapshot_path.display()
+    );
 
     Ok(PreviewLaunch {
         launched: true,
         process_id: child.pid(),
         command,
-        snapshot_path: snapshot_path.display().to_string(),
+        snapshot_root: snapshot_files.snapshot_root.display().to_string(),
+        snapshot_path: snapshot_files.snapshot_path.display().to_string(),
         snapshot_schema_version: snapshot.schema_version,
-        message: "Packaged native preview sidecar launched with a scene snapshot.".to_string(),
+        snapshot_is_temporary: true,
+        cleaned_snapshot_count,
+        message: "Packaged native playtest sidecar launched with a temporary scene snapshot."
+            .to_string(),
     })
 }
 
@@ -1251,11 +1279,24 @@ fn preview_snapshot_for_launch(scene_document: &SceneDocument) -> PreviewSnapsho
     snapshot
 }
 
-fn write_preview_snapshot(
-    workspace_root: &Path,
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PlaytestSnapshotFiles {
+    snapshot_root: PathBuf,
+    snapshot_path: PathBuf,
+}
+
+fn write_playtest_snapshot(
     snapshot: &PreviewSnapshot,
-) -> Result<PathBuf, PreviewLaunchError> {
-    let snapshot_path = preview_snapshot_path(workspace_root);
+) -> Result<PlaytestSnapshotFiles, PreviewLaunchError> {
+    let snapshot_root = playtest_snapshot_run_root();
+    write_playtest_snapshot_to(&snapshot_root, snapshot)
+}
+
+fn write_playtest_snapshot_to(
+    snapshot_root: &Path,
+    snapshot: &PreviewSnapshot,
+) -> Result<PlaytestSnapshotFiles, PreviewLaunchError> {
+    let snapshot_path = playtest_snapshot_path(snapshot_root);
 
     snapshot
         .validate()
@@ -1283,7 +1324,10 @@ fn write_preview_snapshot(
         reason: error.to_string(),
     })?;
 
-    Ok(snapshot_path)
+    Ok(PlaytestSnapshotFiles {
+        snapshot_root: snapshot_root.to_path_buf(),
+        snapshot_path,
+    })
 }
 
 fn workspace_root_from_manifest(manifest_dir: &Path) -> PathBuf {
@@ -1301,11 +1345,82 @@ fn native_preview_binary_path(workspace_root: &Path) -> PathBuf {
         .join(native_preview_binary_name())
 }
 
-fn preview_snapshot_path(workspace_root: &Path) -> PathBuf {
-    workspace_root
-        .join("target")
-        .join("tiles-preview")
-        .join("preview-snapshot.json")
+fn playtest_snapshot_cache_root() -> PathBuf {
+    std::env::temp_dir()
+        .join("tiles-engine")
+        .join("playtest-snapshots")
+}
+
+fn playtest_snapshot_run_root() -> PathBuf {
+    let unix_nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or(0);
+
+    playtest_snapshot_cache_root().join(format!("playtest-{unix_nanos}-{}", std::process::id()))
+}
+
+fn playtest_snapshot_path(snapshot_root: &Path) -> PathBuf {
+    snapshot_root.join(PLAYTEST_SNAPSHOT_FILE_NAME)
+}
+
+fn playtest_launch_marker_path(snapshot_root: &Path) -> PathBuf {
+    snapshot_root.join(PLAYTEST_LAUNCH_MARKER_FILE_NAME)
+}
+
+fn mark_and_cleanup_successful_playtest_snapshot(snapshot_root: &Path) -> usize {
+    let marker_path = playtest_launch_marker_path(snapshot_root);
+    let marker = format!("launchedAt={}\n", current_dev_timestamp());
+
+    if fs::write(&marker_path, marker).is_err() {
+        return 0;
+    }
+
+    cleanup_successful_playtest_snapshots(&playtest_snapshot_cache_root(), snapshot_root)
+        .unwrap_or(0)
+}
+
+fn cleanup_successful_playtest_snapshots(
+    cache_root: &Path,
+    current_snapshot_root: &Path,
+) -> Result<usize, io::Error> {
+    if !cache_root.is_dir() {
+        return Ok(0);
+    }
+
+    let mut successful_roots = fs::read_dir(cache_root)?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| path.is_dir())
+        .filter(|path| playtest_launch_marker_path(path).is_file())
+        .collect::<Vec<_>>();
+
+    successful_roots.sort_by(|left, right| {
+        right
+            .file_name()
+            .unwrap_or_default()
+            .cmp(left.file_name().unwrap_or_default())
+    });
+
+    let mut retained_successes = 0usize;
+    let mut removed_count = 0usize;
+
+    for root in successful_roots {
+        if root == current_snapshot_root {
+            retained_successes += 1;
+            continue;
+        }
+
+        if retained_successes < PLAYTEST_SUCCESSFUL_SNAPSHOT_RETAIN_COUNT {
+            retained_successes += 1;
+            continue;
+        }
+
+        fs::remove_dir_all(root)?;
+        removed_count += 1;
+    }
+
+    Ok(removed_count)
 }
 
 fn runtime_save_storage_path(workspace_root: &Path) -> PathBuf {
@@ -1552,6 +1667,7 @@ fn main() {
             list_runtime_save_slots,
             save_runtime_snapshot,
             load_runtime_snapshot,
+            launch_native_playtest,
             launch_native_preview
         ])
         .run(tauri::generate_context!())
@@ -1626,14 +1742,11 @@ mod tests {
     }
 
     #[test]
-    fn preview_snapshot_path_targets_workspace_preview_dir() {
-        let path = preview_snapshot_path(Path::new("repo"));
+    fn playtest_snapshot_cache_root_uses_system_temp_dir() {
+        let path = playtest_snapshot_cache_root();
 
-        assert!(path.ends_with(
-            Path::new("target")
-                .join("tiles-preview")
-                .join("preview-snapshot.json")
-        ));
+        assert!(path.starts_with(std::env::temp_dir()));
+        assert!(path.ends_with(Path::new("tiles-engine").join("playtest-snapshots")));
     }
 
     #[test]
@@ -2088,6 +2201,60 @@ mod tests {
         assert_eq!(snapshot.scene.grid.columns, scene.entities.len() as u32);
         assert!(json.contains("sceneBatch"));
         assert!(json.contains("editorOverlayBatch"));
+    }
+
+    #[test]
+    fn playtest_snapshot_writes_to_unique_temp_root() {
+        let snapshot_root = temp_workspace_root("playtest-snapshot-write");
+        let _ = fs::remove_dir_all(&snapshot_root);
+        let snapshot = preview_snapshot_for_launch(&tiles_core::sample_village_scene());
+
+        let written = write_playtest_snapshot_to(&snapshot_root, &snapshot)
+            .expect("playtest snapshot should write");
+        let loaded: PreviewSnapshot = serde_json::from_slice(
+            &fs::read(&written.snapshot_path).expect("snapshot file should be readable"),
+        )
+        .expect("snapshot should deserialize");
+        let _ = fs::remove_dir_all(&snapshot_root);
+
+        assert_eq!(written.snapshot_root, snapshot_root);
+        assert_eq!(
+            written
+                .snapshot_path
+                .file_name()
+                .and_then(|name| name.to_str()),
+            Some(PLAYTEST_SNAPSHOT_FILE_NAME)
+        );
+        assert_eq!(loaded.schema_version, snapshot.schema_version);
+        assert_eq!(loaded.source, snapshot.source);
+    }
+
+    #[test]
+    fn playtest_snapshot_cleanup_retains_failed_and_recent_successes() {
+        let cache_root = temp_workspace_root("playtest-snapshot-cleanup");
+        let _ = fs::remove_dir_all(&cache_root);
+        fs::create_dir_all(&cache_root).expect("cache root should be created");
+
+        for index in 0..7 {
+            let root = cache_root.join(format!("playtest-{index:02}"));
+            fs::create_dir_all(&root).expect("snapshot root should be created");
+            fs::write(playtest_launch_marker_path(&root), b"ok")
+                .expect("launch marker should be written");
+        }
+
+        let failed_root = cache_root.join("playtest-failed");
+        fs::create_dir_all(&failed_root).expect("failed snapshot root should be created");
+        let current_root = cache_root.join("playtest-06");
+        let removed = cleanup_successful_playtest_snapshots(&cache_root, &current_root)
+            .expect("cleanup should succeed");
+
+        assert_eq!(removed, 2);
+        assert!(failed_root.exists());
+        assert!(current_root.exists());
+        assert!(!cache_root.join("playtest-00").exists());
+        assert!(!cache_root.join("playtest-01").exists());
+        assert!(cache_root.join("playtest-02").exists());
+        let _ = fs::remove_dir_all(&cache_root);
     }
 
     #[test]

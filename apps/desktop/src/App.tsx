@@ -22,8 +22,11 @@ type PreviewLaunch = {
   launched: boolean;
   processId: number;
   command: string;
+  snapshotRoot: string;
   snapshotPath: string;
   snapshotSchemaVersion: number;
+  snapshotIsTemporary: boolean;
+  cleanedSnapshotCount: number;
   message: string;
 };
 
@@ -975,7 +978,7 @@ export function App() {
   const [shellState, setShellState] = useState<ShellState>("checking");
   const [previewLaunchState, setPreviewLaunchState] = useState<PreviewLaunchState>("idle");
   const [previewLaunchMessage, setPreviewLaunchMessage] = useState(
-    "Native preview launches from the desktop shell when connected.",
+    "Native playtest launches from the desktop shell when connected.",
   );
   const [activePanel, setActivePanel] = useState<(typeof panels)[number]>("Project");
   const [projectTemplates, setProjectTemplates] =
@@ -1161,18 +1164,18 @@ export function App() {
   const launchPreview = () => {
     if (shellState !== "desktop") {
       setPreviewLaunchState("error");
-      setPreviewLaunchMessage("Open the Tauri desktop shell before launching preview.");
+      setPreviewLaunchMessage("Open the Tauri desktop shell before launching playtest.");
       return;
     }
 
     setPreviewLaunchState("launching");
-    setPreviewLaunchMessage("Launching native preview window...");
+    setPreviewLaunchMessage("Launching native playtest window...");
 
-    invoke<PreviewLaunch>("launch_native_preview", { scene })
+    invoke<PreviewLaunch>("launch_native_playtest", { scene })
       .then((response) => {
         setPreviewLaunchState(response.launched ? "launched" : "error");
         setPreviewLaunchMessage(
-          `${response.message} Snapshot v${response.snapshotSchemaVersion}: ${response.snapshotPath}. Process ${response.processId}.`,
+          `${response.message} Snapshot v${response.snapshotSchemaVersion}: ${response.snapshotPath}. Process ${response.processId}. Cleaned ${response.cleanedSnapshotCount}.`,
         );
       })
       .catch((error) => {
@@ -1615,7 +1618,7 @@ export function App() {
               onClick={launchPreview}
               type="button"
             >
-              {previewLaunchState === "launching" ? "Launching..." : "Open Preview"}
+              {previewLaunchState === "launching" ? "Launching..." : "Playtest"}
             </button>
             <span className={`bridge-pill bridge-${shellState}`}>{bridgeLabel}</span>
           </div>
@@ -3462,7 +3465,7 @@ function SystemInspector({
         <dd>{status.nativeBoundary.preview}</dd>
       </div>
       <div>
-        <dt>Preview launcher</dt>
+        <dt>Playtest launcher</dt>
         <dd className={`preview-launch-message preview-launch-${previewLaunchState}`}>
           {previewLaunchMessage}
         </dd>

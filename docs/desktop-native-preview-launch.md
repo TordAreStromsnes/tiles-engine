@@ -1,13 +1,18 @@
-# Desktop Native Preview Launch
+# Desktop Native Playtest Launch
 
-Issue #17 connects the Tauri desktop shell to the sibling native preview window.
-This is a development-mode bridge only. Packaged installer behavior and embedded
-native viewport work are intentionally deferred. The packaged lookup decision is
-documented in [packaged-preview-binary-lookup.md](packaged-preview-binary-lookup.md).
+Issue #17 connected the Tauri desktop shell to the sibling native preview
+window. Issue #152 upgrades that path into the first native playtest snapshot
+launcher: React sends editor state to Rust, Rust writes a temporary snapshot
+file, and the native process loads only that file.
+
+This is still a development-mode bridge for the editor. Packaged installer
+behavior and embedded native viewport work are intentionally deferred. The
+packaged lookup decision is documented in
+[packaged-preview-binary-lookup.md](packaged-preview-binary-lookup.md).
 
 ## Command
 
-The desktop shell exposes `launch_native_preview` from
+The desktop shell exposes `launch_native_playtest` from
 `apps/desktop/src-tauri/src/main.rs`.
 
 The command:
@@ -16,15 +21,18 @@ The command:
 - Accepts and validates the current editor `SceneDocument`.
 - Looks for `target/debug/tiles-native-preview` or
   `target/debug/tiles-native-preview.exe`.
-- Writes `target/tiles-preview/preview-snapshot.json`.
+- Writes a unique temporary snapshot folder under the OS temp directory.
 - Starts the binary as a sibling desktop process with `--snapshot <path>`.
-- Returns the process id, command path, snapshot path, and a user-facing message.
+- Returns the process id, command path, snapshot root/path, cleanup count, and a
+  user-facing message.
 - Returns a clear error if the binary has not been built.
 - Returns a clear error if the snapshot cannot be validated, serialized, or
   written.
+- Leaves project files unchanged unless the user explicitly saves.
 
-The snapshot transfer contract is documented in
-[live-scene-streaming-native-preview.md](live-scene-streaming-native-preview.md).
+Successful launches are marked with `launch-ok.json`. Cleanup removes older
+successful snapshot folders while retaining unmarked folders, which are useful
+when a launch fails after snapshot creation.
 
 ## Local Development Flow
 
@@ -40,8 +48,8 @@ Run the desktop shell:
 npm run desktop:dev
 ```
 
-In the desktop app, use `Open Preview` from the toolbar. The inspector shows the
-launch result or the error returned from Rust.
+In the desktop app, use `Playtest` from the toolbar. The inspector shows the
+launch result, snapshot path, cleanup count, or the error returned from Rust.
 
 ## Deferred Work
 
