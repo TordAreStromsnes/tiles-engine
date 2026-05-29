@@ -30,6 +30,7 @@ pub enum RuntimeSystem {
     Animation,
     InteractionRules,
     MapTransitions,
+    LayerStateActions,
     AiSchedulesPlanned,
     TimeAndLightingPlanned,
     ParticlesPlanned,
@@ -47,6 +48,7 @@ pub fn native_runtime_boundary() -> NativeRuntimeBoundary {
             RuntimeSystem::Animation,
             RuntimeSystem::InteractionRules,
             RuntimeSystem::MapTransitions,
+            RuntimeSystem::LayerStateActions,
             RuntimeSystem::AiSchedulesPlanned,
             RuntimeSystem::TimeAndLightingPlanned,
             RuntimeSystem::ParticlesPlanned,
@@ -62,6 +64,8 @@ pub struct RuntimePreviewState {
     pub npcs: Vec<RuntimeNpc>,
     pub interaction_log: Vec<RuntimeInteractionEvent>,
     pub portal_transitions: Vec<RuntimePortalTransition>,
+    pub layer_states: Vec<RuntimeLayerState>,
+    pub pending_persistent_layer_changes: Vec<RuntimePersistentLayerChange>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -104,6 +108,74 @@ pub struct RuntimePortalTransition {
     pub facing: FacingDirection,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeLayerState {
+    pub map_id: String,
+    pub layer_id: String,
+    pub visible: bool,
+    pub opacity: f32,
+    pub persistence: RuntimeLayerPersistenceMode,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimePersistentLayerChange {
+    pub map_id: String,
+    pub layer_id: String,
+    pub visible: Option<bool>,
+    pub opacity: Option<f32>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RuntimeLayerPersistenceMode {
+    Temporary,
+    Session,
+    Persistent,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", content = "data", rename_all = "camelCase")]
+pub enum RuntimeLayerAction {
+    SetLayerVisibility(SetLayerVisibilityAction),
+    SetLayerOpacity(SetLayerOpacityAction),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetLayerVisibilityAction {
+    pub map_id: String,
+    pub layer_id: String,
+    pub visible: bool,
+    pub persistence: RuntimeLayerPersistenceMode,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetLayerOpacityAction {
+    pub map_id: String,
+    pub layer_id: String,
+    pub opacity: f32,
+    pub persistence: RuntimeLayerPersistenceMode,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RuntimeLayerActionKind {
+    SetLayerVisibility,
+    SetLayerOpacity,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeLayerActionResult {
+    pub action: RuntimeLayerActionKind,
+    pub previous_state: RuntimeLayerState,
+    pub state: RuntimeLayerState,
+    pub persistent_intent_recorded: bool,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeMoveDirection {
     North,
@@ -120,6 +192,13 @@ pub enum RuntimePreviewError {
     MissingPlayerSpawn,
     MissingPlayerController,
     MissingActiveMap { map_id: String },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum RuntimeLayerActionError {
+    MissingMap { map_id: String },
+    MissingLayer { map_id: String, layer_id: String },
+    InvalidOpacity { opacity: f32 },
 }
 
 impl fmt::Display for RuntimePreviewError {
@@ -142,6 +221,26 @@ impl fmt::Display for RuntimePreviewError {
 }
 
 impl Error for RuntimePreviewError {}
+
+impl fmt::Display for RuntimeLayerActionError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MissingMap { map_id } => {
+                write!(formatter, "layer action references missing map `{map_id}`")
+            }
+            Self::MissingLayer { map_id, layer_id } => write!(
+                formatter,
+                "layer action references missing layer `{layer_id}` on map `{map_id}`"
+            ),
+            Self::InvalidOpacity { opacity } => write!(
+                formatter,
+                "layer opacity {opacity} must be finite and between 0.0 and 1.0"
+            ),
+        }
+    }
+}
+
+impl Error for RuntimeLayerActionError {}
 
 pub struct RuntimePreview {
     scene: SceneDocument,
@@ -179,6 +278,8 @@ impl RuntimePreview {
             .filter_map(runtime_npc_from_entity)
             .collect();
 
+        let layer_states = initial_layer_states(&maps_by_id);
+
         Ok(Self {
             maps: maps_by_id,
             state: RuntimePreviewState {
@@ -193,6 +294,8 @@ impl RuntimePreview {
                 npcs,
                 interaction_log: Vec::new(),
                 portal_transitions: Vec::new(),
+                layer_states,
+                pending_persistent_layer_changes: Vec::new(),
             },
             scene,
         })
@@ -292,6 +395,172 @@ impl RuntimePreview {
         Some(transition)
     }
 
+    pub fn apply_layer_action(
+        &mut self,
+        action: RuntimeLayerAction,
+    ) -> Result<RuntimeLayerActionResult, RuntimeLayerActionError> {
+        match action {
+            RuntimeLayerAction::SetLayerVisibility(action) => self.set_layer_visibility(action),
+            RuntimeLayerAction::SetLayerOpacity(action) => self.set_layer_opacity(action),
+        }
+    }
+
+    pub fn reset_temporary_layer_state_changes(&mut self) {
+        let defaults = initial_layer_states(&self.maps)
+            .into_iter()
+            .map(|state| ((state.map_id.clone(), state.layer_id.clone()), state))
+            .collect::<HashMap<_, _>>();
+
+        for state in &mut self.state.layer_states {
+            if state.persistence != RuntimeLayerPersistenceMode::Temporary {
+                continue;
+            }
+
+            if let Some(default_state) =
+                defaults.get(&(state.map_id.clone(), state.layer_id.clone()))
+            {
+                *state = default_state.clone();
+            }
+        }
+    }
+
+    fn set_layer_visibility(
+        &mut self,
+        action: SetLayerVisibilityAction,
+    ) -> Result<RuntimeLayerActionResult, RuntimeLayerActionError> {
+        self.ensure_layer_exists(&action.map_id, &action.layer_id)?;
+        let state = self.layer_state_mut(&action.map_id, &action.layer_id)?;
+        let previous_state = state.clone();
+        state.visible = action.visible;
+        state.persistence = action.persistence;
+        let state = state.clone();
+        let persistent_intent_recorded =
+            if action.persistence == RuntimeLayerPersistenceMode::Persistent {
+                self.record_persistent_layer_change(
+                    &action.map_id,
+                    &action.layer_id,
+                    Some(action.visible),
+                    None,
+                );
+                true
+            } else {
+                false
+            };
+
+        Ok(RuntimeLayerActionResult {
+            action: RuntimeLayerActionKind::SetLayerVisibility,
+            previous_state,
+            state,
+            persistent_intent_recorded,
+        })
+    }
+
+    fn set_layer_opacity(
+        &mut self,
+        action: SetLayerOpacityAction,
+    ) -> Result<RuntimeLayerActionResult, RuntimeLayerActionError> {
+        if !action.opacity.is_finite() || !(0.0..=1.0).contains(&action.opacity) {
+            return Err(RuntimeLayerActionError::InvalidOpacity {
+                opacity: action.opacity,
+            });
+        }
+
+        self.ensure_layer_exists(&action.map_id, &action.layer_id)?;
+        let state = self.layer_state_mut(&action.map_id, &action.layer_id)?;
+        let previous_state = state.clone();
+        state.opacity = action.opacity;
+        state.persistence = action.persistence;
+        let state = state.clone();
+        let persistent_intent_recorded =
+            if action.persistence == RuntimeLayerPersistenceMode::Persistent {
+                self.record_persistent_layer_change(
+                    &action.map_id,
+                    &action.layer_id,
+                    None,
+                    Some(action.opacity),
+                );
+                true
+            } else {
+                false
+            };
+
+        Ok(RuntimeLayerActionResult {
+            action: RuntimeLayerActionKind::SetLayerOpacity,
+            previous_state,
+            state,
+            persistent_intent_recorded,
+        })
+    }
+
+    fn ensure_layer_exists(
+        &self,
+        map_id: &str,
+        layer_id: &str,
+    ) -> Result<(), RuntimeLayerActionError> {
+        let map = self
+            .maps
+            .get(map_id)
+            .ok_or_else(|| RuntimeLayerActionError::MissingMap {
+                map_id: map_id.to_string(),
+            })?;
+
+        if !map.layers.iter().any(|layer| layer.id == layer_id) {
+            return Err(RuntimeLayerActionError::MissingLayer {
+                map_id: map_id.to_string(),
+                layer_id: layer_id.to_string(),
+            });
+        }
+
+        Ok(())
+    }
+
+    fn layer_state_mut(
+        &mut self,
+        map_id: &str,
+        layer_id: &str,
+    ) -> Result<&mut RuntimeLayerState, RuntimeLayerActionError> {
+        self.state
+            .layer_states
+            .iter_mut()
+            .find(|state| state.map_id == map_id && state.layer_id == layer_id)
+            .ok_or_else(|| RuntimeLayerActionError::MissingLayer {
+                map_id: map_id.to_string(),
+                layer_id: layer_id.to_string(),
+            })
+    }
+
+    fn record_persistent_layer_change(
+        &mut self,
+        map_id: &str,
+        layer_id: &str,
+        visible: Option<bool>,
+        opacity: Option<f32>,
+    ) {
+        if let Some(change) = self
+            .state
+            .pending_persistent_layer_changes
+            .iter_mut()
+            .find(|change| change.map_id == map_id && change.layer_id == layer_id)
+        {
+            if visible.is_some() {
+                change.visible = visible;
+            }
+            if opacity.is_some() {
+                change.opacity = opacity;
+            }
+            return;
+        }
+
+        self.state
+            .pending_persistent_layer_changes
+            .push(RuntimePersistentLayerChange {
+                map_id: map_id.to_string(),
+                layer_id: layer_id.to_string(),
+                visible,
+                opacity,
+            });
+    }
+
     fn active_map(&self) -> Result<&TileMap, RuntimePreviewError> {
         self.maps.get(&self.state.active_map_id).ok_or_else(|| {
             RuntimePreviewError::MissingActiveMap {
@@ -315,6 +584,45 @@ impl RuntimePreview {
             .filter(|collision| collision.blocks_movement)
             .any(|collision| grid_point_in_rect(column, row, collision.rect)))
     }
+}
+
+pub fn sample_roof_entry_layer_actions() -> Vec<RuntimeLayerAction> {
+    vec![
+        RuntimeLayerAction::SetLayerOpacity(SetLayerOpacityAction {
+            map_id: "map.village".to_string(),
+            layer_id: "decor".to_string(),
+            opacity: 0.25,
+            persistence: RuntimeLayerPersistenceMode::Temporary,
+        }),
+        RuntimeLayerAction::SetLayerVisibility(SetLayerVisibilityAction {
+            map_id: "map.village".to_string(),
+            layer_id: "overlays".to_string(),
+            visible: false,
+            persistence: RuntimeLayerPersistenceMode::Session,
+        }),
+    ]
+}
+
+fn initial_layer_states(maps: &HashMap<String, TileMap>) -> Vec<RuntimeLayerState> {
+    let mut states = maps
+        .iter()
+        .flat_map(|(map_id, map)| {
+            map.layers.iter().map(|layer| RuntimeLayerState {
+                map_id: map_id.clone(),
+                layer_id: layer.id.clone(),
+                visible: layer.visible_by_default,
+                opacity: layer.opacity,
+                persistence: RuntimeLayerPersistenceMode::Session,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    states.sort_by(|left, right| {
+        left.map_id
+            .cmp(&right.map_id)
+            .then_with(|| left.layer_id.cmp(&right.layer_id))
+    });
+    states
 }
 
 fn find_player_spawn(scene: &SceneDocument) -> Option<&SceneEntity> {
@@ -497,6 +805,11 @@ mod tests {
         assert_eq!(runtime.state().active_map_id, "map.village");
         assert_eq!(runtime.state().player.position.x, 4.0);
         assert_eq!(runtime.state().npcs.len(), 1);
+        assert!(runtime
+            .state()
+            .layer_states
+            .iter()
+            .any(|state| state.map_id == "map.village" && state.layer_id == "decor"));
     }
 
     #[test]
@@ -564,5 +877,143 @@ mod tests {
         assert_eq!(runtime.state().active_map_id, "map.house-interior");
         assert_eq!(runtime.state().player.position.x, 3.0);
         assert_eq!(runtime.state().player.facing, FacingDirection::South);
+    }
+
+    #[test]
+    fn runtime_layer_action_sets_temporary_opacity_and_can_reset() {
+        let mut runtime = RuntimePreview::sample().expect("sample runtime should load");
+
+        let result = runtime
+            .apply_layer_action(RuntimeLayerAction::SetLayerOpacity(SetLayerOpacityAction {
+                map_id: "map.village".to_string(),
+                layer_id: "decor".to_string(),
+                opacity: 0.25,
+                persistence: RuntimeLayerPersistenceMode::Temporary,
+            }))
+            .expect("layer opacity action should apply");
+
+        assert_eq!(result.action, RuntimeLayerActionKind::SetLayerOpacity);
+        assert_eq!(result.previous_state.opacity, 1.0);
+        assert_eq!(result.state.opacity, 0.25);
+        assert_eq!(
+            result.state.persistence,
+            RuntimeLayerPersistenceMode::Temporary
+        );
+
+        runtime.reset_temporary_layer_state_changes();
+        let reset_state = runtime
+            .state()
+            .layer_states
+            .iter()
+            .find(|state| state.map_id == "map.village" && state.layer_id == "decor")
+            .expect("decor layer state should exist");
+
+        assert_eq!(reset_state.opacity, 1.0);
+        assert_eq!(
+            reset_state.persistence,
+            RuntimeLayerPersistenceMode::Session
+        );
+    }
+
+    #[test]
+    fn runtime_layer_action_sets_session_visibility() {
+        let mut runtime = RuntimePreview::sample().expect("sample runtime should load");
+
+        let result = runtime
+            .apply_layer_action(RuntimeLayerAction::SetLayerVisibility(
+                SetLayerVisibilityAction {
+                    map_id: "map.village".to_string(),
+                    layer_id: "overlays".to_string(),
+                    visible: false,
+                    persistence: RuntimeLayerPersistenceMode::Session,
+                },
+            ))
+            .expect("layer visibility action should apply");
+
+        assert!(result.previous_state.visible);
+        assert!(!result.state.visible);
+        assert!(!result.persistent_intent_recorded);
+        assert!(runtime.state().pending_persistent_layer_changes.is_empty());
+    }
+
+    #[test]
+    fn runtime_layer_action_records_persistent_intent() {
+        let mut runtime = RuntimePreview::sample().expect("sample runtime should load");
+
+        let result = runtime
+            .apply_layer_action(RuntimeLayerAction::SetLayerVisibility(
+                SetLayerVisibilityAction {
+                    map_id: "map.village".to_string(),
+                    layer_id: "lighting".to_string(),
+                    visible: false,
+                    persistence: RuntimeLayerPersistenceMode::Persistent,
+                },
+            ))
+            .expect("persistent layer action should apply");
+        runtime
+            .apply_layer_action(RuntimeLayerAction::SetLayerOpacity(SetLayerOpacityAction {
+                map_id: "map.village".to_string(),
+                layer_id: "lighting".to_string(),
+                opacity: 0.4,
+                persistence: RuntimeLayerPersistenceMode::Persistent,
+            }))
+            .expect("persistent opacity action should apply");
+
+        assert!(result.persistent_intent_recorded);
+        assert_eq!(runtime.state().pending_persistent_layer_changes.len(), 1);
+        assert_eq!(
+            runtime.state().pending_persistent_layer_changes[0].visible,
+            Some(false)
+        );
+        assert_eq!(
+            runtime.state().pending_persistent_layer_changes[0].opacity,
+            Some(0.4)
+        );
+    }
+
+    #[test]
+    fn sample_roof_entry_layer_actions_demonstrate_tunnel_or_roof_use() {
+        let mut runtime = RuntimePreview::sample().expect("sample runtime should load");
+
+        for action in sample_roof_entry_layer_actions() {
+            runtime
+                .apply_layer_action(action)
+                .expect("sample roof/tunnel layer action should apply");
+        }
+
+        let decor = runtime
+            .state()
+            .layer_states
+            .iter()
+            .find(|state| state.map_id == "map.village" && state.layer_id == "decor")
+            .expect("decor layer state should exist");
+        let overlays = runtime
+            .state()
+            .layer_states
+            .iter()
+            .find(|state| state.map_id == "map.village" && state.layer_id == "overlays")
+            .expect("overlay layer state should exist");
+
+        assert_eq!(decor.opacity, 0.25);
+        assert!(!overlays.visible);
+    }
+
+    #[test]
+    fn runtime_layer_action_rejects_invalid_opacity() {
+        let mut runtime = RuntimePreview::sample().expect("sample runtime should load");
+
+        let result = runtime.apply_layer_action(RuntimeLayerAction::SetLayerOpacity(
+            SetLayerOpacityAction {
+                map_id: "map.village".to_string(),
+                layer_id: "decor".to_string(),
+                opacity: 1.5,
+                persistence: RuntimeLayerPersistenceMode::Temporary,
+            },
+        ));
+
+        assert!(matches!(
+            result,
+            Err(RuntimeLayerActionError::InvalidOpacity { opacity }) if opacity == 1.5
+        ));
     }
 }
