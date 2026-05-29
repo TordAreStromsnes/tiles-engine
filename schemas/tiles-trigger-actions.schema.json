@@ -1,0 +1,797 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-trigger-actions.schema.json",
+  "title": "Tiles Engine Trigger Actions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "name", "variables", "events", "actions", "tags"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "variables": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/variableDeclaration"
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/eventDefinition"
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/actionDefinition"
+      }
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    }
+  },
+  "$defs": {
+    "variableDeclaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "scope",
+        "valueType",
+        "defaultValue",
+        "quickCreate",
+        "tags"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "$ref": "#/$defs/variableScope"
+        },
+        "valueType": {
+          "$ref": "#/$defs/variableValueType"
+        },
+        "defaultValue": {
+          "$ref": "#/$defs/variableValue"
+        },
+        "quickCreate": {
+          "$ref": "#/$defs/optionalQuickCreate"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "variableScope": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/globalScope"
+        },
+        {
+          "$ref": "#/$defs/worldScope"
+        },
+        {
+          "$ref": "#/$defs/mapScope"
+        },
+        {
+          "$ref": "#/$defs/entityScope"
+        },
+        {
+          "$ref": "#/$defs/playerScope"
+        }
+      ]
+    },
+    "globalScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "const": "global"
+        }
+      }
+    },
+    "worldScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "world"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["worldId"],
+          "properties": {
+            "worldId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "mapScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "map"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mapId"],
+          "properties": {
+            "mapId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "entityScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "entity"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entityId"],
+          "properties": {
+            "entityId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "playerScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "const": "player"
+        }
+      }
+    },
+    "variableValueType": {
+      "enum": ["boolean", "number", "text"]
+    },
+    "variableValue": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/booleanValue"
+        },
+        {
+          "$ref": "#/$defs/numberValue"
+        },
+        {
+          "$ref": "#/$defs/textValue"
+        }
+      ]
+    },
+    "booleanValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value"],
+          "properties": {
+            "value": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "numberValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "number"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value"],
+          "properties": {
+            "value": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "textValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "text"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value"],
+          "properties": {
+            "value": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "quickCreate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["suggestedName", "valueType", "defaultValue", "reason"],
+      "properties": {
+        "suggestedName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "valueType": {
+          "$ref": "#/$defs/variableValueType"
+        },
+        "defaultValue": {
+          "$ref": "#/$defs/variableValue"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "optionalQuickCreate": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/quickCreate"
+        }
+      ]
+    },
+    "variableReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "variableId", "quickCreate"],
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/variableScope"
+        },
+        "variableId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "quickCreate": {
+          "$ref": "#/$defs/optionalQuickCreate"
+        }
+      }
+    },
+    "eventDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "event", "actionIds", "tags"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "event": {
+          "$ref": "#/$defs/eventKind"
+        },
+        "actionIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "eventKind": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/interactEvent"
+        },
+        {
+          "$ref": "#/$defs/enterAreaEvent"
+        },
+        {
+          "$ref": "#/$defs/timeOfDayEvent"
+        },
+        {
+          "$ref": "#/$defs/collisionEvent"
+        },
+        {
+          "$ref": "#/$defs/stateChangeEvent"
+        }
+      ]
+    },
+    "interactEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "interact"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["triggerId"],
+          "properties": {
+            "triggerId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "enterAreaEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "enterArea"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["areaId"],
+          "properties": {
+            "areaId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "timeOfDayEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "timeOfDay"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["hour", "minute"],
+          "properties": {
+            "hour": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 23
+            },
+            "minute": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 59
+            }
+          }
+        }
+      }
+    },
+    "collisionEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "collision"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["colliderId", "targetId"],
+          "properties": {
+            "colliderId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "targetId": {
+              "$ref": "#/$defs/optionalString"
+            }
+          }
+        }
+      }
+    },
+    "stateChangeEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "stateChange"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["variable"],
+          "properties": {
+            "variable": {
+              "$ref": "#/$defs/variableReference"
+            }
+          }
+        }
+      }
+    },
+    "actionDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "action", "metadata", "tags"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "action": {
+          "$ref": "#/$defs/actionKind"
+        },
+        "metadata": {
+          "$ref": "#/$defs/actionMetadata"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "actionKind": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/switchMapAction"
+        },
+        {
+          "$ref": "#/$defs/showDialogueAction"
+        },
+        {
+          "$ref": "#/$defs/setAnimationAction"
+        },
+        {
+          "$ref": "#/$defs/spawnParticleAction"
+        },
+        {
+          "$ref": "#/$defs/setLightAction"
+        },
+        {
+          "$ref": "#/$defs/setVariableAction"
+        },
+        {
+          "$ref": "#/$defs/setLayerVisibilityAction"
+        },
+        {
+          "$ref": "#/$defs/setLayerOpacityAction"
+        }
+      ]
+    },
+    "switchMapAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "switchMap"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mapId", "spawnId"],
+          "properties": {
+            "mapId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "spawnId": {
+              "$ref": "#/$defs/optionalString"
+            }
+          }
+        }
+      }
+    },
+    "showDialogueAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "showDialogue"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dialogueId"],
+          "properties": {
+            "dialogueId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "setAnimationAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "setAnimation"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entityId", "animationId"],
+          "properties": {
+            "entityId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "animationId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "spawnParticleAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "spawnParticle"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["emitterId", "targetId"],
+          "properties": {
+            "emitterId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "targetId": {
+              "$ref": "#/$defs/optionalString"
+            }
+          }
+        }
+      }
+    },
+    "setLightAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "setLight"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lightId", "enabled", "intensity"],
+          "anyOf": [
+            {
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                }
+              }
+            },
+            {
+              "properties": {
+                "intensity": {
+                  "type": "number"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "lightId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "enabled": {
+              "$ref": "#/$defs/optionalBoolean"
+            },
+            "intensity": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "number",
+                  "minimum": 0
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "setVariableAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "setVariable"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["variable", "value"],
+          "properties": {
+            "variable": {
+              "$ref": "#/$defs/variableReference"
+            },
+            "value": {
+              "$ref": "#/$defs/variableValue"
+            }
+          }
+        }
+      }
+    },
+    "setLayerVisibilityAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "setLayerVisibility"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mapId", "layerId", "visible"],
+          "properties": {
+            "mapId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "layerId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "visible": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "setLayerOpacityAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "setLayerOpacity"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mapId", "layerId", "opacity"],
+          "properties": {
+            "mapId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "layerId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "opacity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+    "actionMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reversible", "persistence", "undoGroupId", "historyLabel"],
+      "properties": {
+        "reversible": {
+          "type": "boolean"
+        },
+        "persistence": {
+          "enum": ["temporary", "session", "persistent"]
+        },
+        "undoGroupId": {
+          "$ref": "#/$defs/optionalString"
+        },
+        "historyLabel": {
+          "$ref": "#/$defs/optionalString"
+        }
+      }
+    },
+    "optionalBoolean": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "optionalString": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}
