@@ -7,8 +7,10 @@ use tiles_core::{
     ScenePosition, SceneValidationError, TileMap, TileMapValidationError,
 };
 
+pub mod domain_actions;
 pub mod generic_interactions;
 pub mod menus;
+pub use domain_actions::*;
 pub use generic_interactions::*;
 pub use menus::*;
 
@@ -29,6 +31,7 @@ pub enum RuntimeSystem {
     Movement,
     Animation,
     InteractionRules,
+    DomainActionEvaluator,
     MapTransitions,
     LayerStateActions,
     AiSchedulesPlanned,
@@ -47,6 +50,7 @@ pub fn native_runtime_boundary() -> NativeRuntimeBoundary {
             RuntimeSystem::Movement,
             RuntimeSystem::Animation,
             RuntimeSystem::InteractionRules,
+            RuntimeSystem::DomainActionEvaluator,
             RuntimeSystem::MapTransitions,
             RuntimeSystem::LayerStateActions,
             RuntimeSystem::AiSchedulesPlanned,
@@ -64,6 +68,8 @@ pub struct RuntimePreviewState {
     pub npcs: Vec<RuntimeNpc>,
     pub interaction_log: Vec<RuntimeInteractionEvent>,
     pub portal_transitions: Vec<RuntimePortalTransition>,
+    pub dialogue_requests: Vec<RuntimeDialogueRequest>,
+    pub particle_requests: Vec<RuntimeParticleRequest>,
     pub layer_states: Vec<RuntimeLayerState>,
     pub pending_persistent_layer_changes: Vec<RuntimePersistentLayerChange>,
 }
@@ -106,6 +112,21 @@ pub struct RuntimePortalTransition {
     pub to_map_id: String,
     pub spawn: ScenePosition,
     pub facing: FacingDirection,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeDialogueRequest {
+    pub action_id: String,
+    pub dialogue_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeParticleRequest {
+    pub action_id: String,
+    pub emitter_id: String,
+    pub target_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -294,6 +315,8 @@ impl RuntimePreview {
                 npcs,
                 interaction_log: Vec::new(),
                 portal_transitions: Vec::new(),
+                dialogue_requests: Vec::new(),
+                particle_requests: Vec::new(),
                 layer_states,
                 pending_persistent_layer_changes: Vec::new(),
             },

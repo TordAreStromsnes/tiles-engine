@@ -506,6 +506,9 @@
           "$ref": "#/$defs/spawnParticleAction"
         },
         {
+          "$ref": "#/$defs/giveItemAction"
+        },
+        {
           "$ref": "#/$defs/setLightAction"
         },
         {
@@ -659,6 +662,31 @@
                   "minimum": 0
                 }
               ]
+            }
+          }
+        }
+      }
+    },
+    "giveItemAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "giveItem"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["itemId", "quantity"],
+          "properties": {
+            "itemId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "quantity": {
+              "type": "integer",
+              "minimum": 1
             }
           }
         }

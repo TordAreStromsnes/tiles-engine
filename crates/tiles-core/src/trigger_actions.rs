@@ -155,6 +155,10 @@ pub enum TriggerActionKind {
         emitter_id: String,
         target_id: Option<String>,
     },
+    GiveItem {
+        item_id: String,
+        quantity: u32,
+    },
     SetLight {
         light_id: String,
         enabled: Option<bool>,
@@ -758,6 +762,16 @@ fn validate_action_kind(
             }
             Ok(())
         }
+        TriggerActionKind::GiveItem { item_id, quantity } => {
+            require_text_action(action_id, item_id, "item id")?;
+            if *quantity == 0 {
+                return Err(TriggerActionValidationError::InvalidAction {
+                    action_id: action_id.to_string(),
+                    reason: "item quantity must be greater than zero".to_string(),
+                });
+            }
+            Ok(())
+        }
         TriggerActionKind::SetLight {
             light_id,
             enabled,
@@ -1150,6 +1164,23 @@ mod tests {
                 event_id,
                 action_id
             }) if event_id == "event.door.interact" && action_id == "action.missing"
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_invalid_give_item_quantity() {
+        let mut document = sample_trigger_action_document();
+        document.actions[0].action = TriggerActionKind::GiveItem {
+            item_id: "item.key".to_string(),
+            quantity: 0,
+        };
+
+        let result = document.validate();
+
+        assert!(matches!(
+            result,
+            Err(TriggerActionValidationError::InvalidAction { action_id, .. })
+                if action_id == "action.house.enter"
         ));
     }
 
