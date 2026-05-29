@@ -46,9 +46,22 @@ Example:
     "scenes": "scenes",
     "rules": "rules",
     "exports": "exports"
+  },
+  "template": {
+    "templateId": "template.project.top-down-adventure.starter.v0",
+    "templateVersion": 0,
+    "generatorId": "tiles-engine.project-template.top-down-adventure-starter.v0",
+    "generatedWithTilesVersion": "0.1.0",
+    "starterContent": true,
+    "movementModel": "gridFourWay",
+    "safetyBudgetProfileId": "safety.top-down-rpg.standard.v0"
   }
 }
 ```
+
+`template` is optional for older or hand-authored projects. New projects created
+through the desktop template flow include it so starter content and safety
+defaults are traceable.
 
 ## Asset Registry
 
@@ -81,7 +94,8 @@ Example:
 - Project ids and asset ids must be non-empty and stable.
 - Asset ids must be unique inside the registry.
 - Asset sources must be relative to the `.tilesproj` folder.
-- Top-down and side-scroller targets are first-class MVP targets.
+- Top-down is the first project template target.
+- Side-scroller is a future project template target.
 - Isometric and 2.5D are represented as planned targets, not MVP promises.
 
 ## Rust API

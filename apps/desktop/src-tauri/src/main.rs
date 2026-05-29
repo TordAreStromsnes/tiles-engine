@@ -9,14 +9,16 @@ use std::{
 use serde::{Deserialize, Serialize};
 use tauri_plugin_shell::ShellExt;
 use tiles_core::{
-    load_project, load_sprite_image_file_metadata, load_sprite_image_metadata,
+    create_project_from_template as create_tiles_project_from_template, load_project,
+    load_sprite_image_file_metadata, load_sprite_image_metadata, project_template_catalog,
     sample_runtime_save_snapshot, save_project, AssetFileRef, AssetFileRole, AssetKind,
     AssetLicenseMetadata, AssetLicenseStatus, AssetProvenance, AssetRegistry, AssetRegistryEntry,
-    AutoTileBrushStroke, AutoTilePaintResult, MenuSettingsDocument, RuntimeSaveSnapshot,
-    SceneDocument, SpriteImageMetadata, SpriteRegistryFrame, SpriteRegistrySource,
-    SpriteRegistrySourceType, TerrainAutoTileRuleCatalog, TileMap, PROJECT_FORMAT_VERSION,
+    AutoTileBrushStroke, AutoTilePaintResult, GeneratedStarterAssetFile, MenuSettingsDocument,
+    ProjectTemplateCreationRequest, ProjectTemplateMetadata, RuntimeSaveSnapshot, SceneDocument,
+    SpriteImageMetadata, SpriteRegistryFrame, SpriteRegistrySource, SpriteRegistrySourceType,
+    TerrainAutoTileRuleCatalog, TileMap, TilesProject, PROJECT_FORMAT_VERSION,
 };
-use tiles_core::{PixelRect, ASSETS_DIR};
+use tiles_core::{PixelRect, ASSETS_DIR, ASSET_REGISTRY_FILE, MANIFEST_FILE};
 use tiles_renderer::{default_preview_scene, preview_snapshot, PreviewSnapshot};
 
 const NATIVE_PREVIEW_SIDECAR_NAME: &str = "tiles-native-preview";
@@ -117,6 +119,52 @@ fn validate_menu_settings(document: MenuSettingsDocument) -> MenuSettingsValidat
             menu_count,
             action_count,
             setting_count,
+        },
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DesktopProjectTemplateCreateRequest {
+    project_root: String,
+    project_id: String,
+    project_name: String,
+    template_id: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DesktopProjectTemplateCreateResult {
+    ok: bool,
+    message: String,
+    project_root: String,
+    project_id: String,
+    template_id: String,
+    file_count: usize,
+    asset_count: usize,
+    created_paths: Vec<String>,
+}
+
+#[tauri::command]
+fn list_project_templates() -> Vec<ProjectTemplateMetadata> {
+    project_template_catalog()
+}
+
+#[tauri::command]
+fn create_project_from_template(
+    request: DesktopProjectTemplateCreateRequest,
+) -> DesktopProjectTemplateCreateResult {
+    match create_project_from_template_on_disk(&request) {
+        Ok(result) => result,
+        Err(message) => DesktopProjectTemplateCreateResult {
+            ok: false,
+            message,
+            project_root: request.project_root.trim().to_string(),
+            project_id: request.project_id.trim().to_string(),
+            template_id: request.template_id.trim().to_string(),
+            file_count: 0,
+            asset_count: 0,
+            created_paths: Vec::new(),
         },
     }
 }
@@ -453,6 +501,166 @@ fn persist_sprite_asset_import_to_project(
         registry_entry: Some(registry_entry),
         copied_path: Some(target_path),
     })
+}
+
+fn create_project_from_template_on_disk(
+    request: &DesktopProjectTemplateCreateRequest,
+) -> Result<DesktopProjectTemplateCreateResult, String> {
+    let project_root = project_template_root_from_value(&request.project_root)?;
+    ensure_new_project_root(&project_root)?;
+
+    let generated = create_tiles_project_from_template(&ProjectTemplateCreationRequest {
+        project_id: request.project_id.trim().to_string(),
+        project_name: request.project_name.trim().to_string(),
+        template_id: request.template_id.trim().to_string(),
+    })
+    .map_err(|error| error.to_string())?;
+
+    create_project_template_folders(&project_root, &generated.project)?;
+    let created_paths = write_project_template_files(&project_root, &generated.files)?;
+
+    Ok(DesktopProjectTemplateCreateResult {
+        ok: true,
+        message: format!(
+            "Created `{}` from `{}` with {} editable project files.",
+            generated.project.manifest.project.name,
+            generated.template.name,
+            created_paths.len()
+        ),
+        project_root: project_root.display().to_string(),
+        project_id: generated.project.manifest.project.id,
+        template_id: generated.template.id,
+        file_count: created_paths.len(),
+        asset_count: generated.project.asset_registry.assets.len(),
+        created_paths,
+    })
+}
+
+fn project_template_root_from_value(project_root: &str) -> Result<PathBuf, String> {
+    let trimmed = project_root.trim();
+    if trimmed.is_empty() {
+        Err("Project root is required before creating a local project.".to_string())
+    } else {
+        Ok(PathBuf::from(trimmed))
+    }
+}
+
+fn ensure_new_project_root(project_root: &Path) -> Result<(), String> {
+    if project_root.exists() {
+        let mut entries = fs::read_dir(project_root).map_err(|error| {
+            format!(
+                "Failed to inspect project root `{}`: {error}",
+                project_root.display()
+            )
+        })?;
+
+        if entries
+            .next()
+            .transpose()
+            .map_err(|error| {
+                format!(
+                    "Failed to inspect project root `{}`: {error}",
+                    project_root.display()
+                )
+            })?
+            .is_some()
+        {
+            return Err(format!(
+                "Project root `{}` already contains files. Choose an empty folder.",
+                project_root.display()
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+fn create_project_template_folders(
+    project_root: &Path,
+    project: &TilesProject,
+) -> Result<(), String> {
+    fs::create_dir_all(project_root).map_err(|error| {
+        format!(
+            "Failed to create project root `{}`: {error}",
+            project_root.display()
+        )
+    })?;
+
+    for folder in [
+        project.manifest.folders.assets.as_str(),
+        project.manifest.folders.maps.as_str(),
+        project.manifest.folders.scenes.as_str(),
+        project.manifest.folders.rules.as_str(),
+        project.manifest.folders.exports.as_str(),
+    ] {
+        validate_project_relative_path(folder)?;
+        let folder_path = project_root.join(folder);
+        fs::create_dir_all(&folder_path).map_err(|error| {
+            format!(
+                "Failed to create project folder `{}`: {error}",
+                folder_path.display()
+            )
+        })?;
+    }
+
+    Ok(())
+}
+
+fn write_project_template_files(
+    project_root: &Path,
+    files: &[GeneratedStarterAssetFile],
+) -> Result<Vec<String>, String> {
+    let mut created_paths = Vec::with_capacity(files.len());
+
+    for file in files {
+        validate_project_relative_path(&file.path)?;
+        let path = project_root.join(&file.path);
+
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(|error| {
+                format!(
+                    "Failed to create project file folder `{}`: {error}",
+                    parent.display()
+                )
+            })?;
+        }
+
+        fs::write(&path, &file.bytes).map_err(|error| {
+            format!("Failed to write project file `{}`: {error}", path.display())
+        })?;
+        created_paths.push(file.path.clone());
+    }
+
+    Ok(created_paths)
+}
+
+fn validate_project_relative_path(path: &str) -> Result<(), String> {
+    let path = path.trim();
+    if path.is_empty() {
+        return Err("Project template paths must not be empty.".to_string());
+    }
+
+    let path_buf = PathBuf::from(path);
+    if path_buf.is_absolute() {
+        return Err(format!(
+            "Project template path `{path}` must be relative to the project root."
+        ));
+    }
+
+    for component in path_buf.components() {
+        if matches!(
+            component,
+            std::path::Component::ParentDir
+                | std::path::Component::RootDir
+                | std::path::Component::Prefix(_)
+        ) {
+            return Err(format!(
+                "Project template path `{path}` must not escape the project root."
+            ));
+        }
+    }
+
+    Ok(())
 }
 
 fn sprite_import_project_root(request: &SpriteAssetImportRequest) -> PathBuf {
@@ -1336,6 +1544,8 @@ fn main() {
             preview_auto_tile_brush_stroke,
             sample_menu_settings,
             validate_menu_settings,
+            list_project_templates,
+            create_project_from_template,
             preview_sprite_asset_import,
             persist_sprite_asset_import,
             persist_batch_sprite_asset_import,
@@ -1548,6 +1758,94 @@ mod tests {
 
         assert!(!validation.valid);
         assert!(validation.message.contains("action"));
+    }
+
+    #[test]
+    fn project_template_catalog_exposes_top_down_choices() {
+        let templates = list_project_templates();
+
+        assert_eq!(templates.len(), 2);
+        assert!(templates.iter().any(|template| template.starter_content));
+        assert!(templates.iter().any(|template| !template.starter_content));
+        assert!(templates
+            .iter()
+            .all(|template| template.sprite_image_format == "png"));
+    }
+
+    #[test]
+    fn create_empty_project_template_writes_manifest_and_registry() {
+        let project_root = temp_workspace_root("template-empty");
+        let result = create_project_from_template(DesktopProjectTemplateCreateRequest {
+            project_root: project_root.display().to_string(),
+            project_id: "empty-template-test".to_string(),
+            project_name: "Empty Template Test".to_string(),
+            template_id: tiles_core::TOP_DOWN_ADVENTURE_EMPTY_TEMPLATE_ID.to_string(),
+        });
+        let loaded = load_project(&project_root).expect("project should load");
+        let _ = fs::remove_dir_all(&project_root);
+
+        assert!(result.ok, "{}", result.message);
+        assert_eq!(result.asset_count, 0);
+        assert!(result.created_paths.contains(&MANIFEST_FILE.to_string()));
+        assert!(result
+            .created_paths
+            .contains(&ASSET_REGISTRY_FILE.to_string()));
+        assert!(loaded.manifest.template.is_some());
+        assert_eq!(loaded.manifest.project.game_type_targets.len(), 1);
+    }
+
+    #[test]
+    fn create_starter_project_template_writes_project_local_content() {
+        let project_root = temp_workspace_root("template-starter");
+        let result = create_project_from_template(DesktopProjectTemplateCreateRequest {
+            project_root: project_root.display().to_string(),
+            project_id: "starter-template-test".to_string(),
+            project_name: "Starter Template Test".to_string(),
+            template_id: tiles_core::TOP_DOWN_ADVENTURE_STARTER_TEMPLATE_ID.to_string(),
+        });
+        let loaded = load_project(&project_root).expect("project should load");
+        let world_path = project_root
+            .join("worlds")
+            .join("top-down-starter.world.json");
+        let hero_png_path = project_root
+            .join(ASSETS_DIR)
+            .join("generated")
+            .join("placeholder-hero.png");
+
+        assert!(result.ok, "{}", result.message);
+        assert!(result.asset_count > 0);
+        assert!(result
+            .created_paths
+            .iter()
+            .any(|path| path == "worlds/top-down-starter.world.json"));
+        assert!(world_path.is_file());
+        assert!(hero_png_path.is_file());
+        assert_eq!(
+            loaded
+                .manifest
+                .template
+                .as_ref()
+                .map(|template| template.starter_content),
+            Some(true)
+        );
+        let _ = fs::remove_dir_all(&project_root);
+    }
+
+    #[test]
+    fn create_project_template_rejects_non_empty_folder() {
+        let project_root = temp_workspace_root("template-existing");
+        write_fixture(&project_root.join("keep.txt"), b"existing");
+
+        let result = create_project_from_template(DesktopProjectTemplateCreateRequest {
+            project_root: project_root.display().to_string(),
+            project_id: "existing-template-test".to_string(),
+            project_name: "Existing Template Test".to_string(),
+            template_id: tiles_core::TOP_DOWN_ADVENTURE_EMPTY_TEMPLATE_ID.to_string(),
+        });
+        let _ = fs::remove_dir_all(&project_root);
+
+        assert!(!result.ok);
+        assert!(result.message.contains("already contains files"));
     }
 
     #[test]

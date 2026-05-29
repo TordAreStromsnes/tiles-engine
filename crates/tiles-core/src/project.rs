@@ -33,6 +33,8 @@ pub struct ProjectManifest {
     pub engine_version: String,
     pub project: ProjectInfo,
     pub folders: ProjectFolders,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub template: Option<ProjectTemplateProvenance>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -51,6 +53,20 @@ pub struct ProjectFolders {
     pub scenes: String,
     pub rules: String,
     pub exports: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectTemplateProvenance {
+    pub template_id: String,
+    pub template_version: u32,
+    pub generator_id: String,
+    pub generated_with_tiles_version: String,
+    pub starter_content: bool,
+    pub movement_model: String,
+    pub safety_budget_profile_id: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub notes: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -249,6 +265,10 @@ pub enum ProjectValidationError {
     },
     EmptyProjectId,
     EmptyProjectName,
+    EmptyProjectTemplateField {
+        field: &'static str,
+    },
+    EmptyProjectTemplateNote,
     EmptyAssetId,
     DuplicateAssetId {
         id: String,
@@ -366,6 +386,12 @@ impl fmt::Display for ProjectValidationError {
             ),
             Self::EmptyProjectId => write!(formatter, "project id must not be empty"),
             Self::EmptyProjectName => write!(formatter, "project name must not be empty"),
+            Self::EmptyProjectTemplateField { field } => {
+                write!(formatter, "project template field `{field}` must not be empty")
+            }
+            Self::EmptyProjectTemplateNote => {
+                write!(formatter, "project template notes must not contain empty values")
+            }
             Self::EmptyAssetId => write!(formatter, "asset id must not be empty"),
             Self::DuplicateAssetId { id } => write!(formatter, "duplicate asset id `{id}`"),
             Self::EmptyAssetName { id } => write!(formatter, "asset `{id}` must have a name"),
@@ -518,6 +544,7 @@ impl TilesProject {
                     game_type_targets: vec![GameTypeTarget::TopDown, GameTypeTarget::SideScroller],
                 },
                 folders: ProjectFolders::default(),
+                template: None,
             },
             asset_registry: AssetRegistry {
                 schema_version: PROJECT_FORMAT_VERSION,
@@ -546,6 +573,38 @@ impl ProjectManifest {
 
         if self.project.name.trim().is_empty() {
             return Err(ProjectValidationError::EmptyProjectName);
+        }
+
+        if let Some(template) = &self.template {
+            template.validate()?;
+        }
+
+        Ok(())
+    }
+}
+
+impl ProjectTemplateProvenance {
+    pub fn validate(&self) -> Result<(), ProjectValidationError> {
+        for (field, value) in [
+            ("templateId", self.template_id.as_str()),
+            ("generatorId", self.generator_id.as_str()),
+            (
+                "generatedWithTilesVersion",
+                self.generated_with_tiles_version.as_str(),
+            ),
+            ("movementModel", self.movement_model.as_str()),
+            (
+                "safetyBudgetProfileId",
+                self.safety_budget_profile_id.as_str(),
+            ),
+        ] {
+            if value.trim().is_empty() {
+                return Err(ProjectValidationError::EmptyProjectTemplateField { field });
+            }
+        }
+
+        if self.notes.iter().any(|note| note.trim().is_empty()) {
+            return Err(ProjectValidationError::EmptyProjectTemplateNote);
         }
 
         Ok(())

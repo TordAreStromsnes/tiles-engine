@@ -352,6 +352,7 @@ h1 {
 }
 
 .asset-library-search span,
+.project-template-heading span,
 .asset-library-count span,
 .asset-library-row span,
 .asset-library-row small,
@@ -386,6 +387,21 @@ h1 {
 
 .asset-library-count strong {
   font-size: 24px;
+}
+
+.project-template-heading {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.project-template-heading strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .asset-library-groups {
@@ -475,6 +491,13 @@ h1 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.project-template-row .asset-library-row-main small {
+  overflow: visible;
+  line-height: 1.35;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .asset-license-pill {
@@ -961,6 +984,35 @@ dd {
   margin-top: 18px;
 }
 
+.project-template-inspector {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.project-template-create-button {
+  min-height: 38px;
+  padding: 8px 10px;
+  color: #18242e;
+  background: #f2c14e;
+  border: 1px solid #d3a329;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+}
+
+.project-template-create-button:hover:not(:disabled) {
+  background: #f6ce6c;
+}
+
+.project-template-create-button:disabled {
+  color: #7c8894;
+  background: #edf2f6;
+  border-color: #c7d2de;
+  cursor: not-allowed;
+}
+
 .asset-import-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -991,6 +1043,11 @@ dd {
 }
 
 .asset-import-details {
+  gap: 12px;
+  margin-top: 0;
+}
+
+.project-template-details {
   gap: 12px;
   margin-top: 0;
 }
