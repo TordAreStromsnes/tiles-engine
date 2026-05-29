@@ -12,8 +12,9 @@ use tiles_core::{
     load_project, load_sprite_image_file_metadata, load_sprite_image_metadata,
     sample_runtime_save_snapshot, save_project, AssetFileRef, AssetFileRole, AssetKind,
     AssetLicenseMetadata, AssetLicenseStatus, AssetProvenance, AssetRegistry, AssetRegistryEntry,
-    MenuSettingsDocument, RuntimeSaveSnapshot, SceneDocument, SpriteImageMetadata,
-    SpriteRegistryFrame, SpriteRegistrySource, SpriteRegistrySourceType, PROJECT_FORMAT_VERSION,
+    AutoTileBrushStroke, AutoTilePaintResult, MenuSettingsDocument, RuntimeSaveSnapshot,
+    SceneDocument, SpriteImageMetadata, SpriteRegistryFrame, SpriteRegistrySource,
+    SpriteRegistrySourceType, TerrainAutoTileRuleCatalog, TileMap, PROJECT_FORMAT_VERSION,
 };
 use tiles_core::{PixelRect, ASSETS_DIR};
 use tiles_renderer::{default_preview_scene, preview_snapshot, PreviewSnapshot};
@@ -56,6 +57,25 @@ fn validate_scene(scene: SceneDocument) -> SceneValidation {
             map_count: scene.map_ids.len(),
         },
     }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AutoTileBrushStrokePreview {
+    map: TileMap,
+    paint: AutoTilePaintResult,
+}
+
+#[tauri::command]
+fn preview_auto_tile_brush_stroke(
+    mut map: TileMap,
+    rules: TerrainAutoTileRuleCatalog,
+    stroke: AutoTileBrushStroke,
+) -> Result<AutoTileBrushStrokePreview, String> {
+    let paint = tiles_core::apply_auto_tile_brush_stroke(&mut map, &rules, &stroke)
+        .map_err(|error| error.to_string())?;
+
+    Ok(AutoTileBrushStrokePreview { map, paint })
 }
 
 #[tauri::command]
@@ -1313,6 +1333,7 @@ fn main() {
             engine_status,
             sample_scene,
             validate_scene,
+            preview_auto_tile_brush_stroke,
             sample_menu_settings,
             validate_menu_settings,
             preview_sprite_asset_import,
@@ -1475,6 +1496,36 @@ mod tests {
             .expect("desktop menu/settings sample should validate");
         assert!(document.menus.iter().any(|menu| menu.id == "menu.title"));
         assert!(document.menus.iter().any(|menu| menu.id == "menu.pause"));
+    }
+
+    #[test]
+    fn preview_auto_tile_brush_stroke_command_returns_changed_cells() {
+        let preview = preview_auto_tile_brush_stroke(
+            tiles_core::sample_village_map(),
+            tiles_core::sample_starter_terrain_auto_tile_rules(),
+            AutoTileBrushStroke {
+                layer_id: "terrain".to_string(),
+                terrain_id: "water".to_string(),
+                cells: vec![tiles_core::GridPoint { column: 1, row: 1 }],
+            },
+        )
+        .expect("auto-tile brush stroke preview should apply");
+
+        assert!(preview
+            .paint
+            .changed_cells
+            .iter()
+            .any(|cell| cell.tile_id == "water"));
+        assert!(preview
+            .paint
+            .changed_cells
+            .iter()
+            .any(|cell| cell.tile_id == "grass.edge.water.north"));
+        assert!(preview
+            .map
+            .placements
+            .iter()
+            .any(|placement| placement.id.starts_with("autotile.terrain.")));
     }
 
     #[test]
