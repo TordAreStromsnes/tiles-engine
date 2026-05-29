@@ -1,0 +1,255 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-terrain-auto-tile-rules.schema.json",
+  "title": "Tiles Terrain Auto-Tile Rule Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "tileSetAssetId",
+    "terrains",
+    "rules",
+    "manualOverrideReserved"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tileSetAssetId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Asset registry id of the tile set this rule catalog applies to."
+    },
+    "terrains": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/terrain"
+      }
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    },
+    "manualOverrideReserved": {
+      "type": "boolean",
+      "description": "Reserved flag for future hand-painted override behavior."
+    }
+  },
+  "$defs": {
+    "terrain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "compatibleTerrainIds"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "compatibleTerrainIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "terrainId",
+        "variantKind",
+        "tileId",
+        "priority",
+        "neighbors",
+        "transitions"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "terrainId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "variantKind": {
+          "enum": ["center", "edge", "corner", "innerCorner", "transition"]
+        },
+        "tileId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "neighbors": {
+          "$ref": "#/$defs/neighborMask"
+        },
+        "transitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/transition"
+          }
+        }
+      }
+    },
+    "neighborMask": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "north": {
+          "$ref": "#/$defs/neighborRequirement"
+        },
+        "east": {
+          "$ref": "#/$defs/neighborRequirement"
+        },
+        "south": {
+          "$ref": "#/$defs/neighborRequirement"
+        },
+        "west": {
+          "$ref": "#/$defs/neighborRequirement"
+        },
+        "diagonals": {
+          "$ref": "#/$defs/diagonalNeighborMask"
+        }
+      }
+    },
+    "diagonalNeighborMask": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "northEast": {
+          "$ref": "#/$defs/neighborRequirement"
+        },
+        "southEast": {
+          "$ref": "#/$defs/neighborRequirement"
+        },
+        "southWest": {
+          "$ref": "#/$defs/neighborRequirement"
+        },
+        "northWest": {
+          "$ref": "#/$defs/neighborRequirement"
+        }
+      }
+    },
+    "neighborRequirement": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": {
+              "const": "any"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": {
+              "const": "same"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "terrainId"],
+          "properties": {
+            "kind": {
+              "const": "terrain"
+            },
+            "terrainId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "terrainIds"],
+          "properties": {
+            "kind": {
+              "const": "oneOf"
+            },
+            "terrainIds": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "terrainIds"],
+          "properties": {
+            "kind": {
+              "const": "not"
+            },
+            "terrainIds": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["toTerrainId", "tileId", "weight"],
+      "properties": {
+        "toTerrainId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tileId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "weight": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

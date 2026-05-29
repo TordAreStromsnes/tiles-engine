@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 0,
+  "id": "terrain-rules.starter-terrain",
+  "name": "Starter Terrain Auto-Tile Rules",
+  "tileSetAssetId": "tileset.starter.terrain",
+  "terrains": [
+    {
+      "id": "grass",
+      "name": "Grass",
+      "compatibleTerrainIds": ["dirt", "path", "water"]
+    },
+    {
+      "id": "dirt",
+      "name": "Dirt",
+      "compatibleTerrainIds": ["grass", "path"]
+    },
+    {
+      "id": "path",
+      "name": "Path",
+      "compatibleTerrainIds": ["grass", "dirt"]
+    },
+    {
+      "id": "water",
+      "name": "Water",
+      "compatibleTerrainIds": ["grass"]
+    },
+    {
+      "id": "stone",
+      "name": "Stone",
+      "compatibleTerrainIds": ["grass", "dirt"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.grass.center",
+      "terrainId": "grass",
+      "variantKind": "center",
+      "tileId": "grass",
+      "priority": 10,
+      "neighbors": {
+        "north": { "kind": "same" },
+        "east": { "kind": "same" },
+        "south": { "kind": "same" },
+        "west": { "kind": "same" }
+      },
+      "transitions": []
+    },
+    {
+      "id": "rule.grass.water-north",
+      "terrainId": "grass",
+      "variantKind": "edge",
+      "tileId": "grass.edge.water.north",
+      "priority": 90,
+      "neighbors": {
+        "north": { "kind": "terrain", "terrainId": "water" },
+        "east": { "kind": "same" },
+        "south": { "kind": "same" },
+        "west": { "kind": "same" }
+      },
+      "transitions": [
+        {
+          "toTerrainId": "water",
+          "tileId": "grass.edge.water.north",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "rule.grass.path-east",
+      "terrainId": "grass",
+      "variantKind": "transition",
+      "tileId": "grass.transition.path.east",
+      "priority": 80,
+      "neighbors": {
+        "north": { "kind": "same" },
+        "east": { "kind": "terrain", "terrainId": "path" },
+        "south": { "kind": "same" },
+        "west": { "kind": "same" }
+      },
+      "transitions": [
+        {
+          "toTerrainId": "path",
+          "tileId": "grass.transition.path.east",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "rule.grass.water-north-east-corner",
+      "terrainId": "grass",
+      "variantKind": "corner",
+      "tileId": "grass.corner.water.north-east",
+      "priority": 100,
+      "neighbors": {
+        "north": { "kind": "terrain", "terrainId": "water" },
+        "east": { "kind": "terrain", "terrainId": "water" },
+        "south": { "kind": "same" },
+        "west": { "kind": "same" },
+        "diagonals": {
+          "northEast": { "kind": "terrain", "terrainId": "water" }
+        }
+      },
+      "transitions": [
+        {
+          "toTerrainId": "water",
+          "tileId": "grass.corner.water.north-east",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "rule.path.center",
+      "terrainId": "path",
+      "variantKind": "center",
+      "tileId": "path",
+      "priority": 10,
+      "neighbors": {},
+      "transitions": []
+    }
+  ],
+  "manualOverrideReserved": true
+}

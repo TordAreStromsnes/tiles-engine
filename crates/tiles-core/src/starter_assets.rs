@@ -13,6 +13,7 @@ use crate::{
         sample_placeholder_character_generator_recipe, sample_starter_terrain_generator_recipe,
         StarterGeneratorPaletteSlot, StarterGeneratorRecipe,
     },
+    terrain_rules::sample_starter_terrain_auto_tile_rules,
     PixelRect,
 };
 
@@ -211,6 +212,7 @@ fn add_terrain_assets(
 ) -> Result<(), StarterAssetGenerationError> {
     let png_path = "assets/generated/starter-terrain.png";
     let metadata_path = "assets/generated/starter-terrain.metadata.json";
+    let rules_path = "rules/starter-terrain.auto-tile-rules.json";
     let tile_size = recipe.tile_size;
     let roles = [
         TerrainTileRole::grass(),
@@ -250,6 +252,11 @@ fn add_terrain_assets(
     let metadata_hash = metadata_file.content_hash.clone();
     files.push(metadata_file);
 
+    let rule_catalog = sample_starter_terrain_auto_tile_rules();
+    let rule_file = json_file(rules_path, AssetFileRole::Metadata, &rule_catalog)?;
+    let rule_hash = rule_file.content_hash.clone();
+    files.push(rule_file);
+
     let provenance = provenance_for_recipe(recipe, recipe_path);
     let mut source_entry = AssetRegistryEntry::new(
         "sprite.starter.terrain-source",
@@ -270,6 +277,7 @@ fn add_terrain_assets(
             AssetFileRole::Metadata,
             Some(metadata_hash.clone()),
         ),
+        file_ref(rules_path, AssetFileRole::Metadata, Some(rule_hash.clone())),
         file_ref(recipe_path, AssetFileRole::GeneratedRecipe, None),
     ];
     source_entry.provenance = Some(provenance.clone());
@@ -317,14 +325,41 @@ fn add_terrain_assets(
     );
     tileset_entry.content_hash = Some(metadata_hash.clone());
     tileset_entry.files = vec![
-        file_ref(metadata_path, AssetFileRole::Metadata, Some(metadata_hash)),
+        file_ref(
+            metadata_path,
+            AssetFileRole::Metadata,
+            Some(metadata_hash.clone()),
+        ),
+        file_ref(rules_path, AssetFileRole::Metadata, Some(rule_hash.clone())),
+        file_ref(png_path, AssetFileRole::Source, Some(png_hash.clone())),
+        file_ref(recipe_path, AssetFileRole::GeneratedRecipe, None),
+    ];
+    tileset_entry.provenance = Some(provenance.clone());
+
+    let mut rule_entry = AssetRegistryEntry::new(
+        "rule.starter.terrain-auto-tiles",
+        "Starter Terrain Auto-Tile Rules",
+        AssetKind::Rule,
+        rules_path,
+        vec![
+            "generated".to_string(),
+            "terrain".to_string(),
+            "autoTile".to_string(),
+            "starter".to_string(),
+        ],
+    );
+    rule_entry.source_schema_version = Some(rule_catalog.schema_version);
+    rule_entry.content_hash = Some(rule_hash.clone());
+    rule_entry.files = vec![
+        file_ref(rules_path, AssetFileRole::Metadata, Some(rule_hash)),
         file_ref(png_path, AssetFileRole::Source, Some(png_hash)),
         file_ref(recipe_path, AssetFileRole::GeneratedRecipe, None),
     ];
-    tileset_entry.provenance = Some(provenance);
+    rule_entry.provenance = Some(provenance);
 
     project.asset_registry.assets.push(source_entry);
     project.asset_registry.assets.push(tileset_entry);
+    project.asset_registry.assets.push(rule_entry);
     Ok(())
 }
 
@@ -1018,6 +1053,16 @@ mod tests {
             .files
             .iter()
             .any(|file| file.path == "assets/generated/placeholder-hero.metadata.json"));
+        assert!(generated
+            .project
+            .asset_registry
+            .assets
+            .iter()
+            .any(|entry| entry.id == "rule.starter.terrain-auto-tiles"));
+        assert!(generated
+            .files
+            .iter()
+            .any(|file| file.path == "rules/starter-terrain.auto-tile-rules.json"));
     }
 
     #[test]
@@ -1067,6 +1112,29 @@ mod tests {
     }
 
     #[test]
+    fn starter_asset_generator_attaches_auto_tile_rule_metadata() {
+        let generated = generate_starter_asset_set(&sample_starter_asset_generation_request())
+            .expect("starter asset set should generate");
+        let rules = rule_file(&generated, "rules/starter-terrain.auto-tile-rules.json");
+        let terrain_tileset = generated
+            .project
+            .asset_registry
+            .assets
+            .iter()
+            .find(|entry| entry.id == "tileset.starter.terrain")
+            .expect("terrain tileset should exist");
+
+        rules
+            .validate()
+            .expect("generated auto-tile rules should validate");
+        assert_eq!(rules.tile_set_asset_id, "tileset.starter.terrain");
+        assert!(terrain_tileset
+            .files
+            .iter()
+            .any(|file| file.path == "rules/starter-terrain.auto-tile-rules.json"));
+    }
+
+    #[test]
     fn sample_generated_asset_registry_fixture_validates() {
         let registry: crate::project::AssetRegistry = serde_json::from_str(include_str!(
             "../../../samples/projects/starter-generated.asset-registry.json"
@@ -1089,5 +1157,18 @@ mod tests {
             .expect("metadata file should exist");
 
         serde_json::from_slice(&file.bytes).expect("metadata should deserialize")
+    }
+
+    fn rule_file(
+        generated: &GeneratedStarterAssetSet,
+        path: &str,
+    ) -> crate::terrain_rules::TerrainAutoTileRuleCatalog {
+        let file = generated
+            .files
+            .iter()
+            .find(|file| file.path == path)
+            .expect("rule file should exist");
+
+        serde_json::from_slice(&file.bytes).expect("rule metadata should deserialize")
     }
 }
