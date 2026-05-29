@@ -1,0 +1,236 @@
+{
+  "schemaVersion": 0,
+  "id": "components.starter-environment",
+  "name": "Starter Environment Components",
+  "bindings": [
+    {
+      "ownerId": "sprite.wooden-crate",
+      "ownerKind": "asset",
+      "components": [
+        {
+          "reference": {
+            "kind": "engine",
+            "data": {
+              "componentId": "flammable"
+            }
+          },
+          "properties": {
+            "kind": "flammable",
+            "data": {
+              "burnedVariantAssetId": "sprite.wooden-crate.burned"
+            }
+          },
+          "tags": []
+        }
+      ],
+      "tags": ["fire"]
+    },
+    {
+      "ownerId": "effect.water-splash",
+      "ownerKind": "asset",
+      "components": [
+        {
+          "reference": {
+            "kind": "engine",
+            "data": {
+              "componentId": "extinguisher"
+            }
+          },
+          "properties": {
+            "kind": "extinguisher",
+            "data": {
+              "medium": "water",
+              "strengthPercent": 100
+            }
+          },
+          "tags": []
+        }
+      ],
+      "tags": ["water"]
+    },
+    {
+      "ownerId": "entity.street-lamp",
+      "ownerKind": "entity",
+      "components": [
+        {
+          "reference": {
+            "kind": "engine",
+            "data": {
+              "componentId": "lightEmitter"
+            }
+          },
+          "properties": {
+            "kind": "lightEmitter",
+            "data": {
+              "lightId": "light.street-lamp",
+              "intensityPercent": 80,
+              "radiusTiles": 5
+            }
+          },
+          "tags": []
+        },
+        {
+          "reference": {
+            "kind": "engine",
+            "data": {
+              "componentId": "interactable"
+            }
+          },
+          "properties": {
+            "kind": "interactable",
+            "data": {
+              "triggerId": "trigger.street-lamp",
+              "eventId": "event.street-lamp.toggle"
+            }
+          },
+          "tags": []
+        }
+      ],
+      "tags": ["lighting", "interaction"]
+    },
+    {
+      "ownerId": "sprite.stone-wall",
+      "ownerKind": "asset",
+      "components": [
+        {
+          "reference": {
+            "kind": "engine",
+            "data": {
+              "componentId": "lightOccluder"
+            }
+          },
+          "properties": {
+            "kind": "lightOccluder",
+            "data": {
+              "opacityPercent": 100
+            }
+          },
+          "tags": []
+        }
+      ],
+      "tags": ["lighting"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule.curated.fire.ignite-flammable",
+      "name": "Ignite Flammable",
+      "description": "Fire contact turns flammable targets into burning targets.",
+      "trigger": {
+        "kind": "contact",
+        "data": {
+          "sourceComponent": {
+            "kind": "engine",
+            "data": {
+              "componentId": "burning"
+            }
+          },
+          "targetComponent": {
+            "kind": "engine",
+            "data": {
+              "componentId": "flammable"
+            }
+          }
+        }
+      },
+      "requiredTargetComponents": [
+        {
+          "kind": "engine",
+          "data": {
+            "componentId": "flammable"
+          }
+        }
+      ],
+      "blockedTargetComponents": [
+        {
+          "kind": "engine",
+          "data": {
+            "componentId": "burning"
+          }
+        }
+      ],
+      "outcomes": [
+        {
+          "kind": "addComponent",
+          "data": {
+            "component": {
+              "reference": {
+                "kind": "engine",
+                "data": {
+                  "componentId": "burning"
+                }
+              },
+              "properties": {
+                "kind": "burning",
+                "data": {
+                  "flameEmitterId": "effect.fire.flame",
+                  "burnedVariantAssetId": "sprite.wooden-crate.burned"
+                }
+              },
+              "tags": []
+            }
+          }
+        },
+        {
+          "kind": "spawnParticle",
+          "data": {
+            "emitterId": "effect.fire.flame"
+          }
+        }
+      ],
+      "tags": ["fire", "state-change"]
+    },
+    {
+      "id": "rule.curated.water.extinguish-burning",
+      "name": "Extinguish Burning",
+      "description": "Water extinguisher contact removes burning and spawns smoke.",
+      "trigger": {
+        "kind": "contact",
+        "data": {
+          "sourceComponent": {
+            "kind": "engine",
+            "data": {
+              "componentId": "extinguisher"
+            }
+          },
+          "targetComponent": {
+            "kind": "engine",
+            "data": {
+              "componentId": "burning"
+            }
+          }
+        }
+      },
+      "requiredTargetComponents": [
+        {
+          "kind": "engine",
+          "data": {
+            "componentId": "burning"
+          }
+        }
+      ],
+      "blockedTargetComponents": [],
+      "outcomes": [
+        {
+          "kind": "removeComponent",
+          "data": {
+            "component": {
+              "kind": "engine",
+              "data": {
+                "componentId": "burning"
+              }
+            }
+          }
+        },
+        {
+          "kind": "spawnParticle",
+          "data": {
+            "emitterId": "effect.smoke.puff"
+          }
+        }
+      ],
+      "tags": ["water", "state-change"]
+    }
+  ],
+  "tags": ["starter", "curated-mvp"]
+}

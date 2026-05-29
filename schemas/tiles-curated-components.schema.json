@@ -1,0 +1,677 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-curated-components.schema.json",
+  "title": "Tiles Engine Curated Components And Rules",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "name", "bindings", "rules", "tags"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bindings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/binding"
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    }
+  },
+  "$defs": {
+    "engineComponentId": {
+      "enum": [
+        "flammable",
+        "burning",
+        "extinguisher",
+        "lightEmitter",
+        "lightOccluder",
+        "interactable",
+        "inventoryItem",
+        "transitionTrigger",
+        "damageOnContact"
+      ]
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ownerId", "ownerKind", "components", "tags"],
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ownerKind": {
+          "enum": ["asset", "entity", "tile", "ruleOutput"]
+        },
+        "components": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/componentInstance"
+          }
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "componentInstance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "properties", "tags"],
+      "properties": {
+        "reference": {
+          "$ref": "#/$defs/componentReference"
+        },
+        "properties": {
+          "$ref": "#/$defs/componentProperties"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "componentReference": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/engineReference"
+        },
+        {
+          "$ref": "#/$defs/futureCustomReference"
+        }
+      ]
+    },
+    "engineReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "engine"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["componentId"],
+          "properties": {
+            "componentId": {
+              "$ref": "#/$defs/engineComponentId"
+            }
+          }
+        }
+      }
+    },
+    "futureCustomReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "futureCustom"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["customComponentId"],
+          "properties": {
+            "customComponentId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "componentProperties": {
+      "oneOf": [
+        { "$ref": "#/$defs/flammableProperties" },
+        { "$ref": "#/$defs/burningProperties" },
+        { "$ref": "#/$defs/extinguisherProperties" },
+        { "$ref": "#/$defs/lightEmitterProperties" },
+        { "$ref": "#/$defs/lightOccluderProperties" },
+        { "$ref": "#/$defs/interactableProperties" },
+        { "$ref": "#/$defs/inventoryItemProperties" },
+        { "$ref": "#/$defs/transitionTriggerProperties" },
+        { "$ref": "#/$defs/damageOnContactProperties" },
+        { "$ref": "#/$defs/futureCustomProperties" }
+      ]
+    },
+    "flammableProperties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "flammable"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["burnedVariantAssetId"],
+          "properties": {
+            "burnedVariantAssetId": {
+              "$ref": "#/$defs/optionalString"
+            }
+          }
+        }
+      }
+    },
+    "burningProperties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "burning"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["flameEmitterId", "burnedVariantAssetId"],
+          "properties": {
+            "flameEmitterId": {
+              "$ref": "#/$defs/optionalString"
+            },
+            "burnedVariantAssetId": {
+              "$ref": "#/$defs/optionalString"
+            }
+          }
+        }
+      }
+    },
+    "extinguisherProperties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "extinguisher"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["medium", "strengthPercent"],
+          "properties": {
+            "medium": {
+              "type": "string",
+              "minLength": 1
+            },
+            "strengthPercent": {
+              "$ref": "#/$defs/percent"
+            }
+          }
+        }
+      }
+    },
+    "lightEmitterProperties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "lightEmitter"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lightId", "intensityPercent", "radiusTiles"],
+          "properties": {
+            "lightId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "intensityPercent": {
+              "$ref": "#/$defs/percent"
+            },
+            "radiusTiles": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "lightOccluderProperties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "lightOccluder"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["opacityPercent"],
+          "properties": {
+            "opacityPercent": {
+              "$ref": "#/$defs/percent"
+            }
+          }
+        }
+      }
+    },
+    "interactableProperties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "interactable"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["triggerId", "eventId"],
+          "properties": {
+            "triggerId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "eventId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "inventoryItemProperties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "inventoryItem"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["itemId", "quantity"],
+          "properties": {
+            "itemId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "quantity": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "transitionTriggerProperties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "transitionTrigger"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["targetMapId", "spawnId"],
+          "properties": {
+            "targetMapId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "spawnId": {
+              "$ref": "#/$defs/optionalString"
+            }
+          }
+        }
+      }
+    },
+    "damageOnContactProperties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "damageOnContact"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["damagePerSecond"],
+          "properties": {
+            "damagePerSecond": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "futureCustomProperties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "futureCustom"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["payloadSchemaId"],
+          "properties": {
+            "payloadSchemaId": {
+              "$ref": "#/$defs/optionalString"
+            }
+          }
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "description",
+        "trigger",
+        "requiredTargetComponents",
+        "blockedTargetComponents",
+        "outcomes",
+        "tags"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trigger": {
+          "$ref": "#/$defs/ruleTrigger"
+        },
+        "requiredTargetComponents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/componentReference"
+          },
+          "uniqueItems": true
+        },
+        "blockedTargetComponents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/componentReference"
+          },
+          "uniqueItems": true
+        },
+        "outcomes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/ruleOutcome"
+          }
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "ruleTrigger": {
+      "oneOf": [
+        { "$ref": "#/$defs/contactTrigger" },
+        { "$ref": "#/$defs/interactionTrigger" },
+        { "$ref": "#/$defs/timeElapsedTrigger" }
+      ]
+    },
+    "contactTrigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "contact"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sourceComponent", "targetComponent"],
+          "properties": {
+            "sourceComponent": {
+              "$ref": "#/$defs/componentReference"
+            },
+            "targetComponent": {
+              "$ref": "#/$defs/componentReference"
+            }
+          }
+        }
+      }
+    },
+    "interactionTrigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "interaction"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["component"],
+          "properties": {
+            "component": {
+              "$ref": "#/$defs/componentReference"
+            }
+          }
+        }
+      }
+    },
+    "timeElapsedTrigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "timeElapsed"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["component", "seconds"],
+          "properties": {
+            "component": {
+              "$ref": "#/$defs/componentReference"
+            },
+            "seconds": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "ruleOutcome": {
+      "oneOf": [
+        { "$ref": "#/$defs/addComponentOutcome" },
+        { "$ref": "#/$defs/removeComponentOutcome" },
+        { "$ref": "#/$defs/assetVariantOutcome" },
+        { "$ref": "#/$defs/spawnParticleOutcome" },
+        { "$ref": "#/$defs/setLightOutcome" },
+        { "$ref": "#/$defs/damageOutcome" }
+      ]
+    },
+    "addComponentOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "addComponent"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["component"],
+          "properties": {
+            "component": {
+              "$ref": "#/$defs/componentInstance"
+            }
+          }
+        }
+      }
+    },
+    "removeComponentOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "removeComponent"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["component"],
+          "properties": {
+            "component": {
+              "$ref": "#/$defs/componentReference"
+            }
+          }
+        }
+      }
+    },
+    "assetVariantOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "assetVariant"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["variantAssetId"],
+          "properties": {
+            "variantAssetId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "spawnParticleOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "spawnParticle"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["emitterId"],
+          "properties": {
+            "emitterId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "setLightOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "setLight"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["lightId", "enabled"],
+          "properties": {
+            "lightId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "enabled": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "damageOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "damage"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["amount"],
+          "properties": {
+            "amount": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "optionalString": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}
