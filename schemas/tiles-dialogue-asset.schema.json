@@ -1,0 +1,431 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tiles-engine.dev/schemas/tiles-dialogue-asset.schema.json",
+  "title": "Tiles Engine Dialogue Asset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "name", "startNodeId", "nodes", "tags"],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 0
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "startNodeId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    }
+  },
+  "$defs": {
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "speaker",
+        "pages",
+        "choices",
+        "nextNodeId",
+        "actionIds",
+        "tags"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "speaker": {
+          "$ref": "#/$defs/optionalSpeaker"
+        },
+        "pages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/page"
+          }
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/choice"
+          }
+        },
+        "nextNodeId": {
+          "$ref": "#/$defs/optionalString"
+        },
+        "actionIds": {
+          "$ref": "#/$defs/actionIds"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "optionalSpeaker": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/speaker"
+        }
+      ]
+    },
+    "speaker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entityId", "displayName"],
+      "properties": {
+        "entityId": {
+          "$ref": "#/$defs/optionalString"
+        },
+        "displayName": {
+          "$ref": "#/$defs/optionalString"
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "actionIds", "tags"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actionIds": {
+          "$ref": "#/$defs/actionIds"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "choice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text", "targetNodeId", "conditions", "actionIds", "tags"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetNodeId": {
+          "$ref": "#/$defs/optionalString"
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/condition"
+          }
+        },
+        "actionIds": {
+          "$ref": "#/$defs/actionIds"
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["variable", "operator", "value"],
+      "properties": {
+        "variable": {
+          "$ref": "#/$defs/variableReference"
+        },
+        "operator": {
+          "enum": [
+            "equals",
+            "notEquals",
+            "greaterThan",
+            "greaterOrEqual",
+            "lessThan",
+            "lessOrEqual"
+          ]
+        },
+        "value": {
+          "$ref": "#/$defs/variableValue"
+        }
+      }
+    },
+    "variableReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "variableId", "quickCreate"],
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/variableScope"
+        },
+        "variableId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "quickCreate": {
+          "$ref": "#/$defs/optionalQuickCreate"
+        }
+      }
+    },
+    "variableScope": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/globalScope"
+        },
+        {
+          "$ref": "#/$defs/worldScope"
+        },
+        {
+          "$ref": "#/$defs/mapScope"
+        },
+        {
+          "$ref": "#/$defs/entityScope"
+        },
+        {
+          "$ref": "#/$defs/playerScope"
+        }
+      ]
+    },
+    "globalScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "const": "global"
+        }
+      }
+    },
+    "worldScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "world"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["worldId"],
+          "properties": {
+            "worldId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "mapScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "map"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mapId"],
+          "properties": {
+            "mapId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "entityScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "entity"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["entityId"],
+          "properties": {
+            "entityId": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "playerScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "const": "player"
+        }
+      }
+    },
+    "variableValueType": {
+      "enum": ["boolean", "number", "text"]
+    },
+    "variableValue": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/booleanValue"
+        },
+        {
+          "$ref": "#/$defs/numberValue"
+        },
+        {
+          "$ref": "#/$defs/textValue"
+        }
+      ]
+    },
+    "booleanValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value"],
+          "properties": {
+            "value": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "numberValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "number"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value"],
+          "properties": {
+            "value": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "textValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "data"],
+      "properties": {
+        "kind": {
+          "const": "text"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value"],
+          "properties": {
+            "value": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "quickCreate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["suggestedName", "valueType", "defaultValue", "reason"],
+      "properties": {
+        "suggestedName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "valueType": {
+          "$ref": "#/$defs/variableValueType"
+        },
+        "defaultValue": {
+          "$ref": "#/$defs/variableValue"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "optionalQuickCreate": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/quickCreate"
+        }
+      ]
+    },
+    "actionIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "optionalString": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}
