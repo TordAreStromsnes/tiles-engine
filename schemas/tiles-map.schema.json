@@ -98,7 +98,35 @@
     "layer": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "name", "kind", "zIndex", "visibleByDefault"],
+      "required": [
+        "id",
+        "name",
+        "role",
+        "order",
+        "visibleByDefault",
+        "lockedByDefault",
+        "opacity",
+        "metadata"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "role": {
+                "const": "custom"
+              }
+            },
+            "required": ["role"]
+          },
+          "then": {
+            "properties": {
+              "metadata": {
+                "required": ["customRoleId"]
+              }
+            }
+          }
+        }
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -109,15 +137,69 @@
           "type": "string",
           "minLength": 1
         },
-        "kind": {
+        "role": {
           "type": "string",
-          "enum": ["terrain", "object", "collision", "region", "overlay"]
+          "enum": [
+            "ground",
+            "decor",
+            "collision",
+            "objects",
+            "triggers",
+            "lighting",
+            "overlay",
+            "custom"
+          ]
         },
-        "zIndex": {
+        "order": {
           "type": "integer"
         },
         "visibleByDefault": {
           "type": "boolean"
+        },
+        "lockedByDefault": {
+          "type": "boolean"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "metadata": {
+          "$ref": "#/$defs/layerMetadata"
+        }
+      }
+    },
+    "layerMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "customRoleId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "$ref": "#/$defs/tags"
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/layerProperty"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "layerProperty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "value"],
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": "string"
         }
       }
     },

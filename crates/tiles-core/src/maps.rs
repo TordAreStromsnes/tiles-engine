@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 pub const TILE_MAP_SCHEMA_VERSION: u32 = 0;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TileMap {
     pub schema_version: u32,
@@ -32,24 +32,59 @@ pub struct CellSize {
     pub height: u32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MapLayer {
     pub id: String,
     pub name: String,
-    pub kind: MapLayerKind,
-    pub z_index: i32,
+    #[serde(alias = "kind")]
+    pub role: MapLayerRole,
+    #[serde(alias = "zIndex")]
+    pub order: i32,
     pub visible_by_default: bool,
+    pub locked_by_default: bool,
+    pub opacity: f32,
+    pub metadata: MapLayerMetadata,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MapLayerRole {
+    #[serde(alias = "terrain")]
+    Ground,
+    Decor,
+    Collision,
+    #[serde(alias = "object")]
+    Objects,
+    #[serde(alias = "region")]
+    Triggers,
+    Lighting,
+    Overlay,
+    Custom,
+}
+
+impl MapLayerRole {
+    pub fn is_paintable_terrain(self) -> bool {
+        self == Self::Ground
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MapLayerMetadata {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_role_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub properties: Vec<MapLayerProperty>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub enum MapLayerKind {
-    Terrain,
-    Object,
-    Collision,
-    Region,
-    Overlay,
+pub struct MapLayerProperty {
+    pub key: String,
+    pub value: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -138,6 +173,26 @@ pub enum TileMapValidationError {
     EmptyLayerName {
         id: String,
     },
+    InvalidLayerOpacity {
+        id: String,
+    },
+    MissingCustomLayerRoleId {
+        id: String,
+    },
+    EmptyLayerMetadataTag {
+        id: String,
+    },
+    DuplicateLayerMetadataTag {
+        id: String,
+        tag: String,
+    },
+    EmptyLayerMetadataPropertyKey {
+        id: String,
+    },
+    DuplicateLayerMetadataPropertyKey {
+        id: String,
+        key: String,
+    },
     EmptyPlacementId,
     DuplicatePlacementId {
         id: String,
@@ -205,6 +260,29 @@ impl fmt::Display for TileMapValidationError {
             Self::EmptyLayerId => write!(formatter, "layer id must not be empty"),
             Self::DuplicateLayerId { id } => write!(formatter, "duplicate layer id `{id}`"),
             Self::EmptyLayerName { id } => write!(formatter, "layer `{id}` must have a name"),
+            Self::InvalidLayerOpacity { id } => {
+                write!(
+                    formatter,
+                    "layer `{id}` opacity must be between 0.0 and 1.0"
+                )
+            }
+            Self::MissingCustomLayerRoleId { id } => write!(
+                formatter,
+                "custom layer `{id}` must set metadata.customRoleId"
+            ),
+            Self::EmptyLayerMetadataTag { id } => {
+                write!(formatter, "layer `{id}` has an empty metadata tag")
+            }
+            Self::DuplicateLayerMetadataTag { id, tag } => {
+                write!(formatter, "layer `{id}` has duplicate metadata tag `{tag}`")
+            }
+            Self::EmptyLayerMetadataPropertyKey { id } => {
+                write!(formatter, "layer `{id}` has an empty metadata property key")
+            }
+            Self::DuplicateLayerMetadataPropertyKey { id, key } => write!(
+                formatter,
+                "layer `{id}` has duplicate metadata property key `{key}`"
+            ),
             Self::EmptyPlacementId => write!(formatter, "placement id must not be empty"),
             Self::DuplicatePlacementId { id } => write!(formatter, "duplicate placement id `{id}`"),
             Self::EmptyPlacementAssetId { id } => {
@@ -405,9 +483,65 @@ fn validate_layers(layers: &[MapLayer]) -> Result<HashSet<&str>, TileMapValidati
                 id: layer.id.clone(),
             });
         }
+
+        if !layer.opacity.is_finite() || !(0.0..=1.0).contains(&layer.opacity) {
+            return Err(TileMapValidationError::InvalidLayerOpacity {
+                id: layer.id.clone(),
+            });
+        }
+
+        if layer.role == MapLayerRole::Custom
+            && layer
+                .metadata
+                .custom_role_id
+                .as_ref()
+                .is_none_or(|role_id| role_id.trim().is_empty())
+        {
+            return Err(TileMapValidationError::MissingCustomLayerRoleId {
+                id: layer.id.clone(),
+            });
+        }
+
+        validate_layer_metadata(layer)?;
     }
 
     Ok(layer_ids)
+}
+
+fn validate_layer_metadata(layer: &MapLayer) -> Result<(), TileMapValidationError> {
+    let mut tags = HashSet::new();
+    for tag in &layer.metadata.tags {
+        if tag.trim().is_empty() {
+            return Err(TileMapValidationError::EmptyLayerMetadataTag {
+                id: layer.id.clone(),
+            });
+        }
+
+        if !tags.insert(tag.as_str()) {
+            return Err(TileMapValidationError::DuplicateLayerMetadataTag {
+                id: layer.id.clone(),
+                tag: tag.clone(),
+            });
+        }
+    }
+
+    let mut property_keys = HashSet::new();
+    for property in &layer.metadata.properties {
+        if property.key.trim().is_empty() {
+            return Err(TileMapValidationError::EmptyLayerMetadataPropertyKey {
+                id: layer.id.clone(),
+            });
+        }
+
+        if !property_keys.insert(property.key.as_str()) {
+            return Err(TileMapValidationError::DuplicateLayerMetadataPropertyKey {
+                id: layer.id.clone(),
+                key: property.key.clone(),
+            });
+        }
+    }
+
+    Ok(())
 }
 
 fn validate_placements(
@@ -570,28 +704,100 @@ fn rect_in_bounds(origin: GridPoint, size: GridSize, grid: TileGrid) -> bool {
 
 fn starter_layers() -> Vec<MapLayer> {
     vec![
-        MapLayer {
-            id: "terrain".to_string(),
-            name: "Terrain".to_string(),
-            kind: MapLayerKind::Terrain,
-            z_index: 0,
-            visible_by_default: true,
-        },
-        MapLayer {
-            id: "objects".to_string(),
-            name: "Objects".to_string(),
-            kind: MapLayerKind::Object,
-            z_index: 10,
-            visible_by_default: true,
-        },
-        MapLayer {
-            id: "overlays".to_string(),
-            name: "Overlays".to_string(),
-            kind: MapLayerKind::Overlay,
-            z_index: 20,
-            visible_by_default: true,
-        },
+        layer(
+            "terrain",
+            "Ground",
+            MapLayerRole::Ground,
+            0,
+            true,
+            false,
+            1.0,
+        ),
+        layer("decor", "Decor", MapLayerRole::Decor, 10, true, false, 1.0),
+        layer(
+            "objects",
+            "Objects",
+            MapLayerRole::Objects,
+            20,
+            true,
+            false,
+            1.0,
+        ),
+        layer(
+            "collision",
+            "Collision",
+            MapLayerRole::Collision,
+            30,
+            false,
+            true,
+            0.35,
+        ),
+        layer(
+            "triggers",
+            "Triggers",
+            MapLayerRole::Triggers,
+            40,
+            true,
+            false,
+            0.5,
+        ),
+        layer(
+            "lighting",
+            "Lighting",
+            MapLayerRole::Lighting,
+            50,
+            true,
+            false,
+            1.0,
+        ),
+        layer(
+            "overlays",
+            "Overlays",
+            MapLayerRole::Overlay,
+            60,
+            true,
+            false,
+            1.0,
+        ),
     ]
+}
+
+fn layer(
+    id: &str,
+    name: &str,
+    role: MapLayerRole,
+    order: i32,
+    visible_by_default: bool,
+    locked_by_default: bool,
+    opacity: f32,
+) -> MapLayer {
+    MapLayer {
+        id: id.to_string(),
+        name: name.to_string(),
+        role,
+        order,
+        visible_by_default,
+        locked_by_default,
+        opacity,
+        metadata: MapLayerMetadata {
+            custom_role_id: None,
+            tags: vec![role_tag(role).to_string()],
+            properties: Vec::new(),
+        },
+    }
+}
+
+fn role_tag(role: MapLayerRole) -> &'static str {
+    match role {
+        MapLayerRole::Ground => "ground",
+        MapLayerRole::Decor => "decor",
+        MapLayerRole::Collision => "collision",
+        MapLayerRole::Objects => "objects",
+        MapLayerRole::Triggers => "triggers",
+        MapLayerRole::Lighting => "lighting",
+        MapLayerRole::Overlay => "overlay",
+        MapLayerRole::Custom => "custom",
+    }
 }
 
 fn placement(
@@ -641,6 +847,16 @@ mod tests {
         assert_eq!(interior.grid.cell_size.width, 24);
         assert_eq!(village.portals[0].target.map_id, interior.id);
         assert_eq!(interior.portals[0].target.map_id, village.id);
+        assert!(village.layers.iter().any(|layer| {
+            layer.role == MapLayerRole::Ground
+                && layer.visible_by_default
+                && !layer.locked_by_default
+                && layer.opacity == 1.0
+        }));
+        assert!(village
+            .layers
+            .iter()
+            .any(|layer| layer.role == MapLayerRole::Lighting));
     }
 
     #[test]
@@ -672,6 +888,41 @@ mod tests {
                 placement_id,
                 layer_id
             }) if placement_id == "tile.grass.0" && layer_id == "missing"
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_invalid_layer_opacity() {
+        let mut map = sample_village_map();
+        map.layers[0].opacity = 1.25;
+
+        let result = map.validate();
+
+        assert!(matches!(
+            result,
+            Err(TileMapValidationError::InvalidLayerOpacity { id }) if id == "terrain"
+        ));
+    }
+
+    #[test]
+    fn validation_rejects_custom_layer_without_role_id() {
+        let mut map = sample_village_map();
+        map.layers.push(MapLayer {
+            id: "weather".to_string(),
+            name: "Weather".to_string(),
+            role: MapLayerRole::Custom,
+            order: 70,
+            visible_by_default: true,
+            locked_by_default: false,
+            opacity: 0.75,
+            metadata: MapLayerMetadata::default(),
+        });
+
+        let result = map.validate();
+
+        assert!(matches!(
+            result,
+            Err(TileMapValidationError::MissingCustomLayerRoleId { id }) if id == "weather"
         ));
     }
 
