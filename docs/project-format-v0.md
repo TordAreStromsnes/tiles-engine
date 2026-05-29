@@ -61,7 +61,8 @@ Example:
 
 `template` is optional for older or hand-authored projects. New projects created
 through the desktop template flow include it so starter content and safety
-defaults are traceable.
+defaults are traceable. `safetyBudgetProfileId` points to a profile from
+[runtime-safety-budget-schema-v0.md](runtime-safety-budget-schema-v0.md).
 
 ## Asset Registry
 
