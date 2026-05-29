@@ -281,6 +281,37 @@ pub fn sample_player_torch_light_source() -> AttachedLightSourceDefinition {
     }
 }
 
+pub fn sample_player_flashlight_light_source() -> AttachedLightSourceDefinition {
+    AttachedLightSourceDefinition {
+        schema_version: ATTACHED_LIGHT_SOURCE_SCHEMA_VERSION,
+        id: "light.player-flashlight".to_string(),
+        name: "Player Flashlight Light".to_string(),
+        target: LightAttachmentTarget::AttachmentPoint {
+            entity_id: "entity.player".to_string(),
+            attachment_point_id: "hand.right".to_string(),
+        },
+        color: LightColor {
+            red: 0.78,
+            green: 0.9,
+            blue: 1.0,
+        },
+        intensity: 1.6,
+        radius: 7.5,
+        falloff: LightFalloff::Smooth,
+        direction: LightDirection::Cone {
+            cone_angle_degrees: 35.0,
+            facing_offset_degrees: 0.0,
+        },
+        follow_position: true,
+        follow_facing: true,
+        enabled: true,
+        tags: vec![
+            "material.lightEmitter".to_string(),
+            "tool.flashlight".to_string(),
+        ],
+    }
+}
+
 fn validate_target(
     id: &str,
     target: &LightAttachmentTarget,
@@ -444,6 +475,17 @@ mod tests {
     }
 
     #[test]
+    fn sample_player_flashlight_light_source_validates() {
+        let light = sample_player_flashlight_light_source();
+
+        light
+            .validate()
+            .expect("player flashlight light source should validate");
+        assert_eq!(light.id, "light.player-flashlight");
+        assert!(matches!(light.direction, LightDirection::Cone { .. }));
+    }
+
+    #[test]
     fn map_position_and_region_targets_validate() {
         let mut light = sample_street_lamp_light_source();
         light.target = LightAttachmentTarget::MapPosition {
@@ -483,6 +525,7 @@ mod tests {
         for light in [
             include_str!("../../../samples/lights/street-lamp.light.json"),
             include_str!("../../../samples/lights/player-torch.light.json"),
+            include_str!("../../../samples/lights/player-flashlight.light.json"),
         ] {
             let light: AttachedLightSourceDefinition =
                 serde_json::from_str(light).expect("light source sample should deserialize");

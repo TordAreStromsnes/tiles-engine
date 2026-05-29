@@ -1,0 +1,90 @@
+{
+  "ambient": {
+    "color": {
+      "red": 1.0,
+      "green": 1.0,
+      "blue": 1.0
+    },
+    "mode": {
+      "kind": "dayNight",
+      "data": {
+        "timeOfDayHours": 21.0,
+        "nightIntensity": 0.12,
+        "dayIntensity": 0.65
+      }
+    }
+  },
+  "lights": [
+    {
+      "lightId": "light.street-lamp",
+      "position": {
+        "x": 4.0,
+        "y": 4.0,
+        "z": 1.8
+      },
+      "directionDegrees": null,
+      "coneAngleDegrees": null,
+      "color": {
+        "red": 1.0,
+        "green": 0.82,
+        "blue": 0.55
+      },
+      "intensity": 1.25,
+      "radius": 6.0,
+      "falloff": "smooth",
+      "enabled": true
+    },
+    {
+      "lightId": "light.player-flashlight",
+      "position": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+      },
+      "directionDegrees": 0.0,
+      "coneAngleDegrees": 35.0,
+      "color": {
+        "red": 0.78,
+        "green": 0.9,
+        "blue": 1.0
+      },
+      "intensity": 1.6,
+      "radius": 7.5,
+      "falloff": "smooth",
+      "enabled": true
+    }
+  ],
+  "occluders": [
+    {
+      "id": "occluder.stone-wall",
+      "shape": {
+        "kind": "rect",
+        "data": {
+          "center": {
+            "x": 6.0,
+            "y": 4.0,
+            "z": 0.0
+          },
+          "width": 0.5,
+          "height": 3.0
+        }
+      },
+      "opacity": 0.8
+    },
+    {
+      "id": "occluder.round-column",
+      "shape": {
+        "kind": "circle",
+        "data": {
+          "center": {
+            "x": 3.0,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "radius": 0.45
+        }
+      },
+      "opacity": 0.75
+    }
+  ]
+}

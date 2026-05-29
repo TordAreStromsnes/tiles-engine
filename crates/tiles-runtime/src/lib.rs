@@ -9,9 +9,11 @@ use tiles_core::{
 
 pub mod domain_actions;
 pub mod generic_interactions;
+pub mod lighting_queries;
 pub mod menus;
 pub use domain_actions::*;
 pub use generic_interactions::*;
+pub use lighting_queries::*;
 pub use menus::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -32,6 +34,7 @@ pub enum RuntimeSystem {
     Animation,
     InteractionRules,
     DomainActionEvaluator,
+    LightingQueries,
     MapTransitions,
     LayerStateActions,
     AiSchedulesPlanned,
@@ -51,6 +54,7 @@ pub fn native_runtime_boundary() -> NativeRuntimeBoundary {
             RuntimeSystem::Animation,
             RuntimeSystem::InteractionRules,
             RuntimeSystem::DomainActionEvaluator,
+            RuntimeSystem::LightingQueries,
             RuntimeSystem::MapTransitions,
             RuntimeSystem::LayerStateActions,
             RuntimeSystem::AiSchedulesPlanned,

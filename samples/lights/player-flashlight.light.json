@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 0,
+  "id": "light.player-flashlight",
+  "name": "Player Flashlight Light",
+  "target": {
+    "kind": "attachmentPoint",
+    "data": {
+      "entityId": "entity.player",
+      "attachmentPointId": "hand.right"
+    }
+  },
+  "color": {
+    "red": 0.78,
+    "green": 0.9,
+    "blue": 1.0
+  },
+  "intensity": 1.6,
+  "radius": 7.5,
+  "falloff": "smooth",
+  "direction": {
+    "kind": "cone",
+    "data": {
+      "coneAngleDegrees": 35.0,
+      "facingOffsetDegrees": 0.0
+    }
+  },
+  "followPosition": true,
+  "followFacing": true,
+  "enabled": true,
+  "tags": ["material.lightEmitter", "tool.flashlight"]
+}
