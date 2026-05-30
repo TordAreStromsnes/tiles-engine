@@ -19,12 +19,18 @@ The command:
 
 - Resolves the repo root from the Tauri manifest directory.
 - Accepts and validates the current editor `SceneDocument`.
+- Builds the native preview snapshot and validates it against the standard
+  runtime safety budget before launch.
+- Blocks hard errors with severity-coded diagnostics and allows warning-only
+  diagnostics to launch.
 - Looks for `target/debug/tiles-native-preview` or
   `target/debug/tiles-native-preview.exe`.
 - Writes a unique temporary snapshot folder under the OS temp directory.
 - Starts the binary as a sibling desktop process with `--snapshot <path>`.
 - Returns the process id, command path, snapshot root/path, cleanup count, and a
-  user-facing message.
+  user-facing message with the validation report.
+- Returns `launched: false` with diagnostics when validation blocks launch,
+  leaving snapshot paths empty because no process was started.
 - Returns a clear error if the binary has not been built.
 - Returns a clear error if the snapshot cannot be validated, serialized, or
   written.
