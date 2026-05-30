@@ -27,7 +27,27 @@ type PreviewLaunch = {
   snapshotSchemaVersion: number;
   snapshotIsTemporary: boolean;
   cleanedSnapshotCount: number;
+  validation: PlaytestValidationReport;
   message: string;
+};
+
+type PlaytestDiagnosticSeverity = "error" | "warning";
+
+type PlaytestValidationDiagnostic = {
+  severity: PlaytestDiagnosticSeverity;
+  code: string;
+  message: string;
+  field?: string;
+  actual?: number;
+  limit?: number;
+};
+
+type PlaytestValidationReport = {
+  launchAllowed: boolean;
+  safetyBudgetProfileId: string;
+  errorCount: number;
+  warningCount: number;
+  diagnostics: PlaytestValidationDiagnostic[];
 };
 
 type SaveSlotMetadata = {
@@ -1174,8 +1194,15 @@ export function App() {
     invoke<PreviewLaunch>("launch_native_playtest", { scene })
       .then((response) => {
         setPreviewLaunchState(response.launched ? "launched" : "error");
+        const diagnosticSummary =
+          response.validation.errorCount > 0 || response.validation.warningCount > 0
+            ? ` Diagnostics: ${response.validation.errorCount} error(s), ${response.validation.warningCount} warning(s). ${response.validation.diagnostics[0]?.message ?? ""}`
+            : " Diagnostics: clean.";
+        const launchDetails = response.launched
+          ? ` Snapshot v${response.snapshotSchemaVersion}: ${response.snapshotPath}. Process ${response.processId}. Cleaned ${response.cleanedSnapshotCount}.`
+          : "";
         setPreviewLaunchMessage(
-          `${response.message} Snapshot v${response.snapshotSchemaVersion}: ${response.snapshotPath}. Process ${response.processId}. Cleaned ${response.cleanedSnapshotCount}.`,
+          `${response.message}${launchDetails}${diagnosticSummary}`,
         );
       })
       .catch((error) => {

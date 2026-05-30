@@ -11,10 +11,12 @@ use tauri_plugin_shell::ShellExt;
 use tiles_core::{
     create_project_from_template as create_tiles_project_from_template, load_project,
     load_sprite_image_file_metadata, load_sprite_image_metadata, project_template_catalog,
-    sample_runtime_save_snapshot, save_project, AssetFileRef, AssetFileRole, AssetKind,
-    AssetLicenseMetadata, AssetLicenseStatus, AssetProvenance, AssetRegistry, AssetRegistryEntry,
-    AutoTileBrushStroke, AutoTilePaintResult, GeneratedStarterAssetFile, MenuSettingsDocument,
-    ProjectTemplateCreationRequest, ProjectTemplateMetadata, RuntimeSaveSnapshot, SceneDocument,
+    sample_runtime_save_snapshot, save_project, standard_runtime_safety_budget_profile,
+    validate_playtest_snapshot, AssetFileRef, AssetFileRole, AssetKind, AssetLicenseMetadata,
+    AssetLicenseStatus, AssetProvenance, AssetRegistry, AssetRegistryEntry, AutoTileBrushStroke,
+    AutoTilePaintResult, GeneratedStarterAssetFile, MenuSettingsDocument,
+    PlaytestSnapshotDiagnostic, PlaytestSnapshotValidationReport, ProjectTemplateCreationRequest,
+    ProjectTemplateMetadata, RuntimeSafetyBudgetUsage, RuntimeSaveSnapshot, SceneDocument,
     SpriteImageMetadata, SpriteRegistryFrame, SpriteRegistrySource, SpriteRegistrySourceType,
     TerrainAutoTileRuleCatalog, TileMap, TilesProject, PROJECT_FORMAT_VERSION,
 };
@@ -1063,13 +1065,13 @@ struct PreviewLaunch {
     snapshot_schema_version: u32,
     snapshot_is_temporary: bool,
     cleaned_snapshot_count: usize,
+    validation: PlaytestSnapshotValidationReport,
     message: String,
 }
 
 #[derive(Debug)]
 enum PreviewLaunchError {
     BinaryUnavailable { path: PathBuf },
-    SceneInvalid { reason: String },
     SnapshotWriteFailed { path: PathBuf, reason: String },
     SpawnFailed { path: PathBuf, reason: String },
     SidecarUnavailable { name: String, reason: String },
@@ -1084,9 +1086,6 @@ impl fmt::Display for PreviewLaunchError {
                 "Native preview binary was not found at {}. Build it with `cargo build -p tiles-native-preview` before launching from the desktop shell.",
                 path.display()
             ),
-            Self::SceneInvalid { reason } => {
-                write!(formatter, "Cannot launch native playtest: scene is invalid: {reason}")
-            }
             Self::SnapshotWriteFailed { path, reason } => write!(
                 formatter,
                 "Failed to write native playtest snapshot at {}: {reason}",
@@ -1125,12 +1124,14 @@ fn launch_native_playtest(
 ) -> Result<PreviewLaunch, String> {
     let workspace_root = workspace_root_from_manifest(Path::new(env!("CARGO_MANIFEST_DIR")));
 
-    scene.validate().map_err(|error| {
-        PreviewLaunchError::SceneInvalid {
-            reason: error.to_string(),
-        }
-        .to_string()
-    })?;
+    if let Err(error) = scene.validate() {
+        let validation = blocked_scene_validation_report(error.to_string());
+        return Ok(blocked_preview_launch(
+            None,
+            validation,
+            "Native playtest blocked by scene validation diagnostics.",
+        ));
+    }
 
     launch_native_preview_from(
         Some(&app),
@@ -1187,6 +1188,15 @@ fn launch_native_preview_from_debug_binary(
     }
 
     let snapshot = preview_snapshot_for_launch(scene_document);
+    let validation = validate_playtest_snapshot_for_launch(&snapshot);
+    if !validation.launch_allowed {
+        return Ok(blocked_preview_launch(
+            Some(&snapshot),
+            validation,
+            "Native playtest blocked by snapshot validation diagnostics.",
+        ));
+    }
+
     let snapshot_files = write_playtest_snapshot(&snapshot)?;
     let child = ProcessCommand::new(&binary_path)
         .current_dir(workspace_root)
@@ -1214,6 +1224,7 @@ fn launch_native_preview_from_debug_binary(
         snapshot_schema_version: snapshot.schema_version,
         snapshot_is_temporary: true,
         cleaned_snapshot_count,
+        validation,
         message: "Native playtest launched with a temporary scene snapshot.".to_string(),
     })
 }
@@ -1224,6 +1235,15 @@ fn launch_native_preview_from_sidecar(
     scene_document: &SceneDocument,
 ) -> Result<PreviewLaunch, PreviewLaunchError> {
     let snapshot = preview_snapshot_for_launch(scene_document);
+    let validation = validate_playtest_snapshot_for_launch(&snapshot);
+    if !validation.launch_allowed {
+        return Ok(blocked_preview_launch(
+            Some(&snapshot),
+            validation,
+            "Native playtest sidecar blocked by snapshot validation diagnostics.",
+        ));
+    }
+
     let snapshot_files = write_playtest_snapshot(&snapshot)?;
     let snapshot_arg = snapshot_files.snapshot_path.display().to_string();
     let sidecar_name = native_preview_sidecar_name();
@@ -1259,9 +1279,58 @@ fn launch_native_preview_from_sidecar(
         snapshot_schema_version: snapshot.schema_version,
         snapshot_is_temporary: true,
         cleaned_snapshot_count,
+        validation,
         message: "Packaged native playtest sidecar launched with a temporary scene snapshot."
             .to_string(),
     })
+}
+
+fn validate_playtest_snapshot_for_launch(
+    snapshot: &PreviewSnapshot,
+) -> PlaytestSnapshotValidationReport {
+    let profile = standard_runtime_safety_budget_profile();
+    validate_playtest_snapshot(snapshot, &profile)
+}
+
+fn blocked_scene_validation_report(reason: String) -> PlaytestSnapshotValidationReport {
+    let profile = standard_runtime_safety_budget_profile();
+    let usage = RuntimeSafetyBudgetUsage::default();
+    let budget_check = profile.check_usage(&usage);
+    let diagnostics = vec![PlaytestSnapshotDiagnostic::error(
+        "sceneInvalid",
+        format!("Scene document is invalid: {reason}"),
+    )];
+
+    PlaytestSnapshotValidationReport {
+        launch_allowed: false,
+        safety_budget_profile_id: profile.id,
+        error_count: diagnostics.len(),
+        warning_count: 0,
+        usage,
+        budget_check,
+        diagnostics,
+    }
+}
+
+fn blocked_preview_launch(
+    snapshot: Option<&PreviewSnapshot>,
+    validation: PlaytestSnapshotValidationReport,
+    message: impl Into<String>,
+) -> PreviewLaunch {
+    PreviewLaunch {
+        launched: false,
+        process_id: 0,
+        command: String::new(),
+        snapshot_root: String::new(),
+        snapshot_path: String::new(),
+        snapshot_schema_version: snapshot
+            .map(|snapshot| snapshot.schema_version)
+            .unwrap_or(0),
+        snapshot_is_temporary: false,
+        cleaned_snapshot_count: 0,
+        validation,
+        message: message.into(),
+    }
 }
 
 fn preview_snapshot_for_launch(scene_document: &SceneDocument) -> PreviewSnapshot {
