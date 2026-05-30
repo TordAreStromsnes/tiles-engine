@@ -972,6 +972,80 @@ dd {
   color: #9b2525;
 }
 
+.diagnostic-list,
+.guidance-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.diagnostic,
+.guidance-list li {
+  display: grid;
+  gap: 3px;
+  padding: 8px 0;
+  border-top: 1px solid #e0e7ee;
+}
+
+.diagnostic:first-child,
+.guidance-list li:first-child {
+  border-top: 0;
+}
+
+.diagnostic strong,
+.guidance-list strong {
+  color: #18242e;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.diagnostic span,
+.guidance-list span {
+  color: #2d3b47;
+}
+
+.diagnostic small,
+.guidance-list small {
+  color: #657687;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.diagnostic-error strong {
+  color: #9b2525;
+}
+
+.diagnostic-warning strong {
+  color: #99620c;
+}
+
+.diagnostic-clean strong {
+  color: #0d663a;
+}
+
+.budget-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin-top: 0;
+}
+
+.budget-grid div {
+  min-width: 0;
+}
+
+.budget-grid dt {
+  font-size: 11px;
+}
+
+.budget-grid dd {
+  margin-top: 1px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
 .save-inspector {
   display: grid;
   gap: 14px;

@@ -42,12 +42,44 @@ type PlaytestValidationDiagnostic = {
   limit?: number;
 };
 
+type RuntimeSafetyBudgetUsage = {
+  textureDimensionPx: number;
+  atlasDimensionPx: number;
+  mapCells: number;
+  entitiesPerMap: number;
+  activeParticles: number;
+  memoryEstimateMb: number;
+  lightEmitters: number;
+  ruleEvaluationsPerTick: number;
+};
+
+type RuntimeSafetyBudgetViolation = {
+  field: string;
+  actual: number;
+  limit: number;
+};
+
+type RuntimeSafetyBudgetCheck = {
+  profileId: string;
+  withinBudget: boolean;
+  violations: RuntimeSafetyBudgetViolation[];
+};
+
 type PlaytestValidationReport = {
   launchAllowed: boolean;
   safetyBudgetProfileId: string;
   errorCount: number;
   warningCount: number;
+  usage: RuntimeSafetyBudgetUsage;
+  budgetCheck: RuntimeSafetyBudgetCheck;
   diagnostics: PlaytestValidationDiagnostic[];
+};
+
+type CreatorGuidance = {
+  id: string;
+  title: string;
+  body: string;
+  target?: string;
 };
 
 type SaveSlotMetadata = {
@@ -509,6 +541,31 @@ type ShellState = "checking" | "desktop" | "web" | "bridge-error";
 type PreviewLaunchState = "idle" | "launching" | "launched" | "error";
 type SaveWorkflowState = "idle" | "refreshing" | "saving" | "loading" | "saved" | "loaded" | "error";
 type ProjectTemplateWorkflowState = "idle" | "creating" | "created" | "error";
+
+const emptyRuntimeSafetyBudgetUsage: RuntimeSafetyBudgetUsage = {
+  textureDimensionPx: 0,
+  atlasDimensionPx: 0,
+  mapCells: 0,
+  entitiesPerMap: 0,
+  activeParticles: 0,
+  memoryEstimateMb: 0,
+  lightEmitters: 0,
+  ruleEvaluationsPerTick: 0,
+};
+
+const fallbackPlaytestValidation: PlaytestValidationReport = {
+  launchAllowed: true,
+  safetyBudgetProfileId: "safety.top-down-rpg.standard.v0",
+  errorCount: 0,
+  warningCount: 0,
+  usage: emptyRuntimeSafetyBudgetUsage,
+  budgetCheck: {
+    profileId: "safety.top-down-rpg.standard.v0",
+    withinBudget: true,
+    violations: [],
+  },
+  diagnostics: [],
+};
 
 const fallbackScene: SceneDocument = {
   schemaVersion: 0,
@@ -1000,6 +1057,8 @@ export function App() {
   const [previewLaunchMessage, setPreviewLaunchMessage] = useState(
     "Native playtest launches from the desktop shell when connected.",
   );
+  const [previewValidation, setPreviewValidation] =
+    useState<PlaytestValidationReport>(fallbackPlaytestValidation);
   const [activePanel, setActivePanel] = useState<(typeof panels)[number]>("Project");
   const [projectTemplates, setProjectTemplates] =
     useState<ProjectTemplateMetadata[]>(fallbackProjectTemplates);
@@ -1185,6 +1244,7 @@ export function App() {
     if (shellState !== "desktop") {
       setPreviewLaunchState("error");
       setPreviewLaunchMessage("Open the Tauri desktop shell before launching playtest.");
+      setPreviewValidation(fallbackPlaytestValidation);
       return;
     }
 
@@ -1194,6 +1254,7 @@ export function App() {
     invoke<PreviewLaunch>("launch_native_playtest", { scene })
       .then((response) => {
         setPreviewLaunchState(response.launched ? "launched" : "error");
+        setPreviewValidation(response.validation);
         const diagnosticSummary =
           response.validation.errorCount > 0 || response.validation.warningCount > 0
             ? ` Diagnostics: ${response.validation.errorCount} error(s), ${response.validation.warningCount} warning(s). ${response.validation.diagnostics[0]?.message ?? ""}`
@@ -1784,6 +1845,7 @@ export function App() {
               <SystemInspector
                 previewLaunchMessage={previewLaunchMessage}
                 previewLaunchState={previewLaunchState}
+                previewValidation={previewValidation}
                 status={status}
               />
             )}
@@ -3462,17 +3524,179 @@ function SceneComposerInspector({
   );
 }
 
+function runtimeBudgetUsageRows(validation: PlaytestValidationReport) {
+  return [
+    { id: "texture", label: "Texture", value: `${validation.usage.textureDimensionPx}px` },
+    { id: "atlas", label: "Atlas", value: `${validation.usage.atlasDimensionPx}px` },
+    { id: "mapCells", label: "Map cells", value: validation.usage.mapCells.toLocaleString() },
+    { id: "entities", label: "Entities", value: validation.usage.entitiesPerMap.toLocaleString() },
+    { id: "particles", label: "Particles", value: validation.usage.activeParticles.toLocaleString() },
+    {
+      id: "memory",
+      label: "Memory",
+      value: `${validation.usage.memoryEstimateMb.toLocaleString()} MB`,
+    },
+    { id: "lights", label: "Lights", value: validation.usage.lightEmitters.toLocaleString() },
+    {
+      id: "rules",
+      label: "Rules",
+      value: validation.usage.ruleEvaluationsPerTick.toLocaleString(),
+    },
+  ];
+}
+
+function creatorGuidanceForValidation(validation: PlaytestValidationReport): CreatorGuidance[] {
+  const seen = new Set<string>();
+  const guidance: CreatorGuidance[] = [];
+
+  for (const diagnostic of validation.diagnostics) {
+    const item = creatorGuidanceForDiagnostic(diagnostic);
+    if (!item || seen.has(item.id)) continue;
+    seen.add(item.id);
+    guidance.push(item);
+  }
+
+  if (!validation.budgetCheck.withinBudget && guidance.length === 0) {
+    guidance.push({
+      id: "budget-general",
+      title: "Reduce the busiest content first",
+      body: "Split the heaviest map, lower active counts, or move expensive effects behind triggers.",
+      target: validation.budgetCheck.profileId,
+    });
+  }
+
+  return guidance;
+}
+
+function creatorGuidanceForDiagnostic(
+  diagnostic: PlaytestValidationDiagnostic,
+): CreatorGuidance | null {
+  if (diagnostic.code === "snapshotInvalid") {
+    return {
+      id: "snapshot-invalid",
+      title: "Fix invalid playtest data",
+      body: "Open the affected editor panel and resolve the invalid scene or renderer value before launching.",
+      target: diagnostic.field,
+    };
+  }
+
+  if (diagnostic.code === "sceneInvalid") {
+    return {
+      id: "scene-invalid",
+      title: "Repair the scene setup",
+      body: "Check entity ids, map references, triggers, and player spawn/controller setup before launching.",
+      target: diagnostic.field,
+    };
+  }
+
+  if (diagnostic.code === "snapshotSourceMissing") {
+    return {
+      id: "source-metadata",
+      title: "Keep source context attached",
+      body: "Save or regenerate the playtest snapshot from the editor so diagnostics can point back to content.",
+    };
+  }
+
+  if (diagnostic.code === "snapshotSourceRectsMissing") {
+    return {
+      id: "source-rects",
+      title: "Refresh sprite atlas metadata",
+      body: "Reimport or rebake sprites so atlas rectangles are available for accurate budget estimates.",
+    };
+  }
+
+  if (diagnostic.code !== "runtimeSafetyBudgetExceeded") {
+    return null;
+  }
+
+  switch (diagnostic.field) {
+    case "textureDimensionPx":
+      return {
+        id: "texture-dimension",
+        title: "Use smaller source PNGs",
+        body: "Reduce oversized sprite sheets or split them into smaller PNG sources before atlas packing.",
+        target: budgetTarget(diagnostic),
+      };
+    case "atlasDimensionPx":
+      return {
+        id: "atlas-dimension",
+        title: "Split large atlases",
+        body: "Move unrelated sprites into separate atlases so a single texture does not grow too large.",
+        target: budgetTarget(diagnostic),
+      };
+    case "mapCells":
+      return {
+        id: "map-cells",
+        title: "Break up huge maps",
+        body: "Split the area into linked maps, interiors, caves, or layers that stream independently.",
+        target: budgetTarget(diagnostic),
+      };
+    case "entitiesPerMap":
+      return {
+        id: "entities",
+        title: "Lower active entities",
+        body: "Move distant characters and props behind spawn triggers or split them across connected maps.",
+        target: budgetTarget(diagnostic),
+      };
+    case "activeParticles":
+      return {
+        id: "particles",
+        title: "Trim active particles",
+        body: "Reduce emitter bursts, lifetime, or simultaneous particle sources in the current scene.",
+        target: budgetTarget(diagnostic),
+      };
+    case "memoryEstimateMb":
+      return {
+        id: "memory",
+        title: "Reduce loaded content",
+        body: "Lower texture sizes, split maps, or load fewer actors and effects in the first playtest area.",
+        target: budgetTarget(diagnostic),
+      };
+    case "lightEmitters":
+      return {
+        id: "lights",
+        title: "Limit active lights",
+        body: "Keep distant lamps disabled and attach only nearby torches, beams, or street lights at runtime.",
+        target: budgetTarget(diagnostic),
+      };
+    case "ruleEvaluationsPerTick":
+      return {
+        id: "rules",
+        title: "Simplify active logic",
+        body: "Move repeated checks to triggers, lower tick rates, or split behavior across smaller scopes.",
+        target: budgetTarget(diagnostic),
+      };
+    default:
+      return {
+        id: "budget-unknown",
+        title: "Reduce the flagged budget",
+        body: "Use the technical diagnostic value to identify the expensive content and lower it before launch.",
+        target: budgetTarget(diagnostic),
+      };
+  }
+}
+
+function budgetTarget(diagnostic: PlaytestValidationDiagnostic) {
+  if (diagnostic.actual === undefined || diagnostic.limit === undefined) return diagnostic.field;
+  return `${diagnostic.field}: ${diagnostic.actual.toLocaleString()} / ${diagnostic.limit.toLocaleString()}`;
+}
+
 type SystemInspectorProps = {
   status: EngineStatus;
   previewLaunchState: PreviewLaunchState;
   previewLaunchMessage: string;
+  previewValidation: PlaytestValidationReport;
 };
 
 function SystemInspector({
   status,
   previewLaunchState,
   previewLaunchMessage,
+  previewValidation,
 }: SystemInspectorProps) {
+  const guidance = creatorGuidanceForValidation(previewValidation);
+  const budgetRows = runtimeBudgetUsageRows(previewValidation);
+
   return (
     <dl>
       <div>
@@ -3495,6 +3719,71 @@ function SystemInspector({
         <dt>Playtest launcher</dt>
         <dd className={`preview-launch-message preview-launch-${previewLaunchState}`}>
           {previewLaunchMessage}
+        </dd>
+      </div>
+      <div>
+        <dt>Budget diagnostics</dt>
+        <dd>
+          <ul className="diagnostic-list" aria-label="Playtest diagnostics">
+            {previewValidation.diagnostics.length > 0 ? (
+              previewValidation.diagnostics.map((diagnostic) => (
+                <li
+                  className={`diagnostic diagnostic-${diagnostic.severity}`}
+                  key={`${diagnostic.code}-${diagnostic.field ?? "general"}`}
+                >
+                  <strong>{diagnostic.severity}</strong>
+                  <span>{diagnostic.message}</span>
+                  {diagnostic.field ? (
+                    <small>
+                      {diagnostic.field}
+                      {diagnostic.actual !== undefined && diagnostic.limit !== undefined
+                        ? `: ${diagnostic.actual} / ${diagnostic.limit}`
+                        : ""}
+                    </small>
+                  ) : null}
+                </li>
+              ))
+            ) : (
+              <li className="diagnostic diagnostic-clean">
+                <strong>clean</strong>
+                <span>No playtest diagnostics reported.</span>
+              </li>
+            )}
+          </ul>
+        </dd>
+      </div>
+      <div>
+        <dt>Budget numbers</dt>
+        <dd>
+          <dl className="budget-grid" aria-label="Runtime safety budget usage">
+            {budgetRows.map((row) => (
+              <div key={row.id}>
+                <dt>{row.label}</dt>
+                <dd>{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </dd>
+      </div>
+      <div>
+        <dt>Creator guidance</dt>
+        <dd>
+          <ul className="guidance-list" aria-label="Creator guidance">
+            {guidance.length > 0 ? (
+              guidance.map((item) => (
+                <li key={item.id}>
+                  <strong>{item.title}</strong>
+                  <span>{item.body}</span>
+                  {item.target ? <small>{item.target}</small> : null}
+                </li>
+              ))
+            ) : (
+              <li>
+                <strong>ready</strong>
+                <span>No creator guidance needed for the latest validation report.</span>
+              </li>
+            )}
+          </ul>
         </dd>
       </div>
       <div>
